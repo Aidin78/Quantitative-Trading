@@ -136,22 +136,22 @@ Provider نباید اندیکاتور محاسبه کند. Runtime به Builder
 
 ### Tasks
 
-- [ ] `features/registry.py` — parse `config/features.yaml`
-- [ ] `features/builder.py` — `FeatureBuilder.build(df)` → FeatureSet + MarketContext
-- [ ] `features/indicators/` — RSI, EMA, MACD, ATR, Bollinger
-- [ ] `features/store.py` — `FeatureStore.put/get` + `feature_version`
-- [ ] `features/context_deriver.py` — trend, volatility, session از features
-- [ ] `config/features.yaml` — تعریف declarative اندیکاتورها
+- [x] `features/registry.py` — parse `config/features.yaml`
+- [x] `features/builder.py` — `FeatureBuilder.build(df)` → FeatureSet + MarketContext
+- [x] `features/indicators/` — RSI, EMA, MACD, ATR, Bollinger
+- [x] `features/store.py` — `FeatureStore.put/get` + `feature_version`
+- [x] `features/context_deriver.py` — trend, volatility, session از features
+- [x] `config/features.yaml` — تعریف declarative اندیکاتورها
 
 **Tests:**
-- [ ] snapshot: `df` ثابت → `FeatureSet` ثابت
-- [ ] `MarketContext` از features مشتق می‌شود — نه مستقل از Builder
-- [ ] افزودن اندیکاتور جدید = YAML + یک indicator class
+- [x] snapshot: `df` ثابت → `FeatureSet` ثابت
+- [x] `MarketContext` از features مشتق می‌شود — نه مستقل از Builder
+- [x] افزودن اندیکاتور جدید = YAML + یک indicator class
 
 ### خروجی / معیار قبولی
-- [ ] `FeatureBuilder` بدون import از `providers/` یا `engine/`
-- [ ] RSI در دو Provider مختلف **یک بار** محاسبه می‌شود
-- [ ] `feature_set_version` در خروجی ثبت می‌شود
+- [x] `FeatureBuilder` بدون import از `providers/` یا `engine/`
+- [x] RSI در دو Provider مختلف **یک بار** محاسبه می‌شود
+- [x] `feature_set_version` در خروجی ثبت می‌شود
 
 ---
 

@@ -12,6 +12,19 @@ indicators:
   - name: atr_14
     type: atr
     params: { period: 14 }
+  - name: macd
+    type: macd
+    params: { fast: 12, slow: 26, signal: 9 }
+  - name: bb_upper
+    type: bollinger
+    params: { period: 20, std: 2, band: upper }
+  - name: bb_lower
+    type: bollinger
+    params: { period: 20, std: 2, band: lower }
 flags:
   - name: ema_cross_bullish
     expr: "ema_12 > ema_26"
+context:
+  trend: { method: ema_compare, fast: ema_12, slow: ema_26 }
+  volatility: { method: atr_pct, atr: atr_14, low: 0.3, high: 1.0 }
+  session: { timezone: UTC }

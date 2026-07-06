@@ -20,3 +20,7 @@ class ValidationError(TradingPlatformError):
 
 class InvalidCyclePhaseError(TradingPlatformError):
     pass
+
+
+class InsufficientDataError(TradingPlatformError):
+    pass
