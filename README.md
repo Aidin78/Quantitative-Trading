@@ -72,8 +72,9 @@ cp .env.example .env
 # Infrastructure (postgres + redis)
 docker compose up -d postgres redis
 
-# Backend (development)
-cd backend && poetry install
+# Backend (development) — see backend/README.md for Windows Poetry setup
+cd backend
+# Windows: .\scripts\setup.ps1   OR   Git Bash: bash scripts/setup.sh
 poetry run pytest
 poetry run uvicorn src.main:app --reload
 

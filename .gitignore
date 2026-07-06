@@ -12,4 +12,3 @@ node_modules/
 .next/
 pgdata/
 *.log
-poetry.lock
