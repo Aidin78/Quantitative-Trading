@@ -27,6 +27,7 @@ httpx = "^0.28.0"
 pytest = "^8.3.0"
 pytest-asyncio = "^0.24.0"
 ruff = "^0.8.0"
+pre-commit = "^4.0.0"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -26,8 +26,12 @@ poetry env use "$PYTHON312"
 poetry lock --no-update 2>/dev/null || poetry lock
 poetry install
 
+REPO_ROOT="$(cd .. && pwd)"
+poetry -C "$REPO_ROOT/backend" run pre-commit install
+
 echo ""
 echo "Done. Run:"
 echo "  source .venv/Scripts/activate"
 echo "  poetry run pytest"
 echo "  poetry run uvicorn src.main:app --reload"
+echo "  pre-commit run --all-files   (from repo root)"

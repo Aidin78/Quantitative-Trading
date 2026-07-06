@@ -1,6 +1,6 @@
 """Contract import and schema smoke tests."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.core.contracts import (
     ConfigRevision,
@@ -21,7 +21,7 @@ from src.core.contracts.rationale import RiskCheckResult, RiskVerdict
 
 
 def test_contracts_import_without_implementation() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     rationale = ProviderRationale(summary="test", factors=())
     signal = StrategySignal(
         provider_id="ema_crossover",
@@ -61,6 +61,7 @@ def test_contracts_import_without_implementation() -> None:
         version=1,
         created_at=now,
     )
+    assert snapshot.snapshot_id == "snap_001"
     verdict = RiskVerdict(
         passed=True,
         checks=(

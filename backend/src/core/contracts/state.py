@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class PositionState(BaseModel, frozen=True):
@@ -43,6 +43,7 @@ class RiskState(BaseModel, frozen=True):
     daily_drawdown_pct: float = 0.0
     open_exposure_pct: float = 0.0
     consecutive_losses: int = 0
+    signals_today: int = 0
     limits: RiskLimits
     breached_limits: tuple[str, ...] = ()
     version: int

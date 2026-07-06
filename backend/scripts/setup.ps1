@@ -25,8 +25,14 @@ poetry env use $Python312
 poetry lock --no-update 2>$null; if ($LASTEXITCODE -ne 0) { poetry lock }
 poetry install
 
+$RepoRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+Set-Location $RepoRoot
+poetry -C (Join-Path $RepoRoot "backend") run pre-commit install
+Set-Location (Join-Path $RepoRoot "backend")
+
 Write-Host ""
 Write-Host "Done. Activate venv:"
 Write-Host "  .\.venv\Scripts\Activate.ps1"
 Write-Host "  poetry run pytest"
 Write-Host "  poetry run uvicorn src.main:app --reload"
+Write-Host "  pre-commit run --all-files   (from repo root)"

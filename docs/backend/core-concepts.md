@@ -168,7 +168,7 @@ class BaseSignalProvider(ABC):
 ### Pipeline
 
 ```
-Input: list[StrategySignal] + MarketContext
+Input: list[StrategySignal] + MarketContext + StateSnapshot
   │
   ▼
 [1] MarketFilter.check(context) → pass / reject
@@ -177,13 +177,17 @@ Input: list[StrategySignal] + MarketContext
 [2] Aggregator.combine(signals) → consensus side + confidence
   │
   ▼
-[3] ConfidenceFilter → min threshold
+[3] RiskManager.evaluate(aggregated, snapshot) → pass / reject
+  │   (drawdown, signals_today, open positions, exposure, min_confidence)
   │
   ▼
-[4] RiskManager.validate(signal, portfolio_state) → pass / reject
+[4] FinalSignalBuilder.build() → FinalSignal
   │
   ▼
-[5] FinalSignalBuilder.build() → FinalSignal
+[5] RiskManager.finalize_verdict() → min_risk_reward check
+  │
+  ▼
+Decision (approved | rejected) + DecisionLog
 ```
 
 ### MarketFilter
@@ -298,6 +302,7 @@ class RiskState:
     daily_drawdown_pct: float
     open_exposure_pct: float
     consecutive_losses: int
+    signals_today: int
     breached_limits: tuple[str, ...]
     version: int
 ```

@@ -65,6 +65,7 @@ class RiskState:
     daily_drawdown_pct: float
     open_exposure_pct: float
     consecutive_losses: int
+    signals_today: int
     limits: RiskLimits
     breached_limits: tuple[str, ...]
     version: int

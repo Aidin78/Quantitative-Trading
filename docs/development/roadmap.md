@@ -51,34 +51,34 @@ Validation      →    Providers       →    Observability
 ### Tasks
 
 **زیرساخت:**
-- [ ] Monorepo: `backend/`, `frontend/`, `docs/`, `config/` (مشترک root)
-- [ ] Poetry, Docker Compose (postgres, redis)
-- [ ] ruff, pre-commit, ESLint, Prettier
+- [x] Monorepo: `backend/`, `frontend/`, `docs/`, `config/` (مشترک root)
+- [x] Poetry, Docker Compose (postgres, redis)
+- [x] ruff, pre-commit, ESLint, Prettier
 
 **Contracts (`src/core/contracts/`):**
-- [ ] `signal.py` — `StrategySignal`, `ProviderRationale`, `FinalSignal`
-- [ ] `decision.py` — `Decision`, `DecisionResult`, `DecisionLog`, `RiskVerdict`
-- [ ] `features.py` — `FeatureSet`, `FeatureSetRecord`, `FeatureBuilder` protocol
-- [ ] `context.py` — `MarketContext`
-- [ ] `state.py` — `PortfolioState`, `PositionState`, `RiskState`, `StateSnapshot`
-- [ ] `event.py` — `EventEnvelope`, `EventBus`, event family enums
-- [ ] `execution.py` — `OrderIntent`, `Order`, `Fill`, `FillModel`
-- [ ] `governance.py` — `ConfigRevision`, `Experiment`, `ExperimentRun`
-- [ ] `time.py` — `Clock` protocol
-- [ ] `rationale.py` — `ProviderRationale`, `RiskVerdict`, `RiskCheckResult`
-- [ ] `provider.py` — `SignalProvider` protocol (`analyze(features, context)`)
-- [ ] `data.py` — `MarketDataProvider` protocol
+- [x] `signal.py` — `StrategySignal`, `ProviderRationale`, `FinalSignal`
+- [x] `decision.py` — `Decision`, `DecisionResult`, `DecisionLog`, `RiskVerdict`
+- [x] `features.py` — `FeatureSet`, `FeatureSetRecord`, `FeatureBuilder` protocol
+- [x] `context.py` — `MarketContext`
+- [x] `state.py` — `PortfolioState`, `PositionState`, `RiskState`, `StateSnapshot`
+- [x] `event.py` — `EventEnvelope`, `EventBus`, event family enums
+- [x] `execution.py` — `OrderIntent`, `Order`, `Fill`, `FillModel`
+- [x] `governance.py` — `ConfigRevision`, `Experiment`, `ExperimentRun`
+- [x] `time.py` — `Clock` protocol
+- [x] `rationale.py` — `ProviderRationale`, `RiskVerdict`, `RiskCheckResult`
+- [x] `provider.py` — `SignalProvider` protocol (`analyze(features, context)`)
+- [x] `data.py` — `MarketDataProvider` protocol
 
 **Config schema:**
-- [ ] `config/engine.yaml` — قوانین aggregation, filter, risk
-- [ ] `config/features.yaml` — اندیکاتورها و flags (declarative)
-- [ ] Pydantic settings loader
+- [x] `config/engine.yaml` — قوانین aggregation, filter, risk
+- [x] `config/features.yaml` — اندیکاتورها و flags (declarative)
+- [x] Pydantic settings loader
 
 ### خروجی / معیار قبولی
-- [ ] Contracts import می‌شوند بدون وابستگی به implementation
-- [ ] `EventEnvelope` با `event_time` و `processing_time` تعریف شده
-- [ ] `StateSnapshot` و `ProviderRationale` در contracts
-- [ ] هیچ فایلی در `strategies/` وجود ندارد — عمداً
+- [x] Contracts import می‌شوند بدون وابستگی به implementation
+- [x] `EventEnvelope` با `event_time` و `processing_time` تعریف شده
+- [x] `StateSnapshot` و `ProviderRationale` در contracts
+- [x] هیچ فایلی در `strategies/` وجود ندارد — عمداً
 
 مستندات مرجع: [event-model.md](../architecture/event-model.md), [state-management.md](../architecture/state-management.md), [time-semantics.md](../architecture/time-semantics.md)
 
@@ -96,27 +96,28 @@ Engine فقط با `list[StrategySignal] + MarketContext + StateSnapshot` کار
 ### Tasks
 
 **Pipeline:**
-- [ ] `engine/market_filter.py`
-- [ ] `engine/aggregator.py`
-- [ ] `engine/risk_manager.py`
-- [ ] `engine/decision_engine.py` — orchestration
-- [ ] `engine/decision_log.py` — ثبت هر مرحله
+- [x] `engine/market_filter.py`
+- [x] `engine/aggregator.py`
+- [x] `engine/risk_manager.py`
+- [x] `engine/decision_engine.py` — orchestration + DecisionLog
+- [x] `engine/final_signal_builder.py`
 
 **Mock برای تست:**
-- [ ] `tests/mocks/mock_providers.py` — providerهای با خروجی ثابت
-- [ ] `tests/mocks/fixtures.py` — context و portfolio نمونه
+- [x] `tests/mocks/mock_signals.py` — سیگنال‌های ثابت (جایگزین mock_providers)
+- [x] `tests/mocks/fixtures.py` — context و StateSnapshot نمونه
 
 **Tests (اجباری — قبل از Phase 2):**
-- [ ] consensus: 2 provider هم‌جهت → approved
-- [ ] conflict: BUY vs SELL → rejected
-- [ ] risk: drawdown exceeded → rejected
-- [ ] filter: low volatility → rejected
-- [ ] decision log کامل برای هر سناریو
+- [x] consensus: 2 provider هم‌جهت → approved
+- [x] conflict: BUY vs SELL → rejected
+- [x] risk: drawdown exceeded → rejected
+- [x] filter: low volatility → rejected
+- [x] decision log کامل برای هر سناریو
+- [x] max_signals_per_day, min_risk_reward, aggregation methods
 
 ### خروجی / معیار قبولی
-- [ ] `pytest tests/unit/engine/` — 100% pass
-- [ ] Engine بدون import از `strategies/` یا `data/` کار می‌کند
-- [ ] هر تصمیم `DecisionLog` دارد — حتی rejected
+- [x] `pytest tests/unit/engine/` — 100% pass
+- [x] Engine بدون import از `strategies/` یا `data/` کار می‌کند
+- [x] هر تصمیم `DecisionLog` دارد — حتی rejected
 
 ```
 ✓ Engine tested in isolation
@@ -380,9 +381,9 @@ Engine = unchanged since Phase 1
 ## Definition of Done — MVP
 
 ### Engine (غیرقابل مذاکره)
-- [ ] تصمیم approved/rejected با log کامل
-- [ ] تست unit بدون provider واقعی
-- [ ] config از YAML قابل تغییر
+- [x] تصمیم approved/rejected با log کامل
+- [x] تست unit بدون provider واقعی
+- [x] config از YAML قابل تغییر
 
 ### Runtime
 - [ ] pipeline: data → features → store → state snapshot → providers → engine → events
