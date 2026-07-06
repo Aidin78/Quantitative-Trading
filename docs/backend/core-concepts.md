@@ -99,6 +99,27 @@ class Trade:
 
 ---
 
+## FeatureSet
+
+خروجی **Feature Builder** — ورودی **Signal Provider**.
+
+```python
+@dataclass(frozen=True)
+class FeatureSet:
+    symbol: str
+    timeframe: str
+    timestamp: datetime
+    version: str
+    close: float
+    indicators: dict[str, float]   # {"rsi_14": 28.5, "ema_12": 67100}
+    flags: dict[str, bool]         # {"ema_cross_bullish": True}
+    levels: dict[str, float]       # {"support": 66000}
+```
+
+**قانون:** Provider به `FeatureSet` دسترسی دارد — نه OHLCV خام.
+
+---
+
 ## SignalProvider (استراتژی)
 
 ```python
@@ -107,14 +128,14 @@ class SignalProvider(Protocol):
     enabled: bool
     weight: float
 
-    def analyze(self, df: pd.DataFrame,
+    def analyze(self, features: FeatureSet,
                 context: MarketContext) -> StrategySignal: ...
 ```
 
 **قوانین Provider:**
+- فقط **تفسیر** features — نه محاسبه اندیکاتور
 - فقط `StrategySignal` برمی‌گرداند
-- حق صدا زدن Telegram، DB، Risk ندارد
-- `HOLD` = نظری ندارد
+- حق دسترسی به Telegram، DB، Risk ندارد
 
 ### BaseSignalProvider
 

@@ -18,21 +18,23 @@
 | **numpy** | محاسبات عددی |
 | **polars** | (اختیاری) داده حجیم — جایگزین سریع‌تر pandas |
 
-### اندیکاتورهای تکنیکال
+### Feature Builder و اندیکاتورها
 
 | کتابخانه | کاربرد |
 |----------|--------|
-| **ta** یا **pandas-ta** | RSI, MACD, EMA, Bollinger, ATR |
+| **ta** یا **pandas-ta** | فقط در `features/` برای RSI, MACD, EMA, Bollinger, ATR |
 
-### بک‌تست
+**قاعده معماری:** هیچ `SignalProvider` نباید مستقیماً `ta`، `pandas-ta` یا محاسبات اندیکاتور را import کند. Provider فقط `FeatureSet` را تفسیر می‌کند.
+
+### Validation Harness
 
 | گزینه | مزایا | معایب |
 |-------|-------|-------|
-| **موتور سفارشی** | کنترل کامل، هم‌راستا با Engine | توسعه بیشتر |
+| **Validation Harness سفارشی** | روی همان `PlatformRuntime` اجرا می‌شود و کیفیت Decision را می‌سنجد | توسعه بیشتر |
 | **VectorBT** | سرعت بالا، vectorized | منحنی یادگیری |
 | **Backtrader** | انعطاف، community | کندتر از VectorBT |
 
-**پیشنهاد:** موتور سفارشی سبک که مستقیماً `DecisionEngine` را صدا بزند — ساده‌ترین راه برای «یک منطق، دو حالت».
+**پیشنهاد:** `ValidationHarness` سفارشی که `PlatformRuntime` را روی تاریخ iterate کند. این روش جلوی جدا شدن منطق validation و live را می‌گیرد.
 
 ### API
 
@@ -142,12 +144,13 @@ ruff = "^0.8"
 backend/src/
 ├── api/              # FastAPI routes, deps, websocket
 ├── core/             # models, enums, exceptions
-├── data/             # market data providers
-├── strategies/       # trading strategies
-├── engine/           # decision engine
-├── backtest/         # backtest runner, metrics
-├── live/             # live runner, scheduler
-├── notifications/    # telegram
+├── data/             # MarketDataProvider adapters
+├── features/         # FeatureBuilder, indicators, context derivation
+├── providers/        # SignalProviders (استراتژی‌های plug-in)
+├── engine/           # DecisionEngine
+├── runtime/          # PlatformRuntime
+├── validation/       # ValidationHarness, simulated trades, metrics
+├── sinks/            # logging, database, telegram, websocket sinks
 ├── db/               # sqlalchemy models, repositories
 └── config/           # settings loader
 ```

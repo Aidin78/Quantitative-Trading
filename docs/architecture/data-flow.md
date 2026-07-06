@@ -8,11 +8,11 @@
 MarketDataProvider.get_latest()
         │
         ▼
-build MarketContext + PortfolioState
+FeatureBuilder.build(df)  →  FeatureSet + MarketContext
         │
-        ├──► Provider A.analyze() ──► StrategySignal
-        ├──► Provider B.analyze() ──► StrategySignal
-        └──► Provider N.analyze() ──► StrategySignal
+        ├──► Provider A.analyze(features, ctx) ──► StrategySignal
+        ├──► Provider B.analyze(features, ctx) ──► StrategySignal
+        └──► Provider N.analyze(features, ctx) ──► StrategySignal
                 │
                 ▼
         DecisionEngine.process()
@@ -123,7 +123,7 @@ useSignalFeed hook → toast + invalidate cache
 ### اجرای بک‌تست (Async)
 
 ```
-Browser → POST /api/v1/backtest/run { config }
+Browser → POST /api/v1/validation/run { config }
               │
               ▼
          Create job in DB (status: pending)
@@ -132,29 +132,30 @@ Browser → POST /api/v1/backtest/run { config }
          Celery / Background task
               │
               ├──► WS: progress 10%, 20%, ...
-              ├──► Run BacktestRunner
+              ├──► Run ValidationHarness
               └──► WS: complete + results
                         │
                         ▼
-                   Browser navigates to /backtest/results/{id}
+                   Browser navigates to /validation/results/{id}
 ```
 
 ## مدل‌های داده — روابط
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Backtest   │────►│   Trade     │     │   Signal    │
+│ Validation  │────►│   Trade     │     │   Decision  │
 │  Run        │ 1:N │             │     │             │
 └─────────────┘     └─────────────┘     └──────┬──────┘
                                                │
 ┌─────────────┐     ┌─────────────┐            │ N:1
-│  Strategy   │◄────│ Strategy    │◄───────────┘
+│  Provider   │◄────│ Provider    │◄───────────┘
 │  Config     │     │ Signal      │
 └─────────────┘     └─────────────┘
 
-Signal (final) ──► may reference multiple StrategySignals
-Trade ──► linked to one Signal
-BacktestRun ──► contains many Trades
+Decision ──► contains FeatureSet snapshot + ProviderSignals + DecisionLog
+Signal (final) ──► exists only for approved Decisions
+Trade ──► linked to one approved Decision / Signal
+ValidationRun ──► contains many Decisions and simulated Trades
 ```
 
 ## MarketContext

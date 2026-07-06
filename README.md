@@ -5,6 +5,7 @@
 ## ویژگی‌ها
 
 - موتور تصمیم‌گیری (Decision Engine) — قلب سیستم
+- Feature Builder برای محاسبه یکپارچه اندیکاتورها و `MarketContext`
 - Signal Providerهای plug-in (استراتژی‌ها)
 - Validation harness برای سنجش کیفیت تصمیمات
 - اتصال به بازار زنده با همان Runtime
@@ -28,7 +29,10 @@
 |------|----------|
 | Frontend | Next.js 14, TypeScript, shadcn/ui |
 | API | FastAPI, WebSocket |
-| Core | Python 3.11, pandas, Decision Engine |
+| Decision Engine | Python — pipeline تصمیم |
+| Feature Builder | pandas-ta / ta — اندیکاتورها |
+| Platform Runtime | Python — چرخه اجرا |
+| Signal Providers | plug-in — تفسیر FeatureSet |
 | Database | PostgreSQL + TimescaleDB |
 | Cache | Redis |
 | Notifications | Telegram Bot |

@@ -25,73 +25,48 @@
 
 ```
                     ┌─────────────────────┐
-                    │   Decision Engine   │  ← قلب سیستم
-                    │  (تصمیم نهایی)      │
+                    │   Decision Engine   │  ← لایه ۳: تصمیم
                     └──────────┬──────────┘
                                │
-           ┌───────────────────┼───────────────────┐
-           │                   │                   │
-    ┌──────▼──────┐    ┌───────▼───────┐   ┌──────▼──────┐
-    │  Providers  │    │ Market Context │   │  Portfolio  │
-    │ (Strategies)│    │   (Data)       │   │   State     │
-    └─────────────┘    └────────────────┘   └─────────────┘
-           │
-    ┌──────┴──────┬──────────────┐
-    │             │              │
- EMA Cross    RSI Div       Strategy N
- (plug-in)    (plug-in)     (plug-in)
+                    ┌──────────▼──────────┐
+                    │   Signal Providers  │  ← لایه ۲: نظر
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │   Feature Builder   │  ← لایه ۱: ویژگی/اندیکاتور
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │  MarketDataProvider │  ← لایه ۰: OHLCV خام
+                    └─────────────────────┘
 ```
+
+استراتژی‌ها فقط **Signal Provider** هستند — نه محاسبه‌گر اندیکاتور، نه تصمیم‌گیر نهایی.
 
 ## لایه‌های معماری (از درون به بیرون)
 
-### لایه ۱ — Decision Core (ثابت)
+> جزئیات Feature Builder: [feature-builder.md](./feature-builder.md)
 
-تغییر نمی‌کند مگر با تصمیم آگاهانه معماری:
+### لایه ۰ — Raw Data (Adapter)
 
 | جزء | مسئولیت |
 |-----|----------|
-| `DecisionEngine` | orchestration pipeline |
-| `MarketFilter` | آیا اصلاً شرایط معامله هست؟ |
-| `Aggregator` | ترکیب نظر Providers |
-| `RiskManager` | آیا این تصمیم مجاز است؟ |
-| `DecisionLog` | ثبت شفاف هر مرحله |
+| `MarketDataProvider` | OHLCV خام — CSV یا Live API |
 
-**خروجی:** `Decision` (approved → `FinalSignal` | rejected → `RejectionReason`)
+### لایه ۱ — Feature Builder (زیرساخت مشترک)
 
-### لایه ۲ — Runtime (محیط اجرا)
+| جزء | مسئولیت |
+|-----|----------|
+| `FeatureBuilder` | OHLCV → `FeatureSet` + `MarketContext` |
+| `FeatureRegistry` | تعریف declarative اندیکاتورها از YAML |
 
-Engine را در یک **چرخه تصمیم** اجرا می‌کند. Backtest و Live هر دو **همان Runtime** هستند:
+**خروجی:** `FeatureSet` (اندیکاتورها، flags، levels) + `MarketContext` (trend, volatility, session)
 
-| جزء | نقش |
-|-----|-----|
-| `PlatformRuntime` | حلقه اصلی: data → providers → engine → sink |
-| `MarketDataProvider` | تأمین OHLCV + context |
-| `SignalProvider` | interface استراتژی‌ها |
-| `DecisionSink` | مقصد خروجی تصمیم |
+Provider و Engine هر دو از خروجی Builder تغذیه می‌شوند — نه از OHLCV خام.
 
-```
-PlatformRuntime
-    │
-    ├─ fetch market data
-    ├─ build MarketContext
-    ├─ call all SignalProviders → list[StrategySignal]
-    ├─ DecisionEngine.process() → Decision
-    └─ DecisionSink.handle(decision)
-```
+### لایه ۲ — Signal Providers (plug-in)
 
-### لایه ۳ — Adapters (قابل تعویض)
-
-| Adapter | Backtest | Live |
-|---------|----------|------|
-| `MarketDataProvider` | CSVProvider | LiveProvider (ccxt) |
-| `DecisionSink` | SimulatedTradeSink | TelegramSink + DBSink + WSSink |
-| `Scheduler` | iterate تاریخ | APScheduler |
-
-**Engine و Runtime تغییر نمی‌کنند — فقط adapter عوض می‌شود.**
-
-### لایه ۴ — Providers (plug-in)
-
-استراتژی = یک `SignalProvider`:
+استراتژی = `SignalProvider` — **تفسیر** `FeatureSet`، نه محاسبه اندیکاتور:
 
 ```python
 class SignalProvider(Protocol):
@@ -99,13 +74,59 @@ class SignalProvider(Protocol):
     weight: float
     enabled: bool
 
-    def analyze(self, df: pd.DataFrame,
+    def analyze(self, features: FeatureSet,
                 context: MarketContext) -> StrategySignal: ...
 ```
 
-افزودن استراتژی جدید = implement کردن protocol + register — **بدون لمس Engine**.
+### لایه ۳ — Decision Core (قلب — ثابت)
 
-### لایه ۵ — Presentation (مشاهده‌پذیری)
+| جزء | مسئولیت |
+|-----|----------|
+| `DecisionEngine` | orchestration pipeline |
+| `MarketFilter` | از `MarketContext` — آیا شرایط معامله هست؟ |
+| `Aggregator` | ترکیب نظر Providers |
+| `RiskManager` | آیا این تصمیم مجاز است؟ |
+| `DecisionLog` | ثبت شفاف هر مرحله |
+
+**خروجی:** `Decision` (approved → `FinalSignal` | rejected → `RejectionReason`)
+
+### لایه ۴ — Runtime (محیط اجرا)
+
+Engine را در یک **چرخه تصمیم** اجرا می‌کند. Validation و Live هر دو **همان Runtime** هستند:
+
+| جزء | نقش |
+|-----|-----|
+| `PlatformRuntime` | data → **features** → providers → engine → sink |
+| `MarketDataProvider` | تأمین OHLCV خام |
+| `FeatureBuilder` | تأمین FeatureSet + MarketContext |
+| `SignalProvider` | تفسیر features → نظر |
+| `DecisionSink` | مقصد خروجی تصمیم |
+
+```
+PlatformRuntime
+    │
+    ├─ fetch OHLCV
+    ├─ feature_builder.build(df) → FeatureSet + MarketContext
+    ├─ call all SignalProviders(features, context) → list[StrategySignal]
+    ├─ DecisionEngine.process(signals, context) → Decision
+    └─ DecisionSink.handle(decision)
+```
+
+### لایه ۵ — Adapters (قابل تعویض)
+
+| Adapter | Backtest | Live |
+|---------|----------|------|
+| `MarketDataProvider` | CSVProvider | LiveProvider (ccxt) |
+| `DecisionSink` | SimulatedTradeSink | TelegramSink + DBSink + WSSink |
+| `Scheduler` | iterate تاریخ | APScheduler |
+
+**Engine، Feature Builder و Runtime تغییر نمی‌کنند — فقط adapter عوض می‌شود.**
+
+### لایه ۶ — Providers (plug-in)
+
+جزئیات در لایه ۲ — اینجا فقط یادآوری: Provider آخرین لایه اضافه‌شونده است.
+
+### لایه ۷ — Presentation (مشاهده‌پذیری)
 
 Dashboard اول Decision را نشان می‌دهد، نه استراتژی را:
 - Decision Log
@@ -141,6 +162,7 @@ Dashboard اول Decision را نشان می‌دهد، نه استراتژی ر
 core/contracts/
 ├── signal.py          # StrategySignal, FinalSignal
 ├── decision.py        # Decision, RejectionReason, DecisionLog
+├── features.py        # FeatureSet, FeatureBuilder protocol
 ├── context.py         # MarketContext, PortfolioState
 ├── provider.py        # SignalProvider protocol
 ├── data.py            # MarketDataProvider protocol
@@ -156,8 +178,9 @@ core/contracts/
 | استراتژی مستقیماً Telegram صدا بزند | دور زدن Engine |
 | BacktestRunner جدا از LiveRunner با logic متفاوت | شکستن «یک موتور، دو حالت» |
 | Risk check داخل استراتژی | پراکندگی قوانین |
-| Dashboard اول صفحه Strategies | تمرکز روی peripheral، نه core |
-| تست فقط روی PnL استراتژی تکی | Engine بدون integration test می‌ماند |
+| Dashboard اول صفحه Providers | تمرکز روی peripheral، نه core |
+| اندیکاتور داخل Provider محاسبه شود | تکرار، ناهمسانی Validation/Live — در FeatureBuilder |
+| Provider `df` بگیرد به‌جای `FeatureSet` | coupling به pandas — FeatureSet بده |
 
 ## جمع‌بندی
 

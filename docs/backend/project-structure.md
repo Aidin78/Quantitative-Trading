@@ -23,21 +23,29 @@ backend/
 │   │   ├── contracts/          # ★ قراردادهای ثابت (Phase 0)
 │   │   │   ├── signal.py
 │   │   │   ├── decision.py
+│   │   │   ├── features.py
 │   │   │   ├── context.py
 │   │   │   ├── provider.py
 │   │   │   ├── data.py
 │   │   │   └── sink.py
 │   │   ├── enums.py
 │   │   └── exceptions.py
-│   ├── engine/                 # ★ قلب سیستم (Phase 1)
+│   ├── engine/                 # ★ قلب — Phase 1
 │   │   ├── decision_engine.py
 │   │   ├── aggregator.py
 │   │   ├── risk_manager.py
 │   │   ├── market_filter.py
 │   │   └── decision_log.py
-│   ├── runtime/                # PlatformRuntime (Phase 2)
+│   ├── features/               # ★ Feature Builder — Phase 2
+│   │   ├── builder.py
+│   │   ├── registry.py
+│   │   ├── context_deriver.py
+│   │   └── indicators/
+│   │       ├── rsi.py
+│   │       ├── ema.py
+│   │       └── atr.py
+│   ├── runtime/                # Phase 3
 │   │   ├── platform_runtime.py
-│   │   ├── context_builder.py
 │   │   ├── portfolio_tracker.py
 │   │   └── scheduler.py
 │   ├── data/                   # MarketDataProvider adapters
@@ -49,11 +57,11 @@ backend/
 │   │   ├── database_sink.py
 │   │   ├── telegram_sink.py
 │   │   └── websocket_sink.py
-│   ├── validation/             # سنجش Engine (Phase 3)
+│   ├── validation/             # Phase 4
 │   │   ├── harness.py
 │   │   ├── trade_simulator.py
 │   │   └── metrics.py
-│   ├── providers/              # SignalProviders — plug-in (Phase 4)
+│   ├── providers/              # Phase 5 — plug-in
 │   │   ├── base.py
 │   │   ├── registry.py
 │   │   ├── ema_crossover.py
@@ -77,7 +85,8 @@ backend/
 │   ├── mocks/
 │   │   └── mock_providers.py   # تست Engine بدون provider واقعی
 │   ├── unit/
-│   │   ├── test_engine.py      # ★ اول — قبل از هر چیز
+│   │   ├── test_features.py    # snapshot FeatureSet
+│   │   ├── test_engine.py
 │   │   └── test_providers.py
 │   └── integration/
 │       ├── test_runtime.py
@@ -89,26 +98,34 @@ backend/
 ## ترتیب وابستگی (مهم)
 
 ```
-contracts → engine → runtime → validation → providers → api
-                ↑                              │
-                └──────── mock providers ──────┘
+contracts → engine → features → runtime → validation → providers → api
+                         ↑
+                    mock FeatureSet
 ```
 
-**قانون:** `engine/` نباید import از `providers/` داشته باشد.
+**قوانین وابستگی:**
+- `engine/` — بدون import از `providers/` و `features/`
+- `features/` — بدون import از `providers/` و `engine/`
+- `providers/` — فقط `FeatureSet` می‌گیرد، نه OHLCV خام
+- `runtime/` تنها جایی است که `data/`, `features/`, `providers/`, `engine/`, `sinks/` را orchestration می‌کند
 
 ## مسئولیت هر ماژول
 
 ### `src/core/contracts/`
 
-قراردادهای ثابت — تغییر = نسخه جدید. مستقل از implementation.
+قراردادهای ثابت — شامل `features.py` برای `FeatureSet`.
+
+### `src/features/`
+
+Feature Builder — **تنها** جایی که اندیکاتور محاسبه می‌شود. OHLCV → `FeatureSet` + `MarketContext`.
 
 ### `src/engine/`
 
-قلب سیستم — فقط `StrategySignal` می‌گیرد، `Decision` برمی‌گرداند.
+قلب سیستم — `StrategySignal` + `MarketContext` → `Decision`.
 
 ### `src/runtime/`
 
-`PlatformRuntime` — یک چرخه: data → providers → engine → sink.
+`PlatformRuntime` — data → **features** → providers → engine → sink.
 
 ### `src/validation/`
 
@@ -143,9 +160,25 @@ timeframes:
   - "1h"
   - "4h"
 
-backtest:
+validation:
   default_start: "2024-01-01"
   min_trades: 100
+```
+
+### `config/features.yaml`
+
+```yaml
+version: v1
+indicators:
+  - name: rsi_14
+    type: rsi
+    params: { period: 14 }
+  - name: ema_12
+    type: ema
+    params: { period: 12 }
+flags:
+  - name: ema_cross_bullish
+    expr: "ema_12 > ema_26"
 ```
 
 ### `config/engine.yaml`

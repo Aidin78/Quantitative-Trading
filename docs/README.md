@@ -1,18 +1,19 @@
 # Quantitative Trading Signal Platform — مستندات فنی
 
-پلتفرم هوشمند تولید سیگنال‌های معاملاتی با موتور تصمیم‌گیری یکپارچه، بک‌تست روی داده تاریخی و اتصال به بازار زنده.
+پلتفرم هوشمند تولید سیگنال‌های معاملاتی با Decision Engine یکپارچه، Feature Builder مشترک، Validation روی داده تاریخی و اتصال به بازار زنده.
 
 ## فهرست مستندات
 
 | بخش | فایل | توضیح |
 |-----|------|--------|
-| **معماری** | [engine-centric.md](./architecture/engine-centric.md) | **اصول معماری — Engine در مرکز** |
+| **معماری** | [engine-centric.md](./architecture/engine-centric.md) | اصول معماری — Engine در مرکز |
+| | [feature-builder.md](./architecture/feature-builder.md) | **لایه Feature Builder — اندیکاتور و ویژگی** |
 | | [overview.md](./architecture/overview.md) | معماری کلی سیستم |
 | | [data-flow.md](./architecture/data-flow.md) | جریان داده در validation و لایو |
 | **بک‌اند** | [stack.md](./backend/stack.md) | Stack و کتابخانه‌های Python |
 | | [project-structure.md](./backend/project-structure.md) | ساختار پوشه‌ها |
 | | [core-concepts.md](./backend/core-concepts.md) | مدل‌ها، استراتژی‌ها، موتور تصمیم‌گیری |
-| | [backtesting.md](./backend/backtesting.md) | فاز بک‌تست و معیارهای عملکرد |
+| | [backtesting.md](./backend/backtesting.md) | Validation Harness و معیارهای عملکرد |
 | | [live-trading.md](./backend/live-trading.md) | فاز لایو و تلگرام |
 | **فرانت‌اند** | [stack.md](./frontend/stack.md) | Stack و کتابخانه‌های Next.js |
 | | [project-structure.md](./frontend/project-structure.md) | ساختار پوشه‌های فرانت |
@@ -31,9 +32,12 @@
 ├─────────────────────────────────────────────────────────┤
 │  API: FastAPI + WebSocket + JWT                         │
 ├─────────────────────────────────────────────────────────┤
-│  Core: Decision Engine + Runtime + Signal Providers     │
+│  Decision Engine          ← قلب — تصمیم نهایی           │
+│  Feature Builder          ← ویژگی — اندیکاتور، context  │
+│  Platform Runtime         ← چرخه اجرا                   │
+│  Signal Providers         ← plug-in — تفسیر features    │
 ├─────────────────────────────────────────────────────────┤
-│  Data: PostgreSQL/TimescaleDB + Redis                   │
+│  Data: PostgreSQL/TimescaleDB + Redis + OHLCV adapters  │
 ├─────────────────────────────────────────────────────────┤
 │  Output: Telegram Bot + Dashboard                       │
 └─────────────────────────────────────────────────────────┘
@@ -42,11 +46,12 @@
 ## اصول طراحی
 
 1. **Engine-Centric** — قلب سیستم Decision Engine است؛ استراتژی‌ها فقط Signal Provider.
-2. **Contracts First** — قراردادها قبل از implementation تعریف می‌شوند.
-3. **یک Runtime، دو Adapter** — Validation و Live همان `PlatformRuntime`؛ فقط data/sink عوض می‌شود.
-4. **مدیریت ریسک متمرکز** — قوانین ریسک فقط در Engine.
-5. **شفافیت تصمیم** — هر Decision (approved + rejected) با `DecisionLog` ثبت می‌شود.
-6. **Validation قبل از Live** — بک‌تست ابزار سنجش کیفیت Engine است، نه محصول جدا.
+2. **Feature Separation** — اندیکاتورها در Feature Builder؛ Provider فقط `FeatureSet` را تفسیر می‌کند.
+3. **Contracts First** — قراردادها (`FeatureSet`, `Decision`, `StrategySignal`) قبل از implementation.
+4. **یک Runtime، دو Adapter** — Validation و Live همان `PlatformRuntime`.
+5. **مدیریت ریسک متمرکز** — قوانین ریسک فقط در Engine.
+6. **شفافیت تصمیم** — هر Decision با `DecisionLog` ثبت می‌شود.
+7. **Validation قبل از Live** — بک‌تست ابزار سنجش Engine است.
 
 ## شروع سریع (پس از scaffold)
 
@@ -54,7 +59,7 @@
 # بک‌اند
 cd backend
 poetry install
-poetry run python scripts/run_backtest.py
+poetry run python scripts/run_validation.py
 
 # فرانت‌اند
 cd frontend

@@ -2,13 +2,13 @@
 
 ## هدف
 
-اجرای همان Decision Engine روی داده real-time و ارسال سیگنال‌های تأییدشده از طریق Telegram و Dashboard.
+اجرای همان `PlatformRuntime` روی داده real-time و ارسال فقط تصمیم‌های `approved` از طریق Telegram و Dashboard.
 
 ## پیش‌شرط
 
-- بک‌تست با معیارهای قبولی انجام شده
+- Validation با معیارهای قبولی انجام شده
 - پارامترها و قوانین ریسک finalize شده
-- **هیچ تغییری در منطق Engine** نسبت به بک‌تست
+- **هیچ تغییری در Feature Builder، Runtime یا Engine** نسبت به Validation
 
 ## معماری لایو
 
@@ -20,13 +20,13 @@ APScheduler
     └── Job: ETH/USDT 1h
             │
             ▼
-    LiveRunner.execute(symbol, timeframe)
+    PlatformRuntime.run_cycle(symbol, timeframe)
             │
             ▼
     LiveProvider.get_latest()
             │
             ▼
-    Strategies → DecisionEngine → FinalSignal?
+    FeatureBuilder → Providers → DecisionEngine → Decision
             │
     ┌───────┼───────┐
     ▼       ▼       ▼
@@ -36,33 +36,28 @@ APScheduler
        WebSocket → Dashboard
 ```
 
-## LiveRunner
+## Live Runtime
 
 ```python
-class LiveRunner:
+class LiveRuntime:
     def __init__(
         self,
         data_provider: LiveProvider,
-        strategies: list[BaseStrategy],
+        feature_builder: FeatureBuilder,
+        providers: list[SignalProvider],
         engine: DecisionEngine,
-        notifier: TelegramNotifier,
-        signal_repo: SignalRepository,
+        sink: CompositeSink,
     ): ...
 
     async def execute(self, symbol: str, timeframe: str) -> None:
         df = await self.data_provider.get_latest(symbol, timeframe)
-        context = build_market_context(df, symbol, timeframe)
+        features, context = self.feature_builder.build(df, symbol, timeframe)
         portfolio = await self._load_portfolio_state()
 
-        signals = [s.analyze(df, context) for s in self.strategies if s.enabled]
-        final = self.engine.process(signals, context, portfolio)
+        signals = [p.analyze(features, context) for p in self.providers if p.enabled]
+        decision = self.engine.process(signals, context, portfolio)
 
-        await self._log_decision(signals, context, final)
-
-        if final:
-            await self.signal_repo.save(final)
-            await self.notifier.send(final)
-            await self._publish_ws(final)
+        await self.sink.handle(decision)
 ```
 
 ## LiveProvider (ccxt)
@@ -115,7 +110,7 @@ scheduler.add_job(
 📊 R:R = 1:2.8
 
 💪 Confidence: 78%
-✅ Strategies: EMA Cross, RSI Div
+✅ Providers: EMA Cross, RSI Div
 📈 Market: Trending ↑ | Vol: Normal
 
 ⏰ 2026-07-06 10:30 UTC
@@ -143,8 +138,8 @@ class TelegramNotifier:
 
 | حالت | توضیح |
 |------|--------|
-| **paper** | سیگنال تولید و لاگ — بدون Telegram |
-| **live** | Telegram + Dashboard |
+| **paper** | Decision تولید و لاگ — بدون Telegram |
+| **live** | DB + WebSocket + Telegram فقط برای approved |
 | **paused** | Scheduler متوقف — فقط مانیتور |
 
 تغییر حالت از Dashboard: `POST /api/v1/live/mode`
@@ -156,7 +151,8 @@ class TelegramNotifier:
 | API exchange down | retry 3x با backoff → alert در Dashboard |
 | Rate limit | wait + retry |
 | Telegram fail | retry → ذخیره در DB → flag برای resend |
-| Strategy exception | log + skip آن استراتژی — ادامه با بقیه |
+| Provider exception | log + skip آن Provider — ادامه با بقیه |
+| FeatureBuilder exception | abort cycle + alert، چون همه Providerها به FeatureSet وابسته‌اند |
 
 ## Health Check
 
@@ -183,15 +179,17 @@ GET /api/v1/live/status
 - IP whitelist برای exchange API (در صورت امکان)
 - لاگ بدون ذخیره secrets
 
-## تفاوت بک‌تست و لایو — چک‌لیست
+## تفاوت Validation و Live — چک‌لیست
 
-| مورد | بک‌تست | لایو | یکسان؟ |
+| مورد | Validation | Live | یکسان؟ |
 |------|--------|------|--------|
+| PlatformRuntime | ✓ | ✓ | ✅ |
+| FeatureBuilder | ✓ | ✓ | ✅ |
 | DecisionEngine | ✓ | ✓ | ✅ |
-| Strategies | ✓ | ✓ | ✅ |
+| SignalProviders | ✓ | ✓ | ✅ |
 | RiskManager | ✓ | ✓ | ✅ |
 | MarketDataProvider | CSV | API | ❌ adapter |
-| Output | Metrics | Telegram/WS | ❌ handler |
+| DecisionSink | SimulatedTradeSink | DB/WS/Telegram | ❌ adapter |
 | Timing | batch | scheduled | ❌ |
 
 ## Paper Trading (توصیه)

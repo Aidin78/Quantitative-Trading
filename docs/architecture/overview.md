@@ -19,7 +19,7 @@
 │   CSV/Live Data  │  Telegram/DB/WS Sinks  │  Scheduler           │
 ├──────────────────────────────────────────────────────────────────┤
 │                      Platform Runtime                             │
-│         data → providers → engine → sink (یک چرخه واحد)          │
+│    data → features → providers → engine → sink                   │
 ├──────────────────────────────────────────────────────────────────┤
 │                    ★ Decision Engine ★                           │
 │   MarketFilter → Aggregator → RiskManager → DecisionLog          │
@@ -27,35 +27,44 @@
 │                   Signal Providers (plug-in)                      │
 │   Provider A  │  Provider B  │  Provider N  │  Registry          │
 ├──────────────────────────────────────────────────────────────────┤
-│                     Contracts (ثابت)                                │
-│   StrategySignal │ Decision │ MarketContext │ Protocols            │
+│              ★ Feature Builder Layer ★                           │
+│         OHLCV → FeatureSet + MarketContext                       │
+├──────────────────────────────────────────────────────────────────┤
+│              MarketDataProvider (OHLCV خام)                       │
+├──────────────────────────────────────────────────────────────────┤
+│                     Contracts (ثابت)                              │
+│   FeatureSet │ StrategySignal │ Decision │ Protocols              │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 ## اجزای اصلی
 
-### 1. Data Layer
-
-مسئول تأمین داده OHLCV و context بازار. دو پیاده‌سازی دارد:
+### 1. Data Layer (OHLCV خام)
 
 | Provider | کاربرد | منبع |
 |----------|--------|------|
-| `CSVProvider` | بک‌تست | فایل‌های CSV تاریخی |
-| `LiveProvider` | لایو | ccxt / MetaTrader5 / API کارگزاری |
+| `CSVProvider` | validation | فایل‌های CSV |
+| `LiveProvider` | لایو | ccxt / MT5 |
 
-هر دو از interface یکسان `MarketDataProvider` پیروی می‌کنند.
+### 2. Feature Builder Layer
 
-### 2. Signal Providers (استراتژی‌ها)
+| جزء | مسئولیت |
+|-----|----------|
+| `FeatureBuilder` | OHLCV → `FeatureSet` + `MarketContext` |
+| `FeatureRegistry` | اندیکاتورها از `config/features.yaml` |
 
-استراتژی = **SignalProvider** — منبع نظر تحلیلی، نه تصمیم‌گیر نهایی:
-- فقط `StrategySignal` برمی‌گرداند
-- هیچ دسترسی به Telegram، DB، یا Risk ندارد
+جزئیات: [feature-builder.md](./feature-builder.md)
+
+### 3. Signal Providers
+
+استراتژی = **SignalProvider** — تفسیر `FeatureSet`، نه محاسبه اندیکاتور:
+- ورودی: `FeatureSet` + `MarketContext`
+- خروجی: `StrategySignal`
 - از طریق `ProviderRegistry` ثبت می‌شود
-- افزودن provider جدید = plug-in — بدون تغییر Engine
 
-### 3. Decision Engine (قلب سیستم)
+### 4. Decision Engine (قلب سیستم)
 
-تنها جایی که تصمیم نهایی گرفته می‌شود. ورودی: `list[StrategySignal]` + `MarketContext` + `PortfolioState`. خروجی: `Decision` (approved | rejected).
+تنها جایی که تصمیم نهایی گرفته می‌شود. `MarketContext` از Feature Builder — نه محاسبه مجدد.
 
 مراحل پردازش:
 1. **Market Filter** — بررسی شرایط کلی بازار (volatility، trend، session)
@@ -64,25 +73,25 @@
 4. **Final Signal Builder** — ساخت `FinalSignal` در صورت تأیید
 5. **DecisionLog** — ثبت شفاف هر مرحله (approved و rejected)
 
-### 4. Platform Runtime
+### 5. Platform Runtime
 
-`PlatformRuntime` Engine را در یک چرخه اجرا می‌کند: fetch → providers → engine → sink.
+`PlatformRuntime`: fetch → **feature_builder.build()** → providers → engine → sink.
 
-### 5. Adapter Layer
+### 6. Adapter Layer
 
 | Adapter | Validation | Live |
 |---------|------------|------|
 | `MarketDataProvider` | CSVProvider | LiveProvider |
 | `DecisionSink` | SimulatedTradeSink | Telegram + DB + WS |
 
-### 6. API Layer
+### 7. API Layer
 
 FastAPI — مشاهده‌پذیری Engine و تصمیمات:
 - REST: `/decisions`, `/engine/config`, `/validation`
 - WebSocket: `/ws/decisions`
 - JWT برای auth
 
-### 7. Presentation Layer
+### 8. Presentation Layer
 
 - **Dashboard** — Decision Monitor به‌عنوان صفحه اصلی
 - **Telegram** — فقط `FinalSignal` از مسیر Engine

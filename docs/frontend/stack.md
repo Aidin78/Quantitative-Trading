@@ -30,13 +30,13 @@
 
 ```typescript
 // مثال: server state
-const { data: signals } = useQuery({
-  queryKey: ['signals', filters],
-  queryFn: () => api.getSignals(filters),
+const { data: decisions } = useQuery({
+  queryKey: ['decisions', filters],
+  queryFn: () => api.getDecisions(filters),
 });
 
 // مثال: client state
-const { filters, setFilters } = useSignalFilters();
+const { filters, setFilters } = useDecisionFilters();
 ```
 
 ## چارت‌ها
@@ -65,7 +65,7 @@ const { filters, setFilters } = useSignalFilters();
 
 | کتابخانه | کاربرد |
 |----------|--------|
-| Native **WebSocket** یا **socket.io-client** | سیگنال لحظه‌ای، progress بک‌تست |
+| Native **WebSocket** یا **socket.io-client** | decision stream، validation progress |
 
 ## اعلان‌ها
 
@@ -152,11 +152,11 @@ NEXTAUTH_URL=http://localhost:3000
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const api = {
-  getSignals: (params: SignalFilters) =>
-    fetch(`${BASE_URL}/api/v1/signals?${qs(params)}`).then(r => r.json()),
+  getDecisions: (params: DecisionFilters) =>
+    fetch(`${BASE_URL}/api/v1/decisions?${qs(params)}`).then(r => r.json()),
 
-  runBacktest: (config: BacktestConfig) =>
-    fetch(`${BASE_URL}/api/v1/backtest/run`, {
+  runValidation: (config: ValidationConfig) =>
+    fetch(`${BASE_URL}/api/v1/validation/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
@@ -177,13 +177,14 @@ npx openapi-typescript http://localhost:8000/openapi.json -o lib/api-types.ts
 
 | Route | صفحه |
 |-------|------|
-| `/` | Overview |
+| `/` | Decision Monitor |
 | `/signals` | لیست سیگنال‌ها |
 | `/signals/[id]` | جزئیات سیگنال |
-| `/strategies` | مدیریت استراتژی‌ها |
-| `/strategies/[id]` | جزئیات استراتژی |
-| `/backtest` | اجرای بک‌تست |
-| `/backtest/results/[id]` | نتایج بک‌تست |
+| `/providers` | مدیریت SignalProviderها |
+| `/providers/[id]` | جزئیات Provider |
+| `/features` | Feature Config و آخرین FeatureSet |
+| `/validation` | اجرای Validation |
+| `/validation/results/[id]` | نتایج Validation |
 | `/live` | مانیتور لایو |
 | `/analytics` | تحلیل عمیق |
 | `/risk` | مدیریت ریسک |

@@ -1,59 +1,53 @@
-# بک‌تست (Backtesting)
+# Validation Harness (Backtesting)
 
 ## هدف
 
-اعتبارسنجی استراتژی‌ها و قوانین Decision Engine روی داده تاریخی **قبل از** اتصال به بازار زنده.
+اعتبارسنجی **Decision Engine + Feature Builder + Platform Runtime** روی داده تاریخی **قبل از** اتصال به بازار زنده.
+
+در این معماری، بک‌تست یک محصول مستقل نیست؛ یک `ValidationHarness` است که همان Runtime لایو را روی تاریخ اجرا می‌کند.
 
 ## فرآیند
 
 ```
 1. انتخاب symbol، timeframe، بازه تاریخ
-2. Load CSV → DataFrame
-3. Walk-forward یا full-period iteration
-4. برای هر نقطه زمانی:
-   a. ساخت MarketContext
-   b. اجرای تمام استراتژی‌های فعال
-   c. DecisionEngine.process()
-   d. اگر سیگنال → شبیه‌سازی معامله تا TP/SL/timeout
-5. محاسبه Metrics
-6. ذخیره نتایج در DB
-7. نمایش در Dashboard
+2. Load CSV → OHLCV window
+3. FeatureBuilder → `FeatureSet` + `MarketContext`
+4. SignalProviders → `StrategySignal[]`
+5. DecisionEngine → `Decision` (approved/rejected)
+6. اگر approved → `SimulatedTradeSink` معامله را شبیه‌سازی می‌کند
+7. محاسبه Engine Metrics + Outcome Metrics
+8. ذخیره `DecisionRecord`ها و نمایش در Dashboard
 ```
 
-## BacktestRunner
+## ValidationHarness
 
 ```python
-class BacktestRunner:
+class ValidationHarness:
     def __init__(
         self,
-        data_provider: MarketDataProvider,
-        strategies: list[BaseStrategy],
-        engine: DecisionEngine,
-        config: BacktestConfig,
+        runtime: PlatformRuntime,
+        trade_sink: SimulatedTradeSink,
+        config: ValidationConfig,
     ): ...
 
-    def run(self) -> BacktestResult:
-        df = self.data_provider.get_ohlcv(...)
-        portfolio = PortfolioState.initial(config.initial_capital)
-        trades: list[Trade] = []
+    async def run(self) -> ValidationResult:
+        for point in self._iterate_history():
+            decision = await self.runtime.run_cycle(
+                symbol=config.symbol,
+                timeframe=config.timeframe,
+                as_of=point.timestamp,
+            )
+            await self.trade_sink.handle(decision)
 
-        for i in range(self.warmup_bars, len(df)):
-            window = df.iloc[:i+1]
-            context = build_market_context(window, ...)
-            signals = [s.analyze(window, context) for s in self.strategies]
-            final = self.engine.process(signals, context, portfolio)
-
-            if final:
-                trade = self._simulate_trade(final, df.iloc[i:])
-                trades.append(trade)
-                portfolio = self._update_portfolio(portfolio, trade)
-
-        return BacktestResult(trades=trades, metrics=compute_metrics(trades))
+        return ValidationResult(
+            engine_metrics=compute_engine_metrics(),
+            outcome_metrics=compute_outcome_metrics(),
+        )
 ```
 
 ## شبیه‌سازی معامله
 
-برای هر `FinalSignal`:
+برای هر `Decision` با `result = approved`:
 
 1. **Entry** — قیمت close کندل سیگنال (یا open کندل بعد)
 2. **Monitor** — iterate کندل‌های بعدی
@@ -65,7 +59,16 @@ class BacktestRunner:
 
 ## معیارهای عملکرد
 
-### معیارهای اصلی
+### Engine Metrics
+
+| معیار | فرمول | حداقل پیشنهادی |
+|-------|--------|-----------------|
+| **Approval Rate** | approved / all_decisions | وابسته به استراتژی |
+| **Rejection Breakdown** | group by rejection_reason | باید قابل توضیح باشد |
+| **Provider Contribution** | provider در چند decision نهایی نقش داشته | — |
+| **Decision Latency** | زمان هر cycle | مناسب timeframe |
+
+### Outcome Metrics
 
 | معیار | فرمول | حداقل پیشنهادی |
 |-------|--------|-----------------|
@@ -116,10 +119,10 @@ timestamp,open,high,low,close,volume
 - `volume` — float
 - مرتب‌سازی صعودی بر اساس زمان
 
-## BacktestConfig
+## ValidationConfig
 
 ```yaml
-backtest:
+validation:
   symbol: "BTC/USDT"
   timeframe: "1h"
   start_date: "2024-01-01"
@@ -129,22 +132,24 @@ backtest:
   slippage_pct: 0.05
   max_bars_in_trade: 48      # حداکثر کندل در معامله
   warmup_bars: 200           # قبل از شروع سیگنال
-  strategies:
+  providers:
     - ema_crossover
     - rsi_divergence
 ```
 
 ## خروجی‌ها
 
-### BacktestResult
+### ValidationResult
 
 ```python
 @dataclass
-class BacktestResult:
+class ValidationResult:
     id: str
-    config: BacktestConfig
+    config: ValidationConfig
+    decisions: list[DecisionRecord]
     trades: list[Trade]
-    metrics: BacktestMetrics
+    engine_metrics: EngineMetrics
+    outcome_metrics: OutcomeMetrics
     equity_curve: list[tuple[datetime, float]]
     drawdown_curve: list[tuple[datetime, float]]
     created_at: datetime
@@ -162,21 +167,22 @@ class BacktestResult:
 ## CLI
 
 ```bash
-python scripts/run_backtest.py \
+python scripts/run_validation.py \
   --symbol BTC/USDT \
   --timeframe 1h \
   --start 2024-01-01 \
   --end 2025-01-01 \
-  --output results/backtest_001.json
+  --output results/validation_001.json
 ```
 
 ## API
 
 ```
-POST /api/v1/backtest/run     → job_id (async)
-GET  /api/v1/backtest/{id}    → status + metrics
-GET  /api/v1/backtest/{id}/trades
-WS   /ws/backtest/{id}        → progress events
+POST /api/v1/validation/run     → job_id (async)
+GET  /api/v1/validation/{id}    → status + engine/outcome metrics
+GET  /api/v1/validation/{id}/decisions
+GET  /api/v1/validation/{id}/trades
+WS   /ws/validation/{id}        → progress events
 ```
 
 ## نکات مهم

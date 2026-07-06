@@ -19,9 +19,9 @@ refactor/xxx      # refactoring
 
 ```
 feat(engine): add weighted confidence aggregation
-fix(backtest): correct SL hit detection on same candle
-docs(api): add signals endpoint examples
-refactor(strategies): extract indicator helpers
+fix(validation): correct SL hit detection on same candle
+docs(api): add decisions endpoint examples
+refactor(features): extract indicator helpers
 test(engine): add risk manager edge cases
 chore(deps): upgrade fastapi to 0.115
 ```
@@ -64,7 +64,7 @@ def aggregate_signals(
 - فایل تست: `test_<module>.py`
 - نام تست: `test_<behavior>_<condition>`
 - Fixtures در `conftest.py`
-- حداقل coverage برای `engine/` و `strategies/`
+- حداقل coverage برای `engine/`, `features/`, `providers/`, `validation/`
 
 ```python
 def test_risk_manager_rejects_when_daily_drawdown_exceeded():
@@ -165,10 +165,10 @@ export function SignalTable({ signals, onRowClick }: SignalTableProps) {
 
 | نوع | قرارداد | مثال |
 |-----|---------|------|
-| Table | snake_case, plural | `signals`, `backtest_runs` |
+| Table | snake_case, plural | `decisions`, `validation_runs` |
 | Column | snake_case | `entry_price`, `created_at` |
 | Index | `ix_<table>_<column>` | `ix_signals_timestamp` |
-| FK | `fk_<table>_<ref_table>` | `fk_trades_signals` |
+| FK | `fk_<table>_<ref_table>` | `fk_trades_decisions` |
 
 ### Migrations
 
@@ -189,8 +189,9 @@ export function SignalTable({ signals, onRowClick }: SignalTableProps) {
 ### YAML Config
 
 - `config/settings.yaml` — تنظیمات غیرحساس
-- `config/risk.yaml` — قوانین ریسک
-- `config/strategies/*.yaml` — پارامتر استراتژی‌ها
+- `config/engine.yaml` — قوانین ریسک، aggregation و filter
+- `config/features.yaml` — اندیکاتورها، flags و context derivation
+- `config/providers/*.yaml` — پارامتر SignalProviderها، بدون period اندیکاتور
 
 ---
 
@@ -202,7 +203,7 @@ export function SignalTable({ signals, onRowClick }: SignalTableProps) {
 import structlog
 logger = structlog.get_logger()
 
-logger.info("signal_generated", signal_id=sig.id, symbol=sig.symbol)
+logger.info("decision_created", decision_id=decision.id, result=decision.result)
 logger.warning("risk_rejected", reason=result.reason)
 logger.error("exchange_api_failed", error=str(e), retry=attempt)
 ```
@@ -212,7 +213,7 @@ logger.error("exchange_api_failed", error=str(e), retry=attempt)
 | Level | کاربرد |
 |-------|--------|
 | DEBUG | جزئیات development |
-| INFO | رویدادهای عادی (signal, backtest complete) |
+| INFO | رویدادهای عادی (decision created, validation complete) |
 | WARNING | risk reject, retry |
 | ERROR | API fail, exception |
 
@@ -249,5 +250,7 @@ logger.error("exchange_api_failed", error=str(e), retry=attempt)
 - [ ] No secrets in code
 - [ ] Error handling مناسب
 - [ ] Consistent naming
-- [ ] No look-ahead bias (backtest)
+- [ ] No look-ahead bias (validation)
+- [ ] Provider فقط `FeatureSet` را تفسیر می‌کند و اندیکاتور محاسبه نمی‌کند
+- [ ] Engine هیچ import از `features/` یا `providers/` ندارد
 - [ ] Docs به‌روز اگر API تغییر کرده

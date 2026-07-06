@@ -35,84 +35,78 @@ Authentication: `Authorization: Bearer <JWT>` (به‌جز `/auth/login`)
 
 ---
 
-## Signals
+## Decisions
 
-### GET `/signals`
+Decision موجودیت اصلی API است. هر cycle یک Decision تولید می‌کند: `approved` یا `rejected`.
 
-لیست سیگنال‌ها با فیلتر و pagination.
+### GET `/decisions`
 
-**Query Parameters:**
+لیست تمام تصمیم‌ها با فیلتر و pagination.
 
-| Param | Type | Default | توضیح |
-|-------|------|---------|--------|
-| `symbol` | string | — | فیلتر نماد |
-| `side` | string | — | BUY \| SELL |
-| `status` | string | — | sent \| rejected \| paper |
-| `strategy` | string | — | فیلتر استراتژی |
-| `min_confidence` | float | — | حداقل confidence |
-| `start_date` | date | — | از تاریخ |
-| `end_date` | date | — | تا تاریخ |
-| `page` | int | 1 | صفحه |
-| `limit` | int | 50 | تعداد (max 100) |
+| Param | Type | توضیح |
+|-------|------|--------|
+| `symbol` | string | فیلتر نماد |
+| `result` | string | approved \| rejected |
+| `side` | string | BUY \| SELL، فقط برای approved |
+| `rejection_reason` | string | risk \| filter \| low_confidence \| conflict |
+| `provider` | string | فیلتر Provider مشارکت‌کننده |
+| `start_date` | date | از تاریخ |
+| `end_date` | date | تا تاریخ |
+| `page` | int | صفحه |
+| `limit` | int | تعداد |
 
 ```json
-// Response 200
 {
   "items": [
     {
-      "id": "sig_abc123",
+      "id": "dec_abc123",
       "symbol": "BTC/USDT",
-      "side": "BUY",
-      "entry_price": 67250.0,
-      "stop_loss": 66800.0,
-      "take_profit": 68500.0,
-      "confidence": 0.78,
-      "risk_reward": 2.78,
       "timeframe": "1h",
-      "status": "sent",
-      "contributing_strategies": ["ema_crossover", "rsi_divergence"],
+      "result": "approved",
+      "side": "BUY",
+      "confidence": 0.78,
+      "rejection_reason": null,
+      "provider_ids": ["ema_crossover", "rsi_divergence"],
+      "feature_set_version": "v1",
       "timestamp": "2026-07-06T10:30:00Z"
     }
   ],
   "total": 142,
   "page": 1,
-  "limit": 50,
-  "pages": 3
+  "limit": 50
 }
 ```
 
-### GET `/signals/{id}`
+### GET `/decisions/{id}`
 
-جزئیات کامل یک سیگنال شامل decision log و strategy signals.
+جزئیات کامل یک تصمیم شامل `FeatureSet`, `MarketContext`, provider votes و `DecisionLog`.
 
 ```json
-// Response 200
 {
-  "id": "sig_abc123",
-  "symbol": "BTC/USDT",
-  "side": "BUY",
-  "entry_price": 67250.0,
-  "stop_loss": 66800.0,
-  "take_profit": 68500.0,
-  "confidence": 0.78,
-  "risk_reward": 2.78,
-  "timeframe": "1h",
-  "status": "sent",
-  "timestamp": "2026-07-06T10:30:00Z",
+  "id": "dec_abc123",
+  "result": "approved",
+  "final_signal": {
+    "id": "sig_abc123",
+    "side": "BUY",
+    "entry_price": 67250.0,
+    "stop_loss": 66800.0,
+    "take_profit": 68500.0,
+    "risk_reward": 2.78
+  },
+  "feature_snapshot": {
+    "version": "v1",
+    "indicators": { "rsi_14": 28.5, "ema_12": 67100.0 },
+    "flags": { "ema_cross_bullish": true }
+  },
   "market_context": {
     "trend": "UP",
     "volatility": "NORMAL",
     "atr": 450.0,
     "session": "EUROPE"
   },
-  "contributing_strategies": ["ema_crossover", "rsi_divergence"],
-  "strategy_signals": [
-    {
-      "strategy_id": "ema_crossover",
-      "side": "BUY",
-      "confidence": 0.75,
-      "metadata": { "fast_ema": 67100, "slow_ema": 66800 }
-    }
+  "provider_signals": [
+    { "provider_id": "ema_crossover", "side": "BUY", "confidence": 0.75 },
+    { "provider_id": "rsi_divergence", "side": "BUY", "confidence": 0.68 }
   ],
   "decision_log": {
     "market_filter": { "passed": true },
@@ -122,78 +116,96 @@ Authentication: `Authorization: Bearer <JWT>` (به‌جز `/auth/login`)
 }
 ```
 
-### GET `/signals/stats`
+### GET `/engine/stats`
 
-آمار کلی برای KPI cards.
+آمار Decision Monitor.
 
 ```json
-// Response 200
 {
-  "signals_today": 3,
-  "signals_week": 12,
-  "win_rate_30d": 0.624,
-  "profit_30d_pct": 4.2,
-  "max_drawdown_30d_pct": -8.1,
-  "active_strategies": 5,
-  "total_strategies": 7
+  "decisions_today": 48,
+  "approval_rate": 0.184,
+  "rejection_breakdown": {
+    "risk": 12,
+    "market_filter": 18,
+    "low_confidence": 9
+  },
+  "active_providers": 5,
+  "feature_set_version": "v1"
 }
 ```
 
 ---
 
-## Strategies
+## Signals
 
-### GET `/strategies`
+`Signal` یک view مشتق‌شده از Decisionهای `approved` است؛ rejectedها در `/decisions` می‌مانند.
+
+### GET `/signals`
+
+لیست فقط سیگنال‌های نهایی approved.
+
+### GET `/signals/{id}`
+
+جزئیات سیگنال به همراه `decision_id` برای مشاهده مسیر تصمیم.
+
+---
+
+## Features
+
+### GET `/features/config`
+
+برگرداندن `config/features.yaml`.
+
+### PATCH `/features/config`
+
+ویرایش controlled config برای اندیکاتورها و flags. تغییر config باید version جدید بسازد.
+
+### GET `/features/snapshot`
+
+آخرین `FeatureSet` برای symbol/timeframe.
+
+---
+
+## Providers
+
+### GET `/providers`
 
 ```json
-// Response 200
 {
   "items": [
     {
-      "strategy_id": "ema_crossover",
-      "name": "EMA Crossover",
+      "provider_id": "ema_crossover",
+      "name": "EMA Crossover Provider",
       "enabled": true,
       "weight": 1.0,
-      "params": { "fast_period": 12, "slow_period": 26 },
-      "stats": {
-        "win_rate": 0.58,
-        "total_signals": 142,
-        "avg_confidence": 0.71,
-        "last_signal_at": "2026-07-06T08:30:00Z"
-      }
+      "params": { "min_confidence": 0.6 },
+      "required_features": ["ema_cross_bullish", "ema_12", "ema_26"]
     }
   ]
 }
 ```
 
-### GET `/strategies/{id}`
-
-جزئیات + performance history.
-
-### PATCH `/strategies/{id}`
+### PATCH `/providers/{id}`
 
 ```json
-// Request
 {
   "enabled": true,
   "weight": 1.2,
-  "params": { "fast_period": 10, "slow_period": 24 }
+  "params": { "min_confidence": 0.65 }
 }
-
-// Response 200
-{ "strategy_id": "ema_crossover", "enabled": true, ... }
 ```
+
+Provider config نباید period اندیکاتور را تغییر دهد؛ آن در `/features/config` است.
 
 ---
 
-## Backtest
+## Validation
 
-### POST `/backtest/run`
+### POST `/validation/run`
 
-شروع بک‌تست async.
+اجرای ValidationHarness async.
 
 ```json
-// Request
 {
   "symbol": "BTC/USDT",
   "timeframe": "1h",
@@ -202,76 +214,49 @@ Authentication: `Authorization: Bearer <JWT>` (به‌جز `/auth/login`)
   "initial_capital": 10000,
   "commission_pct": 0.1,
   "slippage_pct": 0.05,
-  "strategies": ["ema_crossover", "rsi_divergence"]
-}
-
-// Response 202
-{
-  "job_id": "bt_xyz789",
-  "status": "pending"
+  "providers": ["ema_crossover", "rsi_divergence"],
+  "feature_set_version": "v1",
+  "engine_config_version": "v1"
 }
 ```
 
-### GET `/backtest/{id}`
+### GET `/validation/{id}`
 
 ```json
-// Response 200
 {
-  "id": "bt_xyz789",
+  "id": "val_xyz789",
   "status": "completed",
   "progress": 100,
-  "config": { ... },
-  "metrics": {
+  "engine_metrics": {
+    "approval_rate": 0.18,
+    "rejection_breakdown": { "risk": 120, "low_confidence": 340 },
+    "provider_contribution": { "ema_crossover": 0.62 }
+  },
+  "outcome_metrics": {
     "win_rate": 0.58,
     "profit_factor": 1.72,
     "sharpe_ratio": 1.35,
     "max_drawdown_pct": -12.4,
-    "total_trades": 234,
-    "net_profit_pct": 18.5
-  },
-  "created_at": "2026-07-06T09:00:00Z",
-  "completed_at": "2026-07-06T09:05:00Z"
+    "total_trades": 234
+  }
 }
 ```
 
-### GET `/backtest/{id}/trades`
+### GET `/validation/{id}/decisions`
 
-```json
-// Response 200
-{
-  "items": [
-    {
-      "id": "trade_001",
-      "symbol": "BTC/USDT",
-      "side": "BUY",
-      "entry_price": 42000,
-      "exit_price": 43200,
-      "entry_time": "2024-03-15T10:00:00Z",
-      "exit_time": "2024-03-16T14:00:00Z",
-      "pnl": 120.0,
-      "pnl_pct": 2.86,
-      "exit_reason": "TP"
-    }
-  ],
-  "total": 234
-}
-```
+تمام DecisionRecordهای validation.
 
-### GET `/backtest/{id}/equity-curve`
+### GET `/validation/{id}/trades`
 
-```json
-// Response 200
-{
-  "data": [
-    { "timestamp": "2024-01-01T00:00:00Z", "equity": 10000 },
-    { "timestamp": "2024-01-02T00:00:00Z", "equity": 10050 }
-  ]
-}
-```
+معاملات شبیه‌سازی‌شده از approved decisions.
 
-### DELETE `/backtest/{id}`
+### GET `/validation/{id}/equity-curve`
 
-حذف نتایج بک‌تست.
+منحنی equity بر اساس simulated trades.
+
+### DELETE `/validation/{id}`
+
+حذف نتایج validation.
 
 ---
 

@@ -8,51 +8,54 @@ Authentication: query param `?token=<JWT>` یا header در handshake
 
 | Endpoint | کاربرد |
 |----------|--------|
-| `/ws/signals` | سیگنال‌های جدید |
-| `/ws/backtest/{job_id}` | progress بک‌تست |
-| `/ws/live` | feed لایو (decisions + status) |
+| `/ws/decisions` | stream تمام decisionها (approved + rejected) |
+| `/ws/signals` | فقط سیگنال‌های approved برای اعلان UI |
+| `/ws/validation/{job_id}` | progress validation |
+| `/ws/live` | status لایو و runtime events |
 
 ---
 
-## `/ws/signals`
+## `/ws/decisions`
 
 ### اتصال
 
 ```javascript
-const ws = new WebSocket('ws://localhost:8000/ws/signals?token=eyJ...');
+const ws = new WebSocket('ws://localhost:8000/ws/decisions?token=eyJ...');
 ```
 
 ### Events (Server → Client)
 
-#### `signal.new`
+#### `decision.created`
 
-سیگنال جدید صادر شد.
+هر cycle یک decision جدید تولید می‌کند.
 
 ```json
 {
-  "event": "signal.new",
+  "event": "decision.created",
   "data": {
-    "id": "sig_abc123",
+    "id": "dec_abc123",
     "symbol": "BTC/USDT",
+    "result": "approved",
     "side": "BUY",
-    "entry_price": 67250.0,
-    "stop_loss": 66800.0,
-    "take_profit": 68500.0,
     "confidence": 0.78,
+    "rejection_reason": null,
+    "provider_ids": ["ema_crossover", "rsi_divergence"],
+    "feature_set_version": "v1",
     "timeframe": "1h",
     "timestamp": "2026-07-06T10:30:00Z"
   }
 }
 ```
 
-#### `signal.rejected`
+#### `decision.rejected`
 
-سیگنال رد شد (برای decision log).
+تصمیم rejected شد؛ UI باید دلیل را در Decision Monitor نمایش دهد.
 
 ```json
 {
-  "event": "signal.rejected",
+  "event": "decision.rejected",
   "data": {
+    "id": "dec_rej_001",
     "symbol": "BTC/USDT",
     "reason": "daily_drawdown_limit",
     "timestamp": "2026-07-06T10:30:00Z",
@@ -77,17 +80,43 @@ const ws = new WebSocket('ws://localhost:8000/ws/signals?token=eyJ...');
 
 ---
 
-## `/ws/backtest/{job_id}`
+## `/ws/signals`
 
-### Events
+فقط برای approved decisions و toast اعلان سیگنال استفاده می‌شود. منبع truth همچنان `/ws/decisions` است.
 
-#### `backtest.progress`
+#### `signal.new`
 
 ```json
 {
-  "event": "backtest.progress",
+  "event": "signal.new",
   "data": {
-    "job_id": "bt_xyz789",
+    "id": "sig_abc123",
+    "decision_id": "dec_abc123",
+    "symbol": "BTC/USDT",
+    "side": "BUY",
+    "entry_price": 67250.0,
+    "stop_loss": 66800.0,
+    "take_profit": 68500.0,
+    "confidence": 0.78,
+    "timeframe": "1h",
+    "timestamp": "2026-07-06T10:30:00Z"
+  }
+}
+```
+
+---
+
+## `/ws/validation/{job_id}`
+
+### Events
+
+#### `validation.progress`
+
+```json
+{
+  "event": "validation.progress",
+  "data": {
+    "job_id": "val_xyz789",
     "progress": 45,
     "current_date": "2024-06-15",
     "trades_so_far": 89
@@ -95,14 +124,18 @@ const ws = new WebSocket('ws://localhost:8000/ws/signals?token=eyJ...');
 }
 ```
 
-#### `backtest.completed`
+#### `validation.completed`
 
 ```json
 {
-  "event": "backtest.completed",
+  "event": "validation.completed",
   "data": {
-    "job_id": "bt_xyz789",
-    "metrics": {
+    "job_id": "val_xyz789",
+    "engine_metrics": {
+      "approval_rate": 0.18,
+      "rejection_breakdown": { "risk": 120, "low_confidence": 340 }
+    },
+    "outcome_metrics": {
       "win_rate": 0.58,
       "profit_factor": 1.72,
       "sharpe_ratio": 1.35,
@@ -113,13 +146,13 @@ const ws = new WebSocket('ws://localhost:8000/ws/signals?token=eyJ...');
 }
 ```
 
-#### `backtest.failed`
+#### `validation.failed`
 
 ```json
 {
-  "event": "backtest.failed",
+  "event": "validation.failed",
   "data": {
-    "job_id": "bt_xyz789",
+    "job_id": "val_xyz789",
     "error": "Insufficient data for warmup period"
   }
 }
@@ -195,9 +228,10 @@ LiveRunner
     │
     ▼
 Redis PUBLISH
-    ├── channel:signals     → /ws/signals clients
+    ├── channel:decisions   → /ws/decisions clients
+    ├── channel:signals     → /ws/signals clients (approved only)
     ├── channel:live        → /ws/live clients
-    └── channel:backtest:*  → /ws/backtest/{id} clients
+    └── channel:validation:* → /ws/validation/{id} clients
 ```
 
 FastAPI WebSocket Manager:

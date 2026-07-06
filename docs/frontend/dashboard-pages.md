@@ -1,40 +1,40 @@
 # صفحات داشبورد
 
-## 1. Overview (`/`)
+## 1. Decision Monitor (`/`)
 
-صفحه اصلی — نمای کلی وضعیت سیستم.
+صفحه اصلی — مشاهده زنده تصمیم‌های Engine. این صفحه باید قبل از Signals و Providers ساخته شود.
 
 ### بخش‌ها
 
 | بخش | محتوا |
 |-----|--------|
-| **Header Status** | وضعیت لایو (● Live / ○ Paused)، قیمت فعلی symbol پیش‌فرض، آخرین سیگنال |
-| **KPI Cards** | Signals Today، Win Rate (30d)، Profit (30d)، Max Drawdown، Active Strategies |
-| **Equity Curve** | نمودار 30 روز اخیر |
-| **Recent Signals** | 10 سیگنال آخر — feed زنده |
-| **Strategy Performance** | bar chart عملکرد هر استراتژی |
-| **Market Conditions** | trend، volatility، session فعلی |
+| **Runtime Status** | live/paper/paused، آخرین cycle، latency |
+| **Decision Feed** | همه decisionها: approved + rejected |
+| **Rejection Breakdown** | دلایل رد: risk، filter، low confidence |
+| **Feature Snapshot** | `FeatureSet` آخرین cycle: RSI، EMA، ATR، flags |
+| **Provider Votes** | خروجی هر SignalProvider برای decision انتخاب‌شده |
+| **Engine Config Summary** | aggregation، risk، market filter |
 
 ### Wireframe
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ [● Live]  BTC/USDT  $67,420  +1.2%     Last signal: 12m ago    │
+│ [● Live]  BTC/USDT  Last cycle: 10:30:01  Latency: 240ms       │
 ├──────────┬──────────┬──────────┬──────────┬─────────────────────┤
-│ Signals  │ Win Rate │ Profit   │ Max DD   │ Active Strategies  │
-│ Today: 3 │  62.4%   │ +4.2%    │ -8.1%    │ 5 / 7              │
+│ Decisions│ Approval │ Rejected │ Max DD   │ Active Providers   │
+│ Today:48 │  18.4%   │  81.6%   │ -8.1%    │ 5 / 7              │
 ├──────────┴──────────┴──────────┴──────────┴─────────────────────┤
-│  Equity Curve (30d)              │  Recent Signals              │
+│  Rejection Breakdown             │  Decision Feed               │
 │  ┌────────────────────────────┐  │  🟢 BUY BTC  78%  12:04      │
-│  │                            │  │  🔴 SELL ETH 71%  09:31      │
-│  │      [chart area]          │  │  🟢 BUY BTC  65%  yesterday  │
+│  │ risk ███████               │  │  ⚪ REJECT BTC risk 11:00    │
+│  │ filter ████                │  │  ⚪ REJECT ETH low conf      │
 │  │                            │  │  ...                         │
 │  └────────────────────────────┘  │                              │
 ├──────────────────────────────────┼──────────────────────────────┤
-│  Strategy Performance            │  Market Conditions           │
-│  [EMA ████████ 62%]              │  Trend: ↑ Uptrend            │
-│  [RSI  ██████ 58%]               │  Volatility: Normal          │
-│  [MACD ████ 45%]                 │  Session: Europe             │
+│  Feature Snapshot                │  Provider Votes              │
+│  RSI14: 28.5  ATR: 450           │  EMA: BUY 0.75               │
+│  EMA cross bullish: true         │  RSI: BUY 0.68               │
+│  Trend: ↑ Uptrend                │  MACD: HOLD                  │
 └──────────────────────────────────┴──────────────────────────────┘
 ```
 
@@ -55,7 +55,7 @@
 | SL | حد ضرر |
 | TP | حد سود |
 | Confidence | progress bar یا درصد |
-| Strategies | تگ استراتژی‌های تأییدکننده |
+| Providers | تگ Providerهای مشارکت‌کننده |
 | Status | sent / rejected / paper |
 
 **فیلترها:**
@@ -63,7 +63,7 @@
 - Symbol
 - Side (BUY/SELL/All)
 - Min confidence slider
-- Strategy dropdown
+- Provider dropdown
 - Status
 
 **عملیات:**
@@ -76,21 +76,21 @@
 |-----|--------|
 | **Signal Card** | تمام فیلدهای FinalSignal |
 | **Candlestick Chart** | کندل با markers: entry (▲), SL (—), TP (—) |
-| **Contributing Strategies** | جدول StrategySignal هر استراتژی + metadata |
+| **Contributing Providers** | جدول StrategySignal هر Provider + metadata |
 | **Decision Log** | مراحل فیلتر → aggregate → risk |
 | **Outcome** (اگر بسته شده) | PnL، exit reason، duration |
 
 ---
 
-## 3. Strategies (`/strategies`)
+## 3. Providers (`/providers`)
 
 ### لیست
 
-کارت برای هر استراتژی:
+کارت برای هر SignalProvider:
 
 ```
 ┌─────────────────────────────────────┐
-│ EMA Crossover            [ON/OFF]  │
+│ EMA Crossover Provider   [ON/OFF]  │
 │ Win Rate: 58%  |  Signals: 142     │
 │ Avg Confidence: 0.71               │
 │ Last signal: 2h ago                │
@@ -98,19 +98,19 @@
 └─────────────────────────────────────┘
 ```
 
-### جزئیات (`/strategies/[id]`)
+### جزئیات (`/providers/[id]`)
 
 | بخش | محتوا |
 |-----|--------|
-| **Overview** | توضیح استراتژی، وضعیت، weight |
-| **Parameters Form** | ویرایش پارامترها (RSI period, EMA fast/slow, ...) |
+| **Overview** | توضیح Provider، وضعیت، weight |
+| **Parameters Form** | تنظیمات تفسیر Provider؛ اندیکاتورها در Feature Config هستند |
 | **Performance Chart** | عملکرد در بازه‌های 7d / 30d / 90d |
-| **Signal History** | سیگنال‌های تولیدشده توسط این استراتژی |
+| **Signal History** | StrategySignalهای تولیدشده توسط این Provider |
 | **Analysis Log** | آخرین 50 تحلیل (شامل HOLD) |
 
 ---
 
-## 4. Backtest (`/backtest`)
+## 4. Validation (`/validation`)
 
 ### فرم اجرا
 
@@ -121,28 +121,29 @@
 | Start Date | date picker |
 | End Date | date picker |
 | Initial Capital | number |
-| Strategies | multi-select checkbox |
+| Providers | multi-select checkbox |
 | Commission % | number |
 | Slippage % | number |
 
-دکمه: **Run Backtest**
+دکمه: **Run Validation**
 
 ### Progress (حین اجرا)
 
 - Progress bar (0–100%)
 - Log stream: «Processing 2024-03-15... 450/8760 candles»
-- WebSocket: `/ws/backtest/{id}`
+- WebSocket: `/ws/validation/{id}`
 
-### نتایج (`/backtest/results/[id]`)
+### نتایج (`/validation/results/[id]`)
 
 | بخش | محتوا |
 |-----|--------|
-| **KPI Row** | Win Rate، Profit Factor، Sharpe، Max DD، Total Trades، Net Profit |
+| **Engine KPI Row** | Approval Rate، Rejection Breakdown، Provider Contribution |
+| **Outcome KPI Row** | Win Rate، Profit Factor، Sharpe، Max DD، Total Trades، Net Profit |
 | **Equity Curve** | نمودار سرمایه |
 | **Drawdown Chart** | نمودار افت سرمایه |
 | **Monthly Returns** | heatmap یا bar chart |
 | **Trade Table** | تمام معاملات — sortable |
-| **Per-Strategy Breakdown** | عملکرد تفکیکی |
+| **Per-Provider Breakdown** | contribution و عملکرد تفکیکی |
 | **Config Summary** | پارامترهای استفاده‌شده |
 | **Actions** | Export PDF، Compare، Re-run |
 
@@ -186,7 +187,7 @@
 | **Equity Curve** | با benchmark (buy & hold) |
 | **PnL Distribution** | histogram |
 | **By Symbol** | جدول عملکرد per symbol |
-| **By Strategy** | جدول + chart |
+| **By Provider** | جدول + chart |
 | **By Time** | heatmap ساعت × روز هفته |
 | **R:R Analysis** | planned vs actual |
 | **Walk-Forward Results** | اگر اجرا شده |
@@ -246,6 +247,6 @@ Signals Today
 |------|-----|
 | Loading | skeleton cards + table rows |
 | No signals | illustration + «No signals yet» |
-| Backtest running | progress + cancel button |
+| Validation running | progress + cancel button |
 | API error | toast + retry button |
 | WS disconnected | badge «Reconnecting...» in header |

@@ -13,16 +13,18 @@ frontend/
 │   │       └── page.tsx
 │   └── (dashboard)/
 │       ├── layout.tsx             # sidebar + header
-│       ├── page.tsx               # Overview
+│       ├── page.tsx               # Decision Monitor
 │       ├── signals/
 │       │   ├── page.tsx
 │       │   └── [id]/
 │       │       └── page.tsx
-│       ├── strategies/
+│       ├── providers/
 │       │   ├── page.tsx
 │       │   └── [id]/
 │       │       └── page.tsx
-│       ├── backtest/
+│       ├── features/
+│       │   └── page.tsx
+│       ├── validation/
 │       │   ├── page.tsx
 │       │   └── results/
 │       │       └── [id]/
@@ -56,22 +58,30 @@ frontend/
 │   │   ├── drawdown-chart.tsx
 │   │   ├── strategy-performance-chart.tsx
 │   │   └── monthly-heatmap.tsx
+│   ├── decisions/
+│   │   ├── decision-feed.tsx
+│   │   ├── decision-log.tsx
+│   │   ├── rejection-breakdown.tsx
+│   │   └── provider-votes.tsx
 │   ├── signals/
 │   │   ├── signal-table.tsx
 │   │   ├── signal-filters.tsx
 │   │   ├── signal-detail-card.tsx
 │   │   ├── signal-feed.tsx
 │   │   └── signal-side-badge.tsx
-│   ├── strategies/
-│   │   ├── strategy-card.tsx
-│   │   ├── strategy-list.tsx
-│   │   └── strategy-params-form.tsx
-│   ├── backtest/
-│   │   ├── backtest-form.tsx
-│   │   ├── backtest-progress.tsx
-│   │   ├── backtest-metrics.tsx
-│   │   ├── backtest-trade-table.tsx
-│   │   └── backtest-comparison.tsx
+│   ├── providers/
+│   │   ├── provider-card.tsx
+│   │   ├── provider-list.tsx
+│   │   └── provider-params-form.tsx
+│   ├── features/
+│   │   ├── feature-config-editor.tsx
+│   │   └── feature-snapshot.tsx
+│   ├── validation/
+│   │   ├── validation-form.tsx
+│   │   ├── validation-progress.tsx
+│   │   ├── engine-metrics.tsx
+│   │   ├── outcome-metrics.tsx
+│   │   └── validation-comparison.tsx
 │   ├── live/
 │   │   ├── live-monitor.tsx
 │   │   ├── decision-log.tsx
@@ -84,8 +94,10 @@ frontend/
 │       └── risk-gauge.tsx
 ├── hooks/
 │   ├── use-signals.ts
-│   ├── use-strategies.ts
-│   ├── use-backtest.ts
+│   ├── use-decisions.ts
+│   ├── use-providers.ts
+│   ├── use-features.ts
+│   ├── use-validation.ts
 │   ├── use-live-status.ts
 │   ├── use-websocket.ts
 │   └── use-market-data.ts
@@ -134,10 +146,11 @@ app/layout.tsx (Root)
 
 ```typescript
 const navItems = [
-  { href: '/', label: 'Overview', icon: LayoutDashboard },
+  { href: '/', label: 'Decisions', icon: LayoutDashboard },
   { href: '/signals', label: 'Signals', icon: Zap },
-  { href: '/strategies', label: 'Strategies', icon: Brain },
-  { href: '/backtest', label: 'Backtest', icon: FlaskConical },
+  { href: '/providers', label: 'Providers', icon: Brain },
+  { href: '/features', label: 'Features', icon: SlidersHorizontal },
+  { href: '/validation', label: 'Validation', icon: FlaskConical },
   { href: '/live', label: 'Live', icon: Radio },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/risk', label: 'Risk', icon: Shield },
@@ -154,9 +167,10 @@ const navItems = [
 ### SignalTable
 
 - TanStack Table
-- ستون‌ها: time, symbol, side, entry, SL, TP, confidence, strategies, status
+- ستون‌ها: time, symbol, side, entry, SL, TP, confidence, providers, status
 - sort + filter + pagination
 - row click → `/signals/[id]`
+- برای rejectedها از `DecisionFeed` و `/decisions/{id}` استفاده شود؛ `SignalTable` فقط approved decisions را نشان می‌دهد.
 
 ## Hooks
 
