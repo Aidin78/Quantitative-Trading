@@ -69,10 +69,14 @@ def aggregate_signals(
 ```python
 def test_risk_manager_rejects_when_daily_drawdown_exceeded():
     manager = RiskManager(max_daily_drawdown_pct=5.0)
-    state = PortfolioState(daily_drawdown_pct=6.0, ...)
-    result = manager.validate(signal, state)
+    snapshot = StateSnapshot(
+        portfolio=PortfolioState(daily_drawdown_pct=0, ...),
+        risk=RiskState(daily_drawdown_pct=6.0, ...),
+        ...
+    )
+    result = manager.evaluate(aggregated_signal, snapshot)
     assert not result.passed
-    assert result.reason == "daily_drawdown_limit"
+    assert any(c.check_name == "daily_drawdown" and not c.passed for c in result.checks)
 ```
 
 ### Error Handling
@@ -190,7 +194,7 @@ export function SignalTable({ signals, onRowClick }: SignalTableProps) {
 
 - `config/settings.yaml` — تنظیمات غیرحساس
 - `config/engine.yaml` — قوانین ریسک، aggregation و filter
-- `config/features.yaml` — اندیکاتورها، flags و context derivation
+- `config/` (root) — `engine.yaml`, `features.yaml`, `providers/*.yaml`
 - `config/providers/*.yaml` — پارامتر SignalProviderها، بدون period اندیکاتور
 
 ---

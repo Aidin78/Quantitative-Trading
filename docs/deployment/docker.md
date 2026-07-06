@@ -60,7 +60,7 @@ services:
   # اختیاری — بک‌تست سنگین
   celery-worker:
     build: ./backend
-    command: celery -A src.tasks worker -l info
+    command: celery -A src.tasks worker -l info  # Phase 8 — اختیاری
     env_file: .env
     depends_on:
       - redis

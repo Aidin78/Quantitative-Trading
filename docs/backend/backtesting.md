@@ -40,7 +40,7 @@ class ValidationHarness:
                 timeframe=config.timeframe,
                 as_of=point.timestamp,
             )
-            await self.event_bus.publish(DecisionCreated.from_decision(decision))
+            # events از Runtime/ExecutionEngine منتشر می‌شوند — نه harness مستقیم
 
         return ValidationResult(
             engine_metrics=compute_engine_metrics(),

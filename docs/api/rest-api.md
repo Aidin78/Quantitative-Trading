@@ -111,10 +111,21 @@ Decision موجودیت اصلی API است. هر cycle یک Decision تولید
   "decision_log": {
     "market_filter": { "passed": true },
     "aggregation": { "side": "BUY", "confidence": 0.78 },
-    "risk_check": { "passed": true }
-  }
+    "risk_check": { "passed": true, "checks": [] }
+  },
+  "explainability": {
+    "summary": "Approved: 2 providers agree BUY",
+    "state_snapshot_id": "snap_001",
+    "revision_id": "rev_baseline",
+    "correlation_id": "cycle_btc_1h_xxx",
+    "causal_chain_url": "/api/v1/replay/cycle/cycle_btc_1h_xxx/timeline"
+  },
+  "event_time": "2026-07-06T10:00:00Z",
+  "decision_time": "2026-07-06T10:00:01.890Z"
 }
 ```
+
+`provider_signals` شامل `rationale` structured است — [explainability.md](../architecture/explainability.md).
 
 ### GET `/engine/stats`
 
@@ -215,8 +226,9 @@ Provider config نباید period اندیکاتور را تغییر دهد؛ آ
   "commission_pct": 0.1,
   "slippage_pct": 0.05,
   "providers": ["ema_crossover", "rsi_divergence"],
-  "feature_set_version": "v1",
-  "engine_config_version": "v1"
+  "revision_id": "rev_baseline",
+  "experiment_id": null,
+  "fill_model_id": "close_price_v1"
 }
 ```
 
@@ -311,6 +323,107 @@ Provider config نباید period اندیکاتور را تغییر دهد؛ آ
   ]
 }
 ```
+
+---
+
+## Replay
+
+Forensic replay از `event_log` — [replay-engine.md](../architecture/replay-engine.md).
+
+### POST `/replay/cycle/{correlation_id}`
+
+```json
+// Request
+{ "mode": "strict" }  // strict | re_execute
+
+// Response 202
+{
+  "job_id": "replay_abc",
+  "correlation_id": "cycle_btc_1h_xxx",
+  "status": "running"
+}
+```
+
+### GET `/replay/{job_id}/timeline`
+
+```json
+{
+  "job_id": "replay_abc",
+  "status": "completed",
+  "events": [
+    { "event_type": "FeatureSetBuilt", "event_time": "...", "processing_time": "..." },
+    { "event_type": "ProviderOpinion", "payload": { "provider_id": "ema_crossover" } },
+    { "event_type": "DecisionApproved", "payload": { "decision_id": "dec_abc" } },
+    { "event_type": "FillReceived", "payload": { "fill_id": "fill_001" } }
+  ]
+}
+```
+
+### GET `/replay/{job_id}/causal/{decision_id}`
+
+گراف علت برای یک تصمیم.
+
+### GET `/replay/{job_id}/diff`
+
+فقط `mode=re_execute` — `DecisionDiff` نسبت به recorded.
+
+---
+
+## Experiments (Governance)
+
+[گovernance.md](../architecture/governance.md)
+
+### POST `/experiments`
+
+```json
+{
+  "name": "confidence_threshold_ab",
+  "revision_id": "rev_aggressive",
+  "mode": "validation",
+  "symbols": ["BTC/USDT"],
+  "timeframes": ["1h"],
+  "hypothesis": "lower min_confidence increases approval rate"
+}
+```
+
+### GET `/experiments`
+
+لیست experimentها با status و آخرین run.
+
+### GET `/experiments/{id}`
+
+جزئیات + `ExperimentRun`ها.
+
+### POST `/experiments/{id}/runs`
+
+شروع validation run برای experiment.
+
+### GET `/experiments/compare`
+
+| Param | Type |
+|-------|------|
+| `a` | experiment_id |
+| `b` | experiment_id |
+
+```json
+{
+  "metrics_delta": {
+    "approval_rate": 0.04,
+    "sharpe_ratio": -0.12,
+    "max_drawdown_pct": 1.5
+  },
+  "decision_diff_count": 142,
+  "significant_cycles": ["cycle_btc_1h_001", "..."]
+}
+```
+
+### GET `/config/revisions`
+
+لیست `ConfigRevision` با lineage.
+
+### GET `/config/revisions/{id}`
+
+bundle کامل yamlها + hashها.
 
 ---
 

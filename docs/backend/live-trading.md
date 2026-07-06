@@ -2,63 +2,55 @@
 
 ## هدف
 
-اجرای همان `PlatformRuntime` روی داده real-time و ارسال فقط تصمیم‌های `approved` از طریق Telegram و Dashboard.
+اجرای همان `PlatformRuntime` روی داده real-time. خروجی‌ها فقط از طریق **EventBus → Handlers** — نه فراخوانی مستقیم DB/Telegram.
 
 ## پیش‌شرط
 
-- Validation با معیارهای قبولی انجام شده
-- پارامترها و قوانین ریسک finalize شده
-- **هیچ تغییری در Feature Builder، Runtime یا Engine** نسبت به Validation
+- Validation با `revision_id` مشخص و معیارهای قبولی — [governance.md](../architecture/governance.md)
+- `LiveGovernanceGate.allow_start(revision_id)` = true
+- **همان** Feature Builder، Runtime و Engine نسبت به validation
 
 ## معماری لایو
 
 ```
 APScheduler
     │
-    ├── Job: BTC/USDT 1h  (هر ساعت)
-    ├── Job: BTC/USDT 4h  (هر 4 ساعت)
-    └── Job: ETH/USDT 1h
-            │
-            ▼
-    PlatformRuntime.run_cycle(symbol, timeframe)
-            │
-            ▼
-    LiveProvider.get_latest()
-            │
-            ▼
-    FeatureBuilder → Providers → DecisionEngine → Decision
-            │
-    ┌───────┼───────┐
-    ▼       ▼       ▼
-   DB    Redis   Telegram
-            │
-            ▼
-       WebSocket → Dashboard
+    └──► PlatformRuntime.run_cycle(symbol, timeframe)
+              │
+              ├── LiveProvider.get_latest()
+              ├── FeatureBuilder → FeatureStore
+              ├── StateStore.snapshot()
+              ├── Providers → DecisionEngine (snapshot read-only)
+              ├── ExecutionEngine (paper/live — فاز 7)
+              │
+              ▼
+         EventBus (Redis)
+              │
+    ┌─────────┼─────────┬─────────────┐
+    ▼         ▼         ▼             ▼
+   DB      WebSocket  Telegram    Metrics
 ```
 
-## Live Runtime
+**قانون:** Runtime هیچ import مستقیم از Telegram/DB/WebSocket ندارد.
+
+## Scheduler + Runtime
 
 ```python
-class LiveRuntime:
-    def __init__(
-        self,
-        data_provider: LiveProvider,
-        feature_builder: FeatureBuilder,
-        providers: list[SignalProvider],
-        engine: DecisionEngine,
-        event_bus: EventBus,
-    ): ...
+# scripts/run_live.py
+scheduler = AsyncIOScheduler()
 
-    async def execute(self, symbol: str, timeframe: str) -> None:
-        df = await self.data_provider.get_latest(symbol, timeframe)
-        features, context = self.feature_builder.build(df, symbol, timeframe)
-        portfolio = await self._load_portfolio_state()
+async def run_job(symbol: str, timeframe: str) -> None:
+    await platform_runtime.run_cycle(symbol=symbol, timeframe=timeframe)
 
-        signals = [p.analyze(features, context) for p in self.providers if p.enabled]
-        decision = self.engine.process(signals, context, portfolio)
-
-        await self.event_bus.publish(DecisionCreated.from_decision(decision))
+scheduler.add_job(
+    run_job,
+    "cron",
+    minute=1,
+    kwargs={"symbol": "BTC/USDT", "timeframe": "1h"},
+)
 ```
+
+`PlatformRuntime` همان کلاس validation است — فقط adapterها عوض می‌شوند.
 
 ## LiveProvider (ccxt)
 
@@ -73,31 +65,9 @@ class LiveProvider(MarketDataProvider):
         return self._to_dataframe(ohlcv)
 ```
 
-## Scheduler
+## Telegram (EventHandler)
 
-```python
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-scheduler = AsyncIOScheduler()
-
-# هر ساعت در دقیقه 1 (بعد از بسته شدن کندل)
-scheduler.add_job(
-    live_runner.execute,
-    "cron",
-    minute=1,
-    args=["BTC/USDT", "1h"],
-)
-
-scheduler.add_job(
-    live_runner.execute,
-    "cron",
-    hour="*/4",
-    minute=1,
-    args=["BTC/USDT", "4h"],
-)
-```
-
-## Telegram Notifier
+`TelegramEventHandler` فقط روی `SignalPublished` واکنش نشان می‌دهد — پس از `PositionOpened` یا به‌عنوان notification جدا از fill.
 
 ### فرمت پیام
 
@@ -117,42 +87,25 @@ scheduler.add_job(
 ⚠️ Not financial advice
 ```
 
-### پیاده‌سازی
-
-```python
-class TelegramNotifier:
-    def __init__(self, bot_token: str, channel_id: str):
-        self.bot = Bot(token=bot_token)
-        self.channel_id = channel_id
-
-    async def send(self, signal: FinalSignal) -> None:
-        message = self._format_signal(signal)
-        await self.bot.send_message(
-            chat_id=self.channel_id,
-            text=message,
-            parse_mode="HTML",
-        )
-```
-
 ## حالت‌های اجرا
 
 | حالت | توضیح |
 |------|--------|
-| **paper** | Decision تولید و لاگ — بدون Telegram |
-| **live** | DB + WebSocket + Telegram فقط برای approved |
-| **paused** | Scheduler متوقف — فقط مانیتور |
+| **paper** | Decision + execution شبیه‌سازی — بدون Telegram |
+| **live** | DB + WebSocket + Telegram برای approved |
+| **paused** | Scheduler متوقف |
 
-تغییر حالت از Dashboard: `POST /api/v1/live/mode`
+تغییر حالت: `POST /api/v1/live/mode`
 
 ## مدیریت خطا
 
 | خطا | رفتار |
 |-----|--------|
-| API exchange down | retry 3x با backoff → alert در Dashboard |
+| API exchange down | retry 3x → `RuntimeCycleFailed` event → alert |
 | Rate limit | wait + retry |
-| Telegram fail | retry → ذخیره در DB → flag برای resend |
-| Provider exception | log + skip آن Provider — ادامه با بقیه |
-| FeatureBuilder exception | abort cycle + alert، چون همه Providerها به FeatureSet وابسته‌اند |
+| Telegram fail | retry → DB queue → `SignalPublished` با flag resend |
+| Provider exception | `ProviderSkipped` event — ادامه با بقیه |
+| FeatureBuilder exception | abort cycle + `RuntimeCycleFailed` |
 
 ## Health Check
 
@@ -162,42 +115,30 @@ GET /api/v1/live/status
 {
   "status": "running",
   "mode": "live",
+  "revision_id": "rev_baseline",
+  "experiment_id": "exp_live_001",
   "last_run": "2026-07-06T10:01:00Z",
-  "last_signal": "2026-07-06T08:30:00Z",
   "exchange_connected": true,
-  "telegram_connected": true,
-  "active_jobs": [
-    {"symbol": "BTC/USDT", "timeframe": "1h", "next_run": "..."}
-  ]
+  "telegram_connected": true
 }
 ```
 
-## امنیت
-
-- API keys فقط در environment variables
-- Telegram bot فقط **send** به کانال مشخص — بدون دریافت دستور از عموم
-- IP whitelist برای exchange API (در صورت امکان)
-- لاگ بدون ذخیره secrets
-
-## تفاوت Validation و Live — چک‌لیست
+## تفاوت Validation و Live
 
 | مورد | Validation | Live | یکسان؟ |
-|------|--------|------|--------|
-| PlatformRuntime | ✓ | ✓ | ✅ |
-| FeatureBuilder | ✓ | ✓ | ✅ |
-| DecisionEngine | ✓ | ✓ | ✅ |
-| SignalProviders | ✓ | ✓ | ✅ |
-| RiskManager | ✓ | ✓ | ✅ |
-| MarketDataProvider | CSV | API | ❌ adapter |
-| EventBus | InMemory | Redis | ❌ adapter |
-| EventHandlers | Simulation+DB | DB/WS/Telegram | ❌ adapter |
-| Timing | batch | scheduled | ❌ |
+|------|------------|------|--------|
+| `PlatformRuntime` | ✓ | ✓ | ✅ |
+| `DecisionEngine` | ✓ | ✓ | ✅ |
+| `StateStore` schema | ✓ | ✓ | ✅ |
+| `MarketDataProvider` | CSV | ccxt | adapter |
+| `EventBus` | InMemory | Redis | adapter |
+| `ExecutionEngine` | Simulated | Paper/Live | adapter |
+| `EventHandlers` | DB + event_log | DB + WS + Telegram | adapter |
+| Timing | batch | scheduled | adapter |
 
 ## Paper Trading (توصیه)
 
-قبل از Telegram واقعی:
-
-1. حداقل 2–4 هفته در حالت `paper`
-2. مقایسه سیگنال‌های paper با حرکت واقعی بازار
-3. بررسی latency و پایداری API
-4. سپس switch به `live`
+1. حداقل 2–4 هفته `paper` با `revision_id` ثابت
+2. مقایسه با validation همان revision
+3. بررسی latency (`decision_time - event_time`)
+4. سپس `live` + `LiveGovernanceGate`

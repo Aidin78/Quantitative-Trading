@@ -1,6 +1,8 @@
 # جریان داده (Data Flow)
 
 > همه مسیرها از **PlatformRuntime** عبور می‌کنند. تفاوت Validation و Live فقط در adapter است.
+>
+> مرجع: [execution-model.md](./execution-model.md) | [state-risk-contract.md](./state-risk-contract.md)
 
 ## چرخه واحد — PlatformRuntime
 
@@ -9,24 +11,33 @@ MarketDataProvider.get_latest()
         │
         ▼
 FeatureBuilder.build(df)  →  FeatureSet + MarketContext
+        │                      └──► FeatureStore.put()
+        ▼
+StateStore.snapshot()  →  state_snapshot_id
         │
-        ├──► Provider A.analyze(features, ctx) ──► StrategySignal
-        ├──► Provider B.analyze(features, ctx) ──► StrategySignal
-        └──► Provider N.analyze(features, ctx) ──► StrategySignal
+        ├──► Provider A.analyze(features, ctx) ──► ProviderOpinion
+        ├──► Provider B.analyze(features, ctx) ──► ProviderOpinion
+        └──► Provider N.analyze(features, ctx) ──► ProviderOpinion
                 │
                 ▼
-        DecisionEngine.process()
+        DecisionEngine.process(signals, context, snapshot)  ← read-only risk
                 │
         ┌───────┴────────┐
         ▼                ▼
-   Decision          Decision
-   (approved)        (rejected)
+   DecisionApproved   DecisionRejected
         │                │
         ▼                ▼
-   EventBus.publish(DomainEvent)  ← همیشه (شامل rejectedها)
+   ExecutionEngine     EventBus (DecisionRejected)
+   OrderIntent → Fill
+        │
+        ▼
+   StateStore.apply_transition()
+        │
+        ▼
+   EventBus.publish(EventEnvelope)  ← Market → Signal → Decision → Execution
 ```
 
-## Validation — iterate روی تاریخ (بک‌تست)
+## Validation — iterate روی تاریخ
 
 ```
 CSV Files → CSVProvider
@@ -37,7 +48,10 @@ ValidationHarness (loop over history)
         └──► PlatformRuntime.run_cycle()  ← همان Runtime
                     │
                     ▼
-            EventBus → SimulationEventHandler (فقط SignalApproved)
+            EventBus
+                ├── ExecutionEngine (Simulated) → FillReceived → PositionClosed
+                ├── event_log_handler → event_log
+                └── database_handler → decisions
                     │
         ▼ (end of data)
 Engine Metrics + Outcome Metrics
@@ -48,17 +62,18 @@ Report (approval rate, rejection breakdown, Sharpe, Max DD, ...)
 
 ### گام‌به‌گام
 
-1. **Harness** — CSV را iterate می‌کند (نه logic جدا از Runtime)
+1. **Harness** — CSV را iterate می‌کند
 2. **Cycle** — هر نقطه زمانی یک `run_cycle()` کامل
-3. **Decide** — Engine تصمیم می‌گیرد؛ rejected هم log می‌شود
-4. **Events** — Runtime برای هر cycle event منتشر می‌کند
-5. **Simulate** — `SimulationEventHandler` فقط `SignalApproved` را به معامله تبدیل می‌کند
-6. **Metrics** — هم کیفیت تصمیم Engine، هم PnL outcome
+3. **Snapshot** — `StateStore.snapshot()` قبل از تصمیم
+4. **Decide** — Engine؛ rejected هم log می‌شود
+5. **Execute** — `SimulatedExecutionEngine` برای approved
+6. **State** — `apply_transition` پس از `FillReceived`
+7. **Metrics** — کیفیت تصمیم Engine + PnL outcome
 
 ## Live — همان Runtime، adapter متفاوت
 
 ```
-Scheduler (every 1m / 5m / 1h)
+Scheduler (cron per symbol/timeframe)
         │
         ▼
 LiveProvider (ccxt)
@@ -67,132 +82,86 @@ LiveProvider (ccxt)
 PlatformRuntime.run_cycle()  ← همان Runtime
         │
         ▼
-EventBus
-    ├── DatabaseEventHandler (همه decisions)
+EventBus (Redis adapter)
+    ├── DatabaseEventHandler (همه decisions + event_log)
     ├── WebSocketEventHandler → Dashboard
     ├── MetricsEventHandler
-    └── TelegramEventHandler (فقط SignalApproved)
+    ├── ExecutionEngine (Paper/Live — فاز آینده)
+    └── TelegramEventHandler (فقط SignalPublished — notification)
 ```
 
-### تفاوت‌های کلیدی با بک‌تست
+### تفاوت‌های کلیدی با validation
 
-| جنبه | بک‌تست | لایو |
-|------|--------|------|
+| جنبه | validation | live |
+|------|------------|------|
 | منبع داده | CSV (ثابت) | API (متغیر) |
 | زمان | گذشته — iterate سریع | حال — wait for candle close |
-| خروجی | event handlers: simulation + DB | event handlers: Telegram + WS + DB |
+| Execution | `SimulatedExecutionEngine` | Paper/Live (فاز 7) |
+| EventBus | InMemory | Redis |
+| Handlerها | DB + event_log | DB + WS + Telegram |
 | خطا | fail fast | retry + alert |
-| لاگ rejected | اختیاری | اجباری |
+| Governance | `revision_id` در config | `LiveGovernanceGate` |
 
 ## Dashboard — جریان درخواست
 
-### خواندن سیگنال‌ها (REST)
+### خواندن تصمیم‌ها (REST)
 
 ```
-Browser → GET /api/v1/signals?symbol=BTC&limit=50
+Browser → GET /api/v1/decisions?symbol=BTC&limit=50
               │
               ▼
-         FastAPI handler
-              │
-              ▼
-         SignalRepository.query()
-              │
-              ▼
-         PostgreSQL
-              │
-              ▼
-         JSON Response → React Query cache → UI Table
+         FastAPI → DecisionRepository → PostgreSQL → JSON
 ```
 
-### سیگنال لحظه‌ای (WebSocket)
+### تصمیم لحظه‌ای (WebSocket)
 
 ```
-Live Runner emits signal
-        │
-        ▼
-Redis PUBLISH channel:signals
-        │
-        ▼
-FastAPI WebSocket manager
-        │
-        ▼
-All connected clients
-        │
-        ▼
-useSignalFeed hook → toast + invalidate cache
-```
-
-### اجرای بک‌تست (Async)
-
-```
-Browser → POST /api/v1/validation/run { config }
+EventBus → WebSocketEventHandler
               │
               ▼
-         Create job in DB (status: pending)
+         /ws/decisions  (DecisionApproved / DecisionRejected)
               │
               ▼
-         Celery / Background task
+         useDecisionFeed → toast + invalidate cache
+```
+
+### اجرای validation (Async)
+
+```
+Browser → POST /api/v1/validation/run { config, revision_id }
               │
-              ├──► WS: progress 10%, 20%, ...
-              ├──► Run ValidationHarness
-              └──► WS: complete + results
-                        │
-                        ▼
-                   Browser navigates to /validation/results/{id}
+              ▼
+         ValidationHarness → WS progress → results page
 ```
 
 ## مدل‌های داده — روابط
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ Validation  │────►│   Trade     │     │   Decision  │
-│  Run        │ 1:N │             │     │             │
-└─────────────┘     └─────────────┘     └──────┬──────┘
-                                               │
-┌─────────────┐     ┌─────────────┐            │ N:1
-│  Provider   │◄────│ Provider    │◄───────────┘
-│  Config     │     │ Signal      │
-└─────────────┘     └─────────────┘
-
-Decision ──► contains FeatureSet snapshot + ProviderSignals + DecisionLog
-Signal (final) ──► exists only for approved Decisions
-Trade ──► linked to one approved Decision / Signal
-ValidationRun ──► contains many Decisions and simulated Trades
+ConfigRevision ──► Experiment ──► ExperimentRun
+                                      │
+                                      ▼
+ValidationRun ──► Decision ──► Order ──► Fill ──► Position
+                     │
+                     ├── FeatureSetRecord (feature_store)
+                     ├── StateSnapshot (state_snapshots)
+                     └── event_log (full chain)
 ```
-
-## MarketContext
-
-شیء کمکی که به Engine و استراتژی‌ها داده می‌شود:
-
-```python
-@dataclass
-class MarketContext:
-    symbol: str
-    timeframe: str
-    current_price: float
-    trend: Literal["UP", "DOWN", "SIDEWAYS"]
-    volatility: Literal["LOW", "NORMAL", "HIGH"]
-    atr: float
-    session: Literal["ASIA", "EUROPE", "US", "OVERLAP"]
-    timestamp: datetime
-```
-
-در بک‌تست از داده تاریخی محاسبه می‌شود؛ در لایو از آخرین کندل‌ها و اندیکاتورها.
 
 ## Decision Log (شفافیت)
 
-هر بار که Engine فراخوانی می‌شود، حتی اگر سیگنال رد شود:
+هر cycle — حتی rejected:
 
 ```json
 {
-  "timestamp": "2026-07-06T10:30:00Z",
-  "symbol": "BTC/USDT",
-  "strategy_signals": [...],
-  "market_filter": { "passed": true, "reason": null },
-  "aggregation": { "consensus": "BUY", "avg_confidence": 0.72 },
-  "risk_check": { "passed": false, "reason": "daily_drawdown_limit" },
+  "event_time": "2026-07-06T10:00:00Z",
+  "decision_time": "2026-07-06T10:00:01.890Z",
+  "state_snapshot_id": "snap_001",
+  "revision_id": "rev_baseline",
+  "market_filter": { "passed": true },
+  "aggregation": { "side": "BUY", "confidence": 0.72 },
+  "risk_check": { "passed": false, "checks": [...] },
   "final_signal": null
 }
 ```
 
-این لاگ در Dashboard بخش Live Monitor و جزئیات Signal نمایش داده می‌شود.
+جزئیات: [explainability.md](./explainability.md)

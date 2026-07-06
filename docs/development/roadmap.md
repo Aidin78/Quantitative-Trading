@@ -51,7 +51,7 @@ Validation      →    Providers       →    Observability
 ### Tasks
 
 **زیرساخت:**
-- [ ] Monorepo: `backend/`, `frontend/`, `docs/`
+- [ ] Monorepo: `backend/`, `frontend/`, `docs/`, `config/` (مشترک root)
 - [ ] Poetry, Docker Compose (postgres, redis)
 - [ ] ruff, pre-commit, ESLint, Prettier
 
@@ -64,6 +64,8 @@ Validation      →    Providers       →    Observability
 - [ ] `event.py` — `EventEnvelope`, `EventBus`, event family enums
 - [ ] `execution.py` — `OrderIntent`, `Order`, `Fill`, `FillModel`
 - [ ] `governance.py` — `ConfigRevision`, `Experiment`, `ExperimentRun`
+- [ ] `time.py` — `Clock` protocol
+- [ ] `rationale.py` — `ProviderRationale`, `RiskVerdict`, `RiskCheckResult`
 - [ ] `provider.py` — `SignalProvider` protocol (`analyze(features, context)`)
 - [ ] `data.py` — `MarketDataProvider` protocol
 
@@ -87,8 +89,8 @@ Validation      →    Providers       →    Observability
 ### هدف
 ساخت **قلب سیستم** — کاملاً مستقل از استراتژی و منبع داده.
 
-### اصل
-Engine فقط با `list[StrategySignal] + MarketContext + PortfolioState` کار می‌کند.
+### Engine
+Engine فقط با `list[StrategySignal] + MarketContext + StateSnapshot` کار می‌کند.
 تست با **MockSignalProvider** — نه استراتژی واقعی.
 
 ### Tasks

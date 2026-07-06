@@ -133,7 +133,7 @@ Experiment Management و ConfigRevision — [governance.md](./governance.md):
 |---------|------------|------|
 | `MarketDataProvider` | CSVProvider | LiveProvider |
 | `EventBus` | InMemoryEventBus | Redis Pub/Sub یا Redis Streams |
-| `EventHandlers` | Simulation + DB | DB + WS + Telegram |
+| `EventHandlers` | Execution (simulated) + DB | DB + WS + Telegram |
 
 ### 14. API Layer
 

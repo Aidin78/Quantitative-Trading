@@ -8,6 +8,7 @@ Authentication: query param `?token=<JWT>` یا header در handshake
 
 | Endpoint | کاربرد |
 |----------|--------|
+| `/ws/replay/{job_id}` | progress replay job |
 | `/ws/decisions` | stream تمام decisionها (approved + rejected) |
 | `/ws/signals` | فقط سیگنال‌های approved برای اعلان UI |
 | `/ws/validation/{job_id}` | progress validation |
@@ -25,24 +26,21 @@ const ws = new WebSocket('ws://localhost:8000/ws/decisions?token=eyJ...');
 
 ### Events (Server → Client)
 
-#### `decision.created`
-
-هر cycle یک decision جدید تولید می‌کند.
+#### `decision.approved`
 
 ```json
 {
-  "event": "decision.created",
+  "event": "decision.approved",
   "data": {
     "id": "dec_abc123",
     "symbol": "BTC/USDT",
-    "result": "approved",
     "side": "BUY",
     "confidence": 0.78,
-    "rejection_reason": null,
-    "provider_ids": ["ema_crossover", "rsi_divergence"],
-    "feature_set_version": "v1",
-    "timeframe": "1h",
-    "timestamp": "2026-07-06T10:30:00Z"
+    "correlation_id": "cycle_btc_1h_xxx",
+    "state_snapshot_id": "snap_001",
+    "revision_id": "rev_baseline",
+    "event_time": "2026-07-06T10:00:00Z",
+    "decision_time": "2026-07-06T10:00:01.890Z"
   }
 }
 ```
@@ -224,15 +222,18 @@ const ws = new WebSocket('ws://localhost:8000/ws/decisions?token=eyJ...');
 ## معماری EventBus / Pub/Sub
 
 ```
-PlatformRuntime
+PlatformRuntime / ExecutionEngine
     │
     ▼
-EventBus.publish(DomainEvent)
+EventBus.publish(EventEnvelope)
     │
-    ├── DecisionCreated     → WebSocketEventHandler → /ws/decisions
-    ├── SignalApproved      → WebSocketEventHandler → /ws/signals
-    ├── ValidationProgressed → WebSocketEventHandler → /ws/validation/{id}
-    └── LiveStatusChanged   → WebSocketEventHandler → /ws/live
+    ├── DecisionApproved      → WebSocketEventHandler → /ws/decisions
+    ├── DecisionRejected      → WebSocketEventHandler → /ws/decisions
+    ├── SignalPublished       → WebSocketEventHandler → /ws/signals
+    ├── FillReceived          → WebSocketEventHandler → /ws/live (optional)
+    ├── ValidationProgressed  → WebSocketEventHandler → /ws/validation/{id}
+    ├── ReplayProgressed      → WebSocketEventHandler → /ws/replay/{id}
+    └── LiveStatusChanged     → WebSocketEventHandler → /ws/live
 ```
 
 در MVP، `InMemoryEventBus` کافی است. در Live، همین EventBus می‌تواند Redis Pub/Sub یا Redis Streams adapter داشته باشد.
@@ -244,7 +245,7 @@ class WebSocketEventHandler:
     def __init__(self):
         self.active: dict[str, list[WebSocket]] = {}
 
-    async def handle(self, event: DomainEvent) -> None:
+    async def handle(self, event: EventEnvelope) -> None:
         channel = self._route_event(event)
         for ws in self.active.get(channel, []):
             await ws.send_json(event_to_ws_message(event))

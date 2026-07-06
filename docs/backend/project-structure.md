@@ -1,18 +1,27 @@
 # ساختار پروژه بک‌اند
 
-## درخت پوشه‌ها
+> **Config:** فایل‌های `config/` در **root monorepo** هستند (`../config/`) — مشترک بین Docker، backend و scripts.
+
+## درخت پوشه‌ها (monorepo)
+
+```
+quantitative-trading/
+├── config/                     # تنظیمات مشترک — root
+│   ├── settings.yaml
+│   ├── engine.yaml
+│   ├── features.yaml
+│   └── providers/
+├── data/historical/            # CSV
+├── backend/
+```
+
+## درخت backend
 
 ```
 backend/
 ├── alembic/                    # Database migrations
 │   ├── versions/
 │   └── env.py
-├── config/
-│   ├── settings.yaml
-│   ├── engine.yaml             # قوانین aggregation, filter, risk
-│   └── providers/              # پارامتر هر SignalProvider
-│       ├── ema_crossover.yaml
-│       └── rsi_divergence.yaml
 ├── scripts/
 │   ├── run_validation.py       # CLI validation harness
 │   ├── run_experiment.py       # CLI A/B experiment
@@ -33,8 +42,7 @@ backend/
 │   │   │   ├── time.py           # Clock protocol
 │   │   │   ├── rationale.py      # ProviderRationale, RiskVerdict
 │   │   │   ├── provider.py
-│   │   │   ├── data.py
-│   │   │   └── sink.py
+│   │   │   └── data.py
 │   │   ├── enums.py
 │   │   └── exceptions.py
 │   ├── engine/                 # ★ قلب — Phase 1

@@ -109,9 +109,11 @@ PlatformRuntime
     │
     ├─ fetch OHLCV
     ├─ feature_builder.build(df) → FeatureSet + MarketContext
+    ├─ StateStore.snapshot() → state_snapshot_id
     ├─ call all SignalProviders(features, context) → list[StrategySignal]
-    ├─ DecisionEngine.process(signals, context) → Decision
-    └─ EventBus.publish(DomainEvent)
+    ├─ DecisionEngine.process(signals, context, snapshot) → Decision
+    ├─ ExecutionEngine.execute(decision, snapshot) → ExecutionEvents (validation)
+    └─ EventBus.publish(EventEnvelope)
 ```
 
 ### لایه ۵ — Adapters (قابل تعویض)
@@ -120,7 +122,7 @@ PlatformRuntime
 |---------|----------|------|
 | `MarketDataProvider` | CSVProvider | LiveProvider (ccxt) |
 | `EventBus` | InMemoryEventBus | Redis Pub/Sub یا Redis Streams |
-| `EventHandlers` | Simulation + DB | DB + WS + Telegram |
+| `EventHandlers` | Execution (simulated) + DB + event_log | DB + WS + Telegram |
 | `Scheduler` | iterate تاریخ | APScheduler |
 
 **Engine، Feature Builder و Runtime تغییر نمی‌کنند — فقط adapter عوض می‌شود.**

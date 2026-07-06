@@ -40,7 +40,49 @@
 
 ---
 
-## 2. Signals (`/signals`)
+---
+
+## 3. Forensic / Replay (`/replay`)
+
+صفحه تحلیل علت تصمیم — [replay-engine.md](../architecture/replay-engine.md).
+
+| بخش | محتوا |
+|-----|--------|
+| **Cycle Search** | جستجو با `correlation_id` یا بازه زمانی |
+| **Timeline** | chain کامل Market → Signal → Decision → Execution |
+| **Causal Graph** | گراف علت برای decision انتخاب‌شده |
+| **Decision Diff** | مقایسه recorded vs re-executed (فاز 8) |
+
+### Wireframe
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Replay: cycle_btc_1h_20260706_1000                              │
+├──────────────────────────────┬──────────────────────────────────┤
+│ Timeline                     │ Causal Graph                     │
+│ 10:00 FeatureSetBuilt        │  FeatureSetBuilt                 │
+│ 10:00 ProviderOpinion ×2     │       ├─► ProviderOpinion        │
+│ 10:00 DecisionRejected       │       └─► DecisionRejected       │
+│       (risk: drawdown)       │            (risk_manager)        │
+└──────────────────────────────┴──────────────────────────────────┘
+```
+
+---
+
+## 4. Experiments (`/experiments`)
+
+Governance — [governance.md](../architecture/governance.md).
+
+| بخش | محتوا |
+|-----|--------|
+| **Experiment List** | name، revision، status، آخرین metrics |
+| **Create** | انتخاب revision + symbols + hypothesis |
+| **Compare** | side-by-side دو experiment |
+| **Drill-down** | لینک به decisions/replay per cycle |
+
+---
+
+## 5. Signals (`/signals`)
 
 ### لیست سیگنال‌ها
 
@@ -82,7 +124,7 @@
 
 ---
 
-## 3. Providers (`/providers`)
+## 6. Providers (`/providers`)
 
 ### لیست
 
@@ -110,7 +152,7 @@
 
 ---
 
-## 4. Validation (`/validation`)
+## 7. Validation (`/validation`)
 
 ### فرم اجرا
 
@@ -153,7 +195,7 @@
 
 ---
 
-## 5. Live Monitor (`/live`)
+## 8. Live Monitor (`/live`)
 
 | بخش | محتوا |
 |-----|--------|
@@ -178,7 +220,7 @@
 
 ---
 
-## 6. Analytics (`/analytics`)
+## 9. Analytics (`/analytics`)
 
 | بخش | محتوا |
 |-----|--------|
@@ -194,7 +236,7 @@
 
 ---
 
-## 7. Risk (`/risk`)
+## 10. Risk (`/risk`)
 
 | بخش | محتوا |
 |-----|--------|
@@ -215,7 +257,7 @@ Signals Today
 
 ---
 
-## 8. Settings (`/settings`)
+## 11. Settings (`/settings`)
 
 ### تب‌ها
 
