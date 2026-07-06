@@ -1,0 +1,7 @@
+provider_id: rsi_divergence
+version: v1
+enabled: true
+weight: 1.0
+params:
+  oversold: 30
+  min_confidence: 0.65

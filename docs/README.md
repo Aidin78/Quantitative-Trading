@@ -78,21 +78,19 @@
 15. **مدیریت ریسک متمرکز** — RiskManager روی snapshot؛ pre-trade در ExecutionRiskGate.
 16. **Validation قبل از Live** — بک‌تست ابزار سنجش Engine است.
 
-## شروع سریع (پس از scaffold)
+## شروع سریع
 
 ```bash
-# بک‌اند
+cp .env.example .env
+docker compose up -d postgres redis
+
 cd backend
-poetry install
-poetry run python scripts/run_validation.py
+poetry install          # یا: pip install -e .
+poetry run pytest
+poetry run uvicorn src.main:app --reload
 
-# فرانت‌اند
-cd frontend
+cd frontend             # Phase 6
 npm install
-npm run dev
-
-# Docker (کل سیستم)
-docker compose up -d
 ```
 
 ## مخاطب مستندات

@@ -1,0 +1,17 @@
+version: v1
+indicators:
+  - name: rsi_14
+    type: rsi
+    params: { period: 14 }
+  - name: ema_12
+    type: ema
+    params: { period: 12 }
+  - name: ema_26
+    type: ema
+    params: { period: 26 }
+  - name: atr_14
+    type: atr
+    params: { period: 14 }
+flags:
+  - name: ema_cross_bullish
+    expr: "ema_12 > ema_26"

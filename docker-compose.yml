@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: trading
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: trading
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://trading:${DB_PASSWORD:-changeme}@postgres:5432/trading
+      REDIS_URL: redis://redis:6379/0
+      CONFIG_DIR: /app/config
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data:ro
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -40,6 +40,17 @@
 
 ---
 
+## 2. Engine Config (`/engine`)
+
+| بخش | محتوا |
+|-----|--------|
+| **Aggregation** | method، min_agreeing_providers |
+| **Market Filter** | sessions، min_atr_pct |
+| **Risk Rules** | drawdown، confidence، max positions |
+| **Revision** | `revision_id` فعال + lineage |
+
+ویرایش از `PATCH /api/v1/engine/config` — هر تغییر → `ConfigRevision` جدید.
+
 ---
 
 ## 3. Forensic / Replay (`/replay`)

@@ -1,0 +1,13 @@
+engine:
+  aggregation:
+    min_agreeing_providers: 2
+    method: weighted_majority
+  filter:
+    min_atr_pct: 0.3
+    allowed_sessions: [EUROPE, US, OVERLAP]
+  risk:
+    max_daily_drawdown_pct: 5.0
+    max_signals_per_day: 10
+    min_confidence: 0.65
+    max_open_positions: 3
+    max_exposure_pct: 50.0

@@ -69,14 +69,15 @@
 # Clone and setup
 cp .env.example .env
 
-# Run with Docker
-docker compose up -d
+# Infrastructure (postgres + redis)
+docker compose up -d postgres redis
 
 # Backend (development)
 cd backend && poetry install
+poetry run pytest
 poetry run uvicorn src.main:app --reload
 
-# Frontend (development)
+# Frontend (Phase 6 — placeholder)
 cd frontend && npm install && npm run dev
 ```
 
@@ -84,12 +85,13 @@ cd frontend && npm install && npm run dev
 
 ```
 quantitative-trading/
-├── backend/          # Python — Core + API
-├── frontend/         # Next.js — Dashboard
+├── backend/          # Python — Core + API (Phase 0+)
+├── frontend/         # Next.js — Dashboard (Phase 6)
+├── config/           # تنظیمات مشترک (engine, features, providers)
 ├── docs/             # مستندات فنی
-├── config/           # تنظیمات
 ├── data/             # داده تاریخی CSV
-└── docker-compose.yml
+├── docker-compose.yml
+└── .env.example
 ```
 
 ## License
