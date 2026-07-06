@@ -46,7 +46,7 @@ class LiveRuntime:
         feature_builder: FeatureBuilder,
         providers: list[SignalProvider],
         engine: DecisionEngine,
-        sink: CompositeSink,
+        event_bus: EventBus,
     ): ...
 
     async def execute(self, symbol: str, timeframe: str) -> None:
@@ -57,7 +57,7 @@ class LiveRuntime:
         signals = [p.analyze(features, context) for p in self.providers if p.enabled]
         decision = self.engine.process(signals, context, portfolio)
 
-        await self.sink.handle(decision)
+        await self.event_bus.publish(DecisionCreated.from_decision(decision))
 ```
 
 ## LiveProvider (ccxt)
@@ -189,7 +189,8 @@ GET /api/v1/live/status
 | SignalProviders | ✓ | ✓ | ✅ |
 | RiskManager | ✓ | ✓ | ✅ |
 | MarketDataProvider | CSV | API | ❌ adapter |
-| DecisionSink | SimulatedTradeSink | DB/WS/Telegram | ❌ adapter |
+| EventBus | InMemory | Redis | ❌ adapter |
+| EventHandlers | Simulation+DB | DB/WS/Telegram | ❌ adapter |
 | Timing | batch | scheduled | ❌ |
 
 ## Paper Trading (توصیه)

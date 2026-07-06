@@ -14,9 +14,12 @@
 3. FeatureBuilder → `FeatureSet` + `MarketContext`
 4. SignalProviders → `StrategySignal[]`
 5. DecisionEngine → `Decision` (approved/rejected)
-6. اگر approved → `SimulatedTradeSink` معامله را شبیه‌سازی می‌کند
-7. محاسبه Engine Metrics + Outcome Metrics
-8. ذخیره `DecisionRecord`ها و نمایش در Dashboard
+6. اگر approved → `ExecutionEngine` (Simulated) → OrderIntent → Fill → PositionClosed
+7. `StateStore.apply_transition` از روی `FillReceived`
+8. محاسبه Engine Metrics + Outcome Metrics
+9. ذخیره `DecisionRecord` + `event_log` + orders/fills
+
+مستندات اجرا: [execution-model.md](../architecture/execution-model.md)
 ```
 
 ## ValidationHarness
@@ -26,7 +29,7 @@ class ValidationHarness:
     def __init__(
         self,
         runtime: PlatformRuntime,
-        trade_sink: SimulatedTradeSink,
+        event_bus: EventBus,
         config: ValidationConfig,
     ): ...
 
@@ -37,7 +40,7 @@ class ValidationHarness:
                 timeframe=config.timeframe,
                 as_of=point.timestamp,
             )
-            await self.trade_sink.handle(decision)
+            await self.event_bus.publish(DecisionCreated.from_decision(decision))
 
         return ValidationResult(
             engine_metrics=compute_engine_metrics(),
@@ -45,7 +48,19 @@ class ValidationHarness:
         )
 ```
 
-## شبیه‌سازی معامله
+## شبیه‌سازی معامله (ExecutionEngine)
+
+شبیه‌سازی دیگر در `trade_simulator` مستقل نیست — `SimulatedExecutionEngine` با `FillModel` deterministic:
+
+```python
+fill_model = FillModel(
+    model_id="close_price_v1",
+    slippage_bps=5,
+    fee_bps=10,
+    fill_at="close",
+)
+execution_engine = SimulatedExecutionEngine(fill_model, clock)
+```
 
 برای هر `Decision` با `result = approved`:
 
@@ -135,6 +150,9 @@ validation:
   providers:
     - ema_crossover
     - rsi_divergence
+  experiment_id: null          # یا ID از [governance.md](../architecture/governance.md)
+  revision_id: null            # ConfigRevision — برای reproducibility
+  fill_model_id: close_price_v1
 ```
 
 ## خروجی‌ها

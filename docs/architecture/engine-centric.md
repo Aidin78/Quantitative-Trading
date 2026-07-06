@@ -43,6 +43,8 @@
 
 استراتژی‌ها فقط **Signal Provider** هستند — نه محاسبه‌گر اندیکاتور، نه تصمیم‌گیر نهایی.
 
+**زیرساخت مفهومی (کنار Engine):** Event Model، State Store، Feature Store، Replay Engine، Time Semantics — [overview.md](./overview.md).
+
 ## لایه‌های معماری (از درون به بیرون)
 
 > جزئیات Feature Builder: [feature-builder.md](./feature-builder.md)
@@ -96,11 +98,11 @@ Engine را در یک **چرخه تصمیم** اجرا می‌کند. Validation
 
 | جزء | نقش |
 |-----|-----|
-| `PlatformRuntime` | data → **features** → providers → engine → sink |
+| `PlatformRuntime` | data → **features** → providers → engine → events |
 | `MarketDataProvider` | تأمین OHLCV خام |
 | `FeatureBuilder` | تأمین FeatureSet + MarketContext |
 | `SignalProvider` | تفسیر features → نظر |
-| `DecisionSink` | مقصد خروجی تصمیم |
+| `EventBus` | انتشار DomainEventها برای side-effectها |
 
 ```
 PlatformRuntime
@@ -109,7 +111,7 @@ PlatformRuntime
     ├─ feature_builder.build(df) → FeatureSet + MarketContext
     ├─ call all SignalProviders(features, context) → list[StrategySignal]
     ├─ DecisionEngine.process(signals, context) → Decision
-    └─ DecisionSink.handle(decision)
+    └─ EventBus.publish(DomainEvent)
 ```
 
 ### لایه ۵ — Adapters (قابل تعویض)
@@ -117,7 +119,8 @@ PlatformRuntime
 | Adapter | Backtest | Live |
 |---------|----------|------|
 | `MarketDataProvider` | CSVProvider | LiveProvider (ccxt) |
-| `DecisionSink` | SimulatedTradeSink | TelegramSink + DBSink + WSSink |
+| `EventBus` | InMemoryEventBus | Redis Pub/Sub یا Redis Streams |
+| `EventHandlers` | Simulation + DB | DB + WS + Telegram |
 | `Scheduler` | iterate تاریخ | APScheduler |
 
 **Engine، Feature Builder و Runtime تغییر نمی‌کنند — فقط adapter عوض می‌شود.**
@@ -166,7 +169,7 @@ core/contracts/
 ├── context.py         # MarketContext, PortfolioState
 ├── provider.py        # SignalProvider protocol
 ├── data.py            # MarketDataProvider protocol
-└── sink.py            # DecisionSink protocol
+└── event.py           # DomainEvent, EventBus, EventHandler protocol
 ```
 
 تغییر contract = نسخه‌گذاری (`v1`, `v2`) — نه patch بی‌برنامه.

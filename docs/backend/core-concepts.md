@@ -1,6 +1,8 @@
 # مفاهیم هسته (Core Concepts)
 
 > استراتژی = `SignalProvider`. تصمیم نهایی فقط در `DecisionEngine`.
+>
+> زیرساخت مفهومی: [event-model.md](../architecture/event-model.md) | [state-management.md](../architecture/state-management.md) | [explainability.md](../architecture/explainability.md)
 
 ## Decision — خروجی Engine
 
@@ -21,24 +23,26 @@ class Decision:
 خروجی هر **SignalProvider** — ورودی Engine، نه محصول نهایی.
 
 ```python
-@dataclass
+@dataclass(frozen=True)
 class StrategySignal:
-    strategy_id: str
+    provider_id: str
     symbol: str
     side: Literal["BUY", "SELL", "HOLD"]
     confidence: float              # 0.0 – 1.0
+    rationale: ProviderRationale   # اجباری برای BUY/SELL — explainability
+    feature_set_id: str            # ارجاع به Feature Store
     entry_price: float | None
     stop_loss: float | None
     take_profit: float | None
     timeframe: str
-    timestamp: datetime
-    metadata: dict[str, Any]       # دلایل تحلیلی
+    event_time: datetime
+    valid_until_event_time: datetime | None
 ```
 
 **قوانین:**
 - `HOLD` یعنی استراتژی نظری ندارد — در aggregation نادیده گرفته می‌شود
-- `confidence` توسط خود استراتژی محاسبه می‌شود (مثلاً بر اساس فاصله از threshold)
-- `metadata` برای شفافیت در Dashboard (مثلاً `{"rsi": 28, "divergence": true}`)
+- `confidence` توسط خود Provider محاسبه می‌شود
+- `rationale` structured است — نه `metadata` آزاد — جزئیات: [explainability.md](../architecture/explainability.md)
 
 ### FinalSignal
 
@@ -147,7 +151,7 @@ class BaseSignalProvider(ABC):
         self.weight = config.get("weight", 1.0)
 
     @abstractmethod
-    def analyze(self, df: pd.DataFrame,
+    def analyze(self, features: FeatureSet,
                 context: MarketContext) -> StrategySignal: ...
 ```
 
@@ -228,17 +232,18 @@ def aggregate(signals: list[StrategySignal]) -> AggregatedResult:
 
 ```python
 class RiskManager:
-    def validate(self, signal: AggregatedResult,
-                 state: PortfolioState) -> RiskCheckResult:
-        if state.daily_drawdown_pct >= self.max_daily_dd:
-            return RiskCheckResult(passed=False,
-                reason="daily_drawdown_limit")
-        if state.signals_today >= self.max_signals:
-            return RiskCheckResult(passed=False,
-                reason="max_signals_per_day")
-        # ...
-        return RiskCheckResult(passed=True)
+    def evaluate(
+        self,
+        signal: AggregatedResult,
+        snapshot: StateSnapshot,
+    ) -> RiskVerdict:
+        risk = snapshot.risk
+        portfolio = snapshot.portfolio
+        # هر check → RiskCheckResult در verdict.checks
+        ...
 ```
+
+`RiskVerdict` structured است — جزئیات: [explainability.md](../architecture/explainability.md).
 
 ---
 
@@ -271,20 +276,33 @@ DataFrame استاندارد:
 
 ---
 
-## PortfolioState (لایو و بک‌تست)
+## State Management (لایو و validation)
+
+وضعیت از طریق `StateStore` مرکزی مدیریت می‌شود — نه پراکنده در handlers.
 
 ```python
-@dataclass
+@dataclass(frozen=True)
 class PortfolioState:
+    portfolio_id: str
+    mode: Literal["validation", "live", "paper", "replay"]
     equity: float
+    cash: float
+    open_positions: tuple[PositionState, ...]
+    realized_pnl: float
+    version: int
+    as_of_event_time: datetime
+
+@dataclass(frozen=True)
+class RiskState:
     daily_pnl: float
     daily_drawdown_pct: float
-    signals_today: int
-    open_positions: list[Position]
-    last_signal_time: datetime | None
+    open_exposure_pct: float
+    consecutive_losses: int
+    breached_limits: tuple[str, ...]
+    version: int
 ```
 
-در بک‌تست از شبیه‌سازی معاملات به‌روز می‌شود؛ در لایو از DB یا حافظه.
+جزئیات کامل: [state-management.md](../architecture/state-management.md).
 
 ---
 

@@ -59,8 +59,18 @@
 
 | کتابخانه | کاربرد |
 |----------|--------|
-| **redis** | pub/sub، cache |
-| **celery** (اختیاری) | background jobs — بک‌تست سنگین |
+| **redis** | EventBus adapter، pub/sub، cache |
+| **celery** (اختیاری) | background jobs — validation سنگین |
+
+### Event Layer
+
+| پیاده‌سازی | کاربرد |
+|------------|--------|
+| **InMemoryEventBus** | MVP و تست‌های integration |
+| **Redis Pub/Sub** | fan-out زنده به WebSocket و handlerها |
+| **Redis Streams** | گزینه بهتر برای replay/audit در production |
+
+**قاعده معماری:** `PlatformRuntime` نباید DB، WebSocket یا Telegram را مستقیم صدا بزند. Runtime فقط `DomainEvent` publish می‌کند و handlerها side-effectها را انجام می‌دهند.
 
 ### بازار زنده
 
@@ -149,8 +159,8 @@ backend/src/
 ├── providers/        # SignalProviders (استراتژی‌های plug-in)
 ├── engine/           # DecisionEngine
 ├── runtime/          # PlatformRuntime
+├── events/           # DomainEvent, EventBus, handlers
 ├── validation/       # ValidationHarness, simulated trades, metrics
-├── sinks/            # logging, database, telegram, websocket sinks
 ├── db/               # sqlalchemy models, repositories
 └── config/           # settings loader
 ```

@@ -221,33 +221,33 @@ const ws = new WebSocket('ws://localhost:8000/ws/decisions?token=eyJ...');
 
 ---
 
-## معماری Pub/Sub
+## معماری EventBus / Pub/Sub
 
 ```
-LiveRunner
+PlatformRuntime
     │
     ▼
-Redis PUBLISH
-    ├── channel:decisions   → /ws/decisions clients
-    ├── channel:signals     → /ws/signals clients (approved only)
-    ├── channel:live        → /ws/live clients
-    └── channel:validation:* → /ws/validation/{id} clients
+EventBus.publish(DomainEvent)
+    │
+    ├── DecisionCreated     → WebSocketEventHandler → /ws/decisions
+    ├── SignalApproved      → WebSocketEventHandler → /ws/signals
+    ├── ValidationProgressed → WebSocketEventHandler → /ws/validation/{id}
+    └── LiveStatusChanged   → WebSocketEventHandler → /ws/live
 ```
 
-FastAPI WebSocket Manager:
+در MVP، `InMemoryEventBus` کافی است. در Live، همین EventBus می‌تواند Redis Pub/Sub یا Redis Streams adapter داشته باشد.
+
+FastAPI WebSocket Handler:
 
 ```python
-class ConnectionManager:
+class WebSocketEventHandler:
     def __init__(self):
         self.active: dict[str, list[WebSocket]] = {}
 
-    async def connect(self, channel: str, ws: WebSocket):
-        await ws.accept()
-        self.active.setdefault(channel, []).append(ws)
-
-    async def broadcast(self, channel: str, message: dict):
+    async def handle(self, event: DomainEvent) -> None:
+        channel = self._route_event(event)
         for ws in self.active.get(channel, []):
-            await ws.send_json(message)
+            await ws.send_json(event_to_ws_message(event))
 ```
 
 ---

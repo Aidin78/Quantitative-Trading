@@ -67,7 +67,7 @@ OHLCV → FeatureBuilder → FeatureSet + MarketContext
 | تصمیم BUY/SELL | نظر = Provider | `providers/` |
 | قوانین ریسک | تصمیم = Engine | `engine/` |
 | خواندن CSV/API | داده خام = Data adapter | `data/` |
-| ذخیره در DB | خروجی = Sink | `sinks/` |
+| ذخیره در DB | خروجی = EventHandler | `events/handlers/` |
 
 ## قراردادها
 

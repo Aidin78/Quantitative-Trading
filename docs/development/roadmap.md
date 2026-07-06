@@ -24,7 +24,7 @@
 
 ```
 Phase 0          Phase 1              Phase 2              Phase 3
-Contracts   →    Decision Engine  →   Feature Builder  →   Platform Runtime
+Contracts   →    Decision Engine  →   Feature Builder  →   Runtime + Events
 (1 هفته)         (2 هفته)             (1 هفته)             (1 هفته)
                       ↓
 Phase 4              Phase 5              Phase 6
@@ -56,13 +56,16 @@ Validation      →    Providers       →    Observability
 - [ ] ruff, pre-commit, ESLint, Prettier
 
 **Contracts (`src/core/contracts/`):**
-- [ ] `signal.py` — `StrategySignal`, `FinalSignal`
-- [ ] `decision.py` — `Decision`, `DecisionResult`, `RejectionReason`, `DecisionLog`
-- [ ] `features.py` — `FeatureSet`, `FeatureBuilder` protocol
-- [ ] `context.py` — `MarketContext`, `PortfolioState`
+- [ ] `signal.py` — `StrategySignal`, `ProviderRationale`, `FinalSignal`
+- [ ] `decision.py` — `Decision`, `DecisionResult`, `DecisionLog`, `RiskVerdict`
+- [ ] `features.py` — `FeatureSet`, `FeatureSetRecord`, `FeatureBuilder` protocol
+- [ ] `context.py` — `MarketContext`
+- [ ] `state.py` — `PortfolioState`, `PositionState`, `RiskState`, `StateSnapshot`
+- [ ] `event.py` — `EventEnvelope`, `EventBus`, event family enums
+- [ ] `execution.py` — `OrderIntent`, `Order`, `Fill`, `FillModel`
+- [ ] `governance.py` — `ConfigRevision`, `Experiment`, `ExperimentRun`
 - [ ] `provider.py` — `SignalProvider` protocol (`analyze(features, context)`)
 - [ ] `data.py` — `MarketDataProvider` protocol
-- [ ] `sink.py` — `DecisionSink` protocol
 
 **Config schema:**
 - [ ] `config/engine.yaml` — قوانین aggregation, filter, risk
@@ -71,8 +74,11 @@ Validation      →    Providers       →    Observability
 
 ### خروجی / معیار قبولی
 - [ ] Contracts import می‌شوند بدون وابستگی به implementation
-- [ ] `Decision` می‌تواند `approved(FinalSignal)` یا `rejected(reason)` باشد
+- [ ] `EventEnvelope` با `event_time` و `processing_time` تعریف شده
+- [ ] `StateSnapshot` و `ProviderRationale` در contracts
 - [ ] هیچ فایلی در `strategies/` وجود ندارد — عمداً
+
+مستندات مرجع: [event-model.md](../architecture/event-model.md), [state-management.md](../architecture/state-management.md), [time-semantics.md](../architecture/time-semantics.md)
 
 ---
 
@@ -130,6 +136,7 @@ Provider نباید اندیکاتور محاسبه کند. Runtime به Builder
 - [ ] `features/registry.py` — parse `config/features.yaml`
 - [ ] `features/builder.py` — `FeatureBuilder.build(df)` → FeatureSet + MarketContext
 - [ ] `features/indicators/` — RSI, EMA, MACD, ATR, Bollinger
+- [ ] `features/store.py` — `FeatureStore.put/get` + `feature_version`
 - [ ] `features/context_deriver.py` — trend, volatility, session از features
 - [ ] `config/features.yaml` — تعریف declarative اندیکاتورها
 
@@ -145,25 +152,38 @@ Provider نباید اندیکاتور محاسبه کند. Runtime به Builder
 
 ---
 
-## Phase 3: Platform Runtime (هفته 5)
+## Phase 3: Platform Runtime + Event Layer (هفته 5)
 
 ### هدف
-یک **Runtime واحد** با pipeline کامل: data → **features** → providers → engine → sink.
+یک **Runtime واحد** با pipeline کامل: data → **features** → providers → engine → events.
+
+Runtime نباید DB، WebSocket یا Telegram را مستقیم صدا بزند. فقط `DomainEvent` منتشر می‌کند.
 
 ### Tasks
 
 - [ ] `runtime/platform_runtime.py` — شامل فراخوانی `feature_builder.build()`
-- [ ] `runtime/portfolio_tracker.py`
+- [ ] `runtime/clocks.py` — `WallClock`, `SimulatedClock`
+- [ ] `state/store.py` — `StateStore`, `InMemoryStateStore`
+- [ ] `state/transitions.py` — `StateTransitionEvent`
 - [ ] `data/csv_provider.py`
-- [ ] `sinks/logging_sink.py`
+- [ ] `events/envelopes.py` — taxonomy: Market, Signal, Decision, Execution
+- [ ] `events/event_bus.py` — interface
+- [ ] `events/in_memory_bus.py` — MVP implementation
+- [ ] `events/handlers/logging_handler.py`
+- [ ] `events/handlers/event_log_handler.py` — نوشتن به `event_log` (اختیاری در MVP)
 - [ ] `tests/mocks/mock_providers.py` — ورودی: `FeatureSet` mock
 
 **Integration test:**
-- [ ] Runtime + CSV + FeatureBuilder + MockProviders + Engine + LoggingSink
+- [ ] Runtime + CSV + FeatureBuilder + FeatureStore + StateStore + MockProviders + Engine + InMemoryEventBus
+- [ ] هر cycle: `state_snapshot_id` در DecisionEvent
+- [ ] `DecisionApproved` / `DecisionRejected` با `event_time` ≠ `processing_time`
 
 ### خروجی / معیار قبولی
-- [ ] `run_cycle()` = fetch → build features → providers → engine → sink
+- [ ] `run_cycle()` = fetch → features → store → snapshot state → providers → engine → publish events
 - [ ] گام feature build **همیشه** قبل از providers
+- [ ] Runtime هیچ import از Telegram/WebSocket/DB handler ندارد
+
+مستندات: [event-model.md](../architecture/event-model.md), [feature-store.md](../architecture/feature-store.md)
 
 ---
 
@@ -182,22 +202,26 @@ Provider نباید اندیکاتور محاسبه کند. Runtime به Builder
 
 ### Tasks
 
-- [ ] `validation/harness.py` — iterate CSV، صدا زدن `PlatformRuntime.run_cycle()`
-- [ ] `validation/trade_simulator.py` — شبیه‌سازی معامله **بعد از** تصمیم approved
-- [ ] `sinks/simulated_trade_sink.py` — ثبت معاملات شبیه‌سازی‌شده
+- [ ] `validation/harness.py` — iterate CSV؛ PnL از `ExecutionEngine` نه trade_simulator مستقیم
+- [ ] `execution/simulated.py` — `SimulatedExecutionEngine` + `FillModel`
+- [ ] `execution/risk_gate.py` — `ExecutionRiskGate` (pre-trade)
+- [ ] `state/` — runtime cycle phases per [state-risk-contract.md](../architecture/state-risk-contract.md)
 - [ ] `validation/metrics.py`:
   - **Engine metrics:** approval rate, rejection breakdown, provider contribution
   - **Outcome metrics:** win rate, Sharpe, max DD, profit factor
 - [ ] `validation/report.py` — گزارش با تمرکز بر Decision quality
-- [ ] DB models: `DecisionRecord`, `BacktestRun`, `SimulatedTrade`
+- [ ] DB models: `DecisionRecord`, `BacktestRun`, `SimulatedTrade`, `event_log`, `feature_sets`, `state_snapshots`
 - [ ] Alembic migrations
 - [ ] `scripts/run_validation.py` — CLI
+- [ ] `replay/engine.py` — **strict replay** از `event_log` (MVP)
+- [ ] `replay/timeline.py` — timeline per `correlation_id`
 
 ### معیارهای قبولی فاز
 
 **Engine quality:**
-- [ ] Decision log برای 100% چرخه‌ها ذخیره می‌شود
+- [ ] Decision log + `state_snapshot_id` برای 100% چرخه‌ها ذخیره می‌شود
 - [ ] rejection breakdown گزارش می‌شود
+- [ ] `event_log` chain کامل Market → Execution برای هر cycle
 
 **Outcome (با Mock یا اولین Provider):**
 - [ ] harness 1 ساله BTC/USDT < 60s
@@ -218,7 +242,7 @@ Provider نباید اندیکاتور محاسبه کند. Runtime به Builder
 - [ ] `providers/base.py` — `BaseSignalProvider` implements protocol
 - [ ] `providers/registry.py` — register / discover
 - [ ] `providers/ema_crossover.py` — تفسیر `features.flags["ema_cross_bullish"]`
-- [ ] `providers/rsi_divergence.py` — تفسیر `features.indicators["rsi_14"]`
+- [ ] `providers/rsi_divergence.py` — تفسیر `features.indicators["rsi_14"]` + `ProviderRationale`
 - [ ] `config/providers/*.yaml` — پارامترها
 - [ ] Unit test هر provider — ورودی `FeatureSet` mock، **بدون** OHLCV
 - [ ] Integration test: Runtime + real providers + validation harness
@@ -242,17 +266,20 @@ Engine = unchanged since Phase 1
 
 ### اولویت صفحات (مهم ← کم‌اهمیت)
 
-1. **Decision Monitor** — live feed تصمیمات + rejection reasons
+1. **Decision Monitor** — live feed + explainability + لینک replay
 2. **Engine Config** — قوانین risk, aggregation, filter
-3. **Signals** — تصمیمات approved
-4. **Validation Results** — نتایج harness
-5. **Providers** — مدیریت استراتژی‌ها (secondary)
+3. **Forensic / Replay** — timeline و causal graph per decision
+4. **Signals** — تصمیمات approved
+5. **Validation Results** — نتایج harness
+6. **Providers** — مدیریت استراتژی‌ها (secondary)
 
 ### Tasks
 
 **API (FastAPI):**
 - [ ] `GET /api/v1/decisions` — لیست تصمیمات (approved + rejected)
-- [ ] `GET /api/v1/decisions/{id}` — decision log کامل
+- [ ] `GET /api/v1/decisions/{id}` — decision log + explainability کامل
+- [ ] `POST /api/v1/replay/cycle/{correlation_id}` — strict replay
+- [ ] `GET /api/v1/replay/{job_id}/timeline`
 - [ ] `GET /api/v1/engine/config` + `PATCH` — تنظیمات engine
 - [ ] `GET /api/v1/engine/stats` — approval rate, rejection breakdown
 - [ ] `GET /api/v1/signals` — فقط approved decisions
@@ -285,12 +312,13 @@ Engine = unchanged since Phase 1
 ### Tasks
 
 - [ ] `data/live_provider.py` (ccxt)
-- [ ] `sinks/telegram_sink.py`
-- [ ] `sinks/database_sink.py`
-- [ ] `sinks/websocket_sink.py` — Redis pub/sub
+- [ ] `events/redis_bus.py` — Redis Pub/Sub یا Redis Streams
+- [ ] `events/handlers/telegram_handler.py`
+- [ ] `events/handlers/database_handler.py`
+- [ ] `events/handlers/websocket_handler.py`
 - [ ] `runtime/scheduler.py` — APScheduler
 - [ ] `scripts/run_live.py` — `PlatformRuntime` + live adapters
-- [ ] Paper mode: `CompositeSink(LoggingSink)` بدون Telegram
+- [ ] Paper mode: EventBus بدون `TelegramEventHandler`
 - [ ] `GET/POST /api/v1/live/*` — status, start, stop, mode
 - [ ] Frontend: Live status در Decision Monitor
 
@@ -301,8 +329,9 @@ Engine = unchanged since Phase 1
 | `PlatformRuntime` | ✓ | ✓ | ✅ |
 | `DecisionEngine` | ✓ | ✓ | ✅ |
 | `SignalProvider` | ✓ | ✓ | ✅ |
+| `EventBus` | InMemory | Redis | adapter |
 | `MarketDataProvider` | CSV | ccxt | adapter |
-| `DecisionSink` | Simulated | Telegram+DB+WS | adapter |
+| `EventHandlers` | Simulation+DB | DB+WS+Telegram | adapter |
 | `Scheduler` | iterate | cron | adapter |
 
 ### خروجی / معیار قبولی
@@ -312,8 +341,14 @@ Engine = unchanged since Phase 1
 
 ---
 
-## Phase 8: Polish (اختیاری)
+## Phase 8: Polish + Production Hardening (اختیاری)
 
+- [ ] Replay re-execute + `DecisionDiff` — [replay-engine.md](../architecture/replay-engine.md)
+- [ ] `governance/` — Experiment API + A/B comparison — [governance.md](../architecture/governance.md)
+- [ ] `revision_id` / `experiment_id` در تمام `event_log`
+- [ ] `LiveGovernanceGate` — live فقط با validation موفق revision
+- [ ] Feature drift detection در replay
+- [ ] Causal graph UI
 - [ ] Analytics — rejection trends, provider contribution over time
 - [ ] Walk-forward validation UI
 - [ ] Engine A/B testing (دو config موازی)
@@ -348,7 +383,17 @@ Engine = unchanged since Phase 1
 - [ ] config از YAML قابل تغییر
 
 ### Runtime
-- [ ] pipeline: data → features → providers → engine → sink
+- [ ] pipeline: data → features → store → state snapshot → providers → engine → events
+- [ ] side-effectها فقط در event handlers
+
+### Infrastructure
+- [ ] Event Model — chain کامل در `event_log`
+- [ ] StateStore — versioned snapshots + [state-risk-contract](../architecture/state-risk-contract.md)
+- [ ] ExecutionEngine — Order/Fill chain — [execution-model](../architecture/execution-model.md)
+- [ ] FeatureStore — `feature_version` + `config_hash`
+- [ ] Strict replay per `correlation_id`
+- [ ] Explainability در API (`ProviderRationale`, `RiskVerdict`)
+- [ ] Governance — `revision_id` در decisions و events
 
 ### Feature Builder
 - [ ] OHLCV → FeatureSet یکسان در Validation و Live

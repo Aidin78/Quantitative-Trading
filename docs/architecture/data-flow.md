@@ -23,7 +23,7 @@ FeatureBuilder.build(df)  →  FeatureSet + MarketContext
    (approved)        (rejected)
         │                │
         ▼                ▼
-   DecisionSink.handle(decision)  ← همیشه (شامل log ردشده‌ها)
+   EventBus.publish(DomainEvent)  ← همیشه (شامل rejectedها)
 ```
 
 ## Validation — iterate روی تاریخ (بک‌تست)
@@ -37,7 +37,7 @@ ValidationHarness (loop over history)
         └──► PlatformRuntime.run_cycle()  ← همان Runtime
                     │
                     ▼
-            SimulatedTradeSink (فقط approved)
+            EventBus → SimulationEventHandler (فقط SignalApproved)
                     │
         ▼ (end of data)
 Engine Metrics + Outcome Metrics
@@ -51,8 +51,9 @@ Report (approval rate, rejection breakdown, Sharpe, Max DD, ...)
 1. **Harness** — CSV را iterate می‌کند (نه logic جدا از Runtime)
 2. **Cycle** — هر نقطه زمانی یک `run_cycle()` کامل
 3. **Decide** — Engine تصمیم می‌گیرد؛ rejected هم log می‌شود
-4. **Simulate** — SimulatedTradeSink فقط approved را به معامله تبدیل می‌کند
-5. **Metrics** — هم کیفیت تصمیم Engine، هم PnL outcome
+4. **Events** — Runtime برای هر cycle event منتشر می‌کند
+5. **Simulate** — `SimulationEventHandler` فقط `SignalApproved` را به معامله تبدیل می‌کند
+6. **Metrics** — هم کیفیت تصمیم Engine، هم PnL outcome
 
 ## Live — همان Runtime، adapter متفاوت
 
@@ -66,10 +67,11 @@ LiveProvider (ccxt)
 PlatformRuntime.run_cycle()  ← همان Runtime
         │
         ▼
-CompositeSink
-    ├── DatabaseSink (همه decisions)
-    ├── WebSocketSink → Dashboard
-    └── TelegramSink (فقط approved)
+EventBus
+    ├── DatabaseEventHandler (همه decisions)
+    ├── WebSocketEventHandler → Dashboard
+    ├── MetricsEventHandler
+    └── TelegramEventHandler (فقط SignalApproved)
 ```
 
 ### تفاوت‌های کلیدی با بک‌تست
@@ -78,7 +80,7 @@ CompositeSink
 |------|--------|------|
 | منبع داده | CSV (ثابت) | API (متغیر) |
 | زمان | گذشته — iterate سریع | حال — wait for candle close |
-| خروجی | Metrics file / DB | Telegram + WS + DB |
+| خروجی | event handlers: simulation + DB | event handlers: Telegram + WS + DB |
 | خطا | fail fast | retry + alert |
 | لاگ rejected | اختیاری | اجباری |
 

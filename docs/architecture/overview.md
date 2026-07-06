@@ -15,11 +15,17 @@
 │                          API Layer                                │
 │              FastAPI REST  │  WebSocket Hub  │  Auth             │
 ├──────────────────────────────────────────────────────────────────┤
+│                       Event Layer + Event Model                   │
+│   EventBus  │  event_log  │  Handlers  │  Replay Engine          │
+├──────────────────────────────────────────────────────────────────┤
+│              State Store + Feature Store + Clock                  │
+│   PortfolioState │ RiskState │ FeatureSetRecord │ Time Semantics  │
+├──────────────────────────────────────────────────────────────────┤
 │                      Adapter Layer                                │
-│   CSV/Live Data  │  Telegram/DB/WS Sinks  │  Scheduler           │
+│   CSV/Live Data  │  Telegram/DB/WS Handlers  │  Scheduler        │
 ├──────────────────────────────────────────────────────────────────┤
 │                      Platform Runtime                             │
-│    data → features → providers → engine → sink                   │
+│    data → features → providers → engine → events                 │
 ├──────────────────────────────────────────────────────────────────┤
 │                    ★ Decision Engine ★                           │
 │   MarketFilter → Aggregator → RiskManager → DecisionLog          │
@@ -75,33 +81,78 @@
 
 ### 5. Platform Runtime
 
-`PlatformRuntime`: fetch → **feature_builder.build()** → providers → engine → sink.
+`PlatformRuntime`: fetch → **feature_builder.build()** → providers → engine → domain events.
 
-### 6. Adapter Layer
+### 6. Event Layer + Event Model
+
+| جزء | مسئولیت |
+|-----|----------|
+| `EventBus` | انتشار eventها — [event-layer.md](./event-layer.md) |
+| `EventEnvelope` | taxonomy رسمی — [event-model.md](./event-model.md) |
+| `event_log` | ذخیره chain کامل برای replay |
+| `ReplayEngine` | forensic و causal analysis — [replay-engine.md](./replay-engine.md) |
+
+### 7. State Store
+
+وضعیت مرکزی versioned — [state-management.md](./state-management.md):
+- `PortfolioState`, `PositionState`, `RiskState`
+- `StateSnapshot` قبل از هر تصمیم
+- mutation فقط از طریق `StateTransitionEvent`
+
+### 8. Execution Engine
+
+تبدیل `FinalSignal` به Order → Fill → Position — [execution-model.md](./execution-model.md):
+- `SimulatedExecutionEngine` در validation
+- `ExecutionRiskGate` — pre-trade check روی snapshot جدید
+- Telegram فقط مصرف‌کننده `SignalPublished`
+
+### 9. State–Risk Contract
+
+مرز enforceable — [state-risk-contract.md](./state-risk-contract.md):
+- RiskManager: read-only روی snapshot
+- StateStore: تنها mutator
+- Runtime: state machine فاز cycle
+
+### 10. Feature Store
+
+ذخیره `FeatureSetRecord` با `feature_version` — [feature-store.md](./feature-store.md).
+
+### 11. Time Semantics
+
+`Clock` abstraction و تفکیک سه بعد زمان — [time-semantics.md](./time-semantics.md).
+
+### 12. Governance
+
+Experiment Management و ConfigRevision — [governance.md](./governance.md):
+- `experiment_id` / `revision_id` در تمام eventها
+- A/B comparison و lineage config
+
+### 13. Adapter Layer
 
 | Adapter | Validation | Live |
 |---------|------------|------|
 | `MarketDataProvider` | CSVProvider | LiveProvider |
-| `DecisionSink` | SimulatedTradeSink | Telegram + DB + WS |
+| `EventBus` | InMemoryEventBus | Redis Pub/Sub یا Redis Streams |
+| `EventHandlers` | Simulation + DB | DB + WS + Telegram |
 
-### 7. API Layer
+### 14. API Layer
 
 FastAPI — مشاهده‌پذیری Engine و تصمیمات:
 - REST: `/decisions`, `/engine/config`, `/validation`
 - WebSocket: `/ws/decisions`
 - JWT برای auth
 
-### 8. Presentation Layer
+### 15. Presentation Layer
 
 - **Dashboard** — Decision Monitor به‌عنوان صفحه اصلی
 - **Telegram** — فقط `FinalSignal` از مسیر Engine
 
 ## دو حالت اجرا — فقط Adapter عوض می‌شود
 
-| حالت | MarketDataProvider | DecisionSink | زمان‌بندی |
-|------|-------------------|--------------|-----------|
-| **Validation** | CSV | SimulatedTradeSink | iterate تاریخ |
-| **Live** | Live API (ccxt) | Telegram + DB + WS | Scheduler |
+| حالت | MarketDataProvider | EventBus | EventHandlers | زمان‌بندی |
+|------|-------------------|----------|---------------|-----------|
+| **Validation** | CSV | InMemory | Simulation + DB + progress | iterate تاریخ |
+| **Live** | Live API (ccxt) | Redis | DB + WS + Telegram | Scheduler |
 
 **نکته حیاتی:** `PlatformRuntime` + `DecisionEngine` در هر دو حالت **همان کد** هستند. Validation (بک‌تست) ابزار سنجش Engine است — نه محصول جدا.
 
@@ -150,12 +201,12 @@ quantitative-trading/
 
 | الگو | محل استفاده |
 |------|-------------|
-| **Protocol** | `SignalProvider`, `MarketDataProvider`, `DecisionSink` |
+| **Protocol** | `SignalProvider`, `MarketDataProvider`, `EventBus`, `EventHandler` |
 | **Pipeline** | Decision Engine — filter → aggregate → risk → log |
 | **Adapter** | CSV/Live data، Telegram/DB sinks |
 | **Registry** | `ProviderRegistry` — plug-in providers |
-| **Composite** | `CompositeSink` — چند مقصد برای یک decision |
-| **Observer** | WebSocket — publish decision به dashboard |
+| **Event Bus** | `DomainEvent` fan-out به handlerها |
+| **Observer** | WebSocket handler — publish event به dashboard |
 | **Repository** | DB — decisions, validation runs, trades |
 
 ## ملاحظات امنیتی
