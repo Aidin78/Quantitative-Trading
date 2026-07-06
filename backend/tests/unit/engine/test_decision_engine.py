@@ -1,25 +1,10 @@
 from __future__ import annotations
 
-import pytest
-
-from src.engine.config import load_engine_config
-from src.engine.decision_engine import DecisionEngine
-from tests.mocks.fixtures import make_context, make_snapshot, utc_now
+from tests.mocks.fixtures import make_context, make_snapshot
 from tests.mocks.mock_signals import conflict_signals, consensus_buy_signals, make_signal
 
 
-@pytest.fixture
-def engine() -> DecisionEngine:
-    return DecisionEngine(load_engine_config())
-
-
-@pytest.fixture
-def times():
-    now = utc_now()
-    return {"event_time": now, "decision_time": now}
-
-
-def test_consensus_two_providers_buy_approved(engine: DecisionEngine, times: dict) -> None:
+def test_consensus_two_providers_buy_approved(engine, times: dict) -> None:
     decision = engine.process(
         consensus_buy_signals(times["event_time"]),
         make_context(),
@@ -35,7 +20,7 @@ def test_consensus_two_providers_buy_approved(engine: DecisionEngine, times: dic
     assert decision.decision_log.risk_check.passed
 
 
-def test_conflict_buy_vs_sell_rejected_at_aggregator(engine: DecisionEngine, times: dict) -> None:
+def test_conflict_buy_vs_sell_rejected_at_aggregator(engine, times: dict) -> None:
     decision = engine.process(
         conflict_signals(times["event_time"]),
         make_context(),
@@ -50,7 +35,7 @@ def test_conflict_buy_vs_sell_rejected_at_aggregator(engine: DecisionEngine, tim
     assert decision.decision_log.market_filter.passed
 
 
-def test_risk_drawdown_exceeded_rejected(engine: DecisionEngine, times: dict) -> None:
+def test_risk_drawdown_exceeded_rejected(engine, times: dict) -> None:
     decision = engine.process(
         consensus_buy_signals(times["event_time"]),
         make_context(),
@@ -65,7 +50,7 @@ def test_risk_drawdown_exceeded_rejected(engine: DecisionEngine, times: dict) ->
     assert not decision.decision_log.risk_check.passed
 
 
-def test_market_filter_low_volatility_rejected(engine: DecisionEngine, times: dict) -> None:
+def test_market_filter_low_volatility_rejected(engine, times: dict) -> None:
     decision = engine.process(
         consensus_buy_signals(times["event_time"]),
         make_context(volatility="LOW"),
@@ -79,7 +64,7 @@ def test_market_filter_low_volatility_rejected(engine: DecisionEngine, times: di
     assert decision.result.rejection_reason == "low_volatility"
 
 
-def test_market_filter_session_not_allowed(engine: DecisionEngine, times: dict) -> None:
+def test_market_filter_session_not_allowed(engine, times: dict) -> None:
     decision = engine.process(
         consensus_buy_signals(times["event_time"]),
         make_context(session="ASIA"),
@@ -93,7 +78,7 @@ def test_market_filter_session_not_allowed(engine: DecisionEngine, times: dict) 
     assert decision.result.rejection_reason == "session_not_allowed"
 
 
-def test_decision_log_complete_on_every_path(engine: DecisionEngine, times: dict) -> None:
+def test_decision_log_complete_on_every_path(engine, times: dict) -> None:
     scenarios = [
         engine.process(
             consensus_buy_signals(times["event_time"]),
@@ -123,7 +108,7 @@ def test_decision_log_complete_on_every_path(engine: DecisionEngine, times: dict
         assert len(log.provider_signals) >= 1
 
 
-def test_low_confidence_rejected_at_risk(engine: DecisionEngine, times: dict) -> None:
+def test_low_confidence_rejected_at_risk(engine, times: dict) -> None:
     low_conf = [
         make_signal("ema_crossover", "BUY", 0.5, event_time=times["event_time"]),
         make_signal("rsi_divergence", "BUY", 0.55, event_time=times["event_time"]),
@@ -141,7 +126,7 @@ def test_low_confidence_rejected_at_risk(engine: DecisionEngine, times: dict) ->
     assert decision.result.rejection_reason == "min_confidence"
 
 
-def test_max_signals_per_day_rejected(engine: DecisionEngine, times: dict) -> None:
+def test_max_signals_per_day_rejected(engine, times: dict) -> None:
     decision = engine.process(
         consensus_buy_signals(times["event_time"]),
         make_context(),
@@ -155,7 +140,7 @@ def test_max_signals_per_day_rejected(engine: DecisionEngine, times: dict) -> No
     assert decision.result.rejection_reason == "max_signals_per_day"
 
 
-def test_min_risk_reward_rejected(engine: DecisionEngine, times: dict) -> None:
+def test_min_risk_reward_rejected(engine, times: dict) -> None:
     poor_rr = [
         make_signal(
             "ema_crossover",

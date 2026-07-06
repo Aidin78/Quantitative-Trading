@@ -8,7 +8,15 @@ import pytest
 
 from src.features.builder import DefaultFeatureBuilder
 from src.features.config import load_features_config
-from tests.fixtures.ohlcv import make_sample_ohlcv
+from tests.fixtures.ohlcv import ensure_sample_btc_fixture, make_sample_ohlcv
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _ensure_csv_fixtures() -> None:
+    fixtures_dir = Path(__file__).resolve().parents[2] / "fixtures"
+    fixtures_dir.mkdir(parents=True, exist_ok=True)
+    ensure_sample_btc_fixture(fixtures_dir / "ohlcv_btc_1h.csv")
+    ensure_sample_btc_fixture(fixtures_dir / "sample_btc_1h.csv")
 
 
 @pytest.fixture

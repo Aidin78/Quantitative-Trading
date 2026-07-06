@@ -41,6 +41,13 @@ class DefaultFeatureBuilder:
     def config_hash(self) -> str:
         return self._config_hash
 
+    @property
+    def store(self) -> FeatureStore | None:
+        return self._store
+
+    def bind_store(self, store: FeatureStore) -> None:
+        self._store = store
+
     def build(
         self,
         df: pd.DataFrame,

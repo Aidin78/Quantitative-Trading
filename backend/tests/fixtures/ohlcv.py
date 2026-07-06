@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -31,3 +32,15 @@ def make_sample_ohlcv(*, bars: int = 100, seed: int = 42) -> pd.DataFrame:
         )
         price = close_p
     return pd.DataFrame(rows)
+
+
+def ensure_sample_btc_fixture(target: Path, *, source: Path | None = None) -> Path:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        return target
+    src = source or target.parent / "ohlcv_btc_1h.csv"
+    if not src.exists():
+        make_sample_ohlcv().to_csv(target, index=False)
+        return target
+    target.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    return target
