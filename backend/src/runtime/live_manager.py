@@ -13,6 +13,7 @@ from src.api.services.live_runner import (
     check_connectivity,
     default_live_jobs,
 )
+from src.observability.metrics import LIVE_CYCLES_TOTAL
 from src.runtime.scheduler import cron_for_timeframe
 
 
@@ -182,6 +183,7 @@ class LiveRuntimeManager:
                 )
                 self._state.last_run_at = datetime.now(UTC)
                 self._state.last_error = None
+                LIVE_CYCLES_TOTAL.labels(mode=self._state.mode).inc()
                 if result.decision.is_approved:
                     self._state.last_signal_at = datetime.now(UTC)
             except Exception as exc:

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import csv
+import io
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_current_user, get_db
@@ -37,6 +40,57 @@ async def list_all_decisions(
     )
     items, total = await list_decisions(db, filters=filters, page=page, limit=limit)
     return {"items": items, "total": total, "page": page, "limit": limit}
+
+
+@router.get("/export")
+async def export_decisions(
+    db: AsyncSession = Depends(get_db),
+    format: str = Query("csv"),
+    limit: int = Query(1000, ge=1, le=5000),
+) -> StreamingResponse:
+    if format != "csv":
+        raise HTTPException(status_code=400, detail="Only csv format supported")
+    items, _ = await list_decisions(db, limit=limit)
+    buffer = io.StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=[
+            "id",
+            "symbol",
+            "timeframe",
+            "result",
+            "side",
+            "confidence",
+            "rejection_reason",
+            "correlation_id",
+            "revision_id",
+            "experiment_id",
+            "timestamp",
+        ],
+    )
+    writer.writeheader()
+    for item in items:
+        writer.writerow(
+            {
+                "id": item.get("id"),
+                "symbol": item.get("symbol"),
+                "timeframe": item.get("timeframe"),
+                "result": item.get("result"),
+                "side": item.get("side"),
+                "confidence": item.get("confidence"),
+                "rejection_reason": item.get("rejection_reason"),
+                "correlation_id": item.get("correlation_id"),
+                "revision_id": item.get("revision_id"),
+                "experiment_id": item.get("experiment_id"),
+                "timestamp": item.get("timestamp"),
+            }
+        )
+    buffer.seek(0)
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=decisions.csv"},
+    )
 
 
 @router.get("/{decision_id}")

@@ -15,7 +15,12 @@
 - Explainability ساختاریافته — `ProviderRationale` و `RiskVerdict`
 - Execution Model رسمی — OrderIntent → Fill → Position (جدا از Telegram)
 - State–Risk Contract — مرز enforceable خواندن/نوشتن state
-- Governance — Experiment Management، ConfigRevision، A/B testing
+- Governance — Experiment Management، ConfigRevision، replay re-execute
+- Analytics — روند تصمیمات، مشارکت provider، heatmap زمانی
+- Observability — Prometheus `/metrics`، Grafana dashboard (اختیاری)
+- Export CSV — decisions و validation results
+- Walk-forward validation — پنجره‌های rolling
+- Feature drift detection در replay re-execute
 - Signal Providerهای plug-in (استراتژی‌ها)
 - Validation harness برای سنجش کیفیت تصمیمات
 - اتصال به بازار زنده با همان Runtime
@@ -62,6 +67,9 @@
 | Database | PostgreSQL + TimescaleDB |
 | Cache | Redis |
 | Notifications | Telegram Bot |
+| Observability | Prometheus + Grafana (profile `observability`) |
+
+**Phase فعلی:** `8-production-mvp` — [`/health`](http://localhost:8000/health)
 
 ## شروع سریع
 
@@ -79,10 +87,17 @@ poetry install
 poetry run pytest
 poetry run uvicorn src.main:app --reload --port 8000
 
-# Frontend dashboard (Phase 6)
+# Frontend dashboard
 cd ../frontend
 npm install
 npm run dev
+
+# E2E smoke tests (starts backend + frontend automatically)
+npm run test:e2e
+
+# Observability stack (Prometheus + Grafana)
+docker compose --profile observability up -d
+# Prometheus: http://localhost:9090  |  Grafana: http://localhost:3001 (admin/admin)
 ```
 
 داشبورد روی [http://localhost:3000](http://localhost:3000) و API روی [http://localhost:8000](http://localhost:8000) در دسترس است.
@@ -99,7 +114,8 @@ npm run dev
 
 1. Backend و Frontend را اجرا کنید.
 2. به صفحه **Validation** بروید و یک harness اجرا کنید.
-3. نتایج در **Decision Monitor**، **Signals** و **Replay** نمایش داده می‌شوند.
+3. نتایج در **Decision Monitor**، **Analytics**، **Signals** و **Replay** نمایش داده می‌شوند.
+4. از **Export CSV** در Decision Monitor یا Validation برای دانلود داده استفاده کنید.
 
 تنظیمات پیش‌فرض symbol و timeframe در [`config/settings.yaml`](./config/settings.yaml) تعریف شده‌اند.
 

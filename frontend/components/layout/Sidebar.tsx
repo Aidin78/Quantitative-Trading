@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  BarChart3,
   Cpu,
   FlaskConical,
   GitBranch,
@@ -16,6 +17,7 @@ import { APP_NAME } from "@/lib/app-info";
 
 const links = [
   { href: "/", label: "Decision Monitor", icon: Activity },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/engine", label: "Engine Config", icon: Cpu },
   { href: "/replay", label: "Replay", icon: GitBranch },
   { href: "/signals", label: "Signals", icon: LineChart },

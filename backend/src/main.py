@@ -2,14 +2,25 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, Request, Response, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.api.auth import get_subject_from_token
 from src.api.v1.router import api_v1_router
 from src.api.websocket.decisions import decision_ws_manager
 from src.core.settings import get_settings, load_app_yaml_config
 from src.db.session import get_async_engine, init_db
+from src.observability.metrics import metrics_payload
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:  # noqa: ANN001
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
 
 
 @asynccontextmanager
@@ -34,6 +45,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(api_v1_router, prefix="/api/v1")
 
@@ -43,7 +55,7 @@ async def health() -> dict:
     app_config = load_app_yaml_config()
     return {
         "status": "ok",
-        "phase": "8-governance-foundation",
+        "phase": "8-production-mvp",
         "environment": settings.environment,
         "app": app_config.app.name,
         "default_symbol": app_config.default_symbols[0] if app_config.default_symbols else None,
@@ -51,6 +63,11 @@ async def health() -> dict:
         "symbols": list(app_config.default_symbols),
         "timeframes": list(app_config.timeframes),
     }
+
+
+@app.get("/metrics")
+async def metrics() -> Response:
+    return Response(content=metrics_payload(), media_type="text/plain; version=0.0.4")
 
 
 @app.websocket("/ws/decisions")

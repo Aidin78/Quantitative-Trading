@@ -66,4 +66,4 @@ async def test_health_phase_7(api_client) -> None:
     client = api_client
     resp = await client.get("/health")
     assert resp.status_code == 200
-    assert resp.json()["phase"] == "8-governance-foundation"
+    assert resp.json()["phase"] == "8-production-mvp"

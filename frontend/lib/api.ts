@@ -13,6 +13,27 @@ export function clearToken() {
   localStorage.removeItem("access_token");
 }
 
+export async function downloadExport(
+  path: string,
+  filename: string,
+): Promise<void> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}${path}`, { headers });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || res.statusText);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
@@ -116,6 +137,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ mode }),
     }),
+  analyticsOverview: (period = "30d") =>
+    apiFetch<AnalyticsOverview>(`/api/v1/analytics/overview?period=${period}`),
+  analyticsHeatmap: (period = "30d") =>
+    apiFetch<AnalyticsHeatmap>(`/api/v1/analytics/heatmap?period=${period}`),
+  walkForward: (body: WalkForwardRequest) =>
+    apiFetch<WalkForwardResult>("/api/v1/validation/walk-forward", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  exportDecisions: () =>
+    downloadExport("/api/v1/decisions/export?format=csv", "decisions.csv"),
+  exportValidation: (id: string) =>
+    downloadExport(
+      `/api/v1/validation/${id}/export?format=csv`,
+      `validation_${id}.csv`,
+    ),
 };
 
 export type DecisionFilters = {
@@ -237,6 +274,8 @@ export type ReplayResult = {
   timeline: TimelineEntry[];
   families_present?: string[];
   decision_diff?: DecisionDiff;
+  feature_drift?: FeatureDrift;
+  causal_graph?: CausalGraph;
 };
 
 export type ConfigRevision = {
@@ -270,10 +309,79 @@ export type ExperimentCreateRequest = {
 };
 
 export type TimelineEntry = {
+  event_id?: string;
   event_type: string;
   event_time: string;
   event_family?: string;
+  causation_id?: string | null;
   summary?: string;
+};
+
+export type FeatureDrift = {
+  detected?: boolean;
+  drifted_features?: string[];
+  config_hash_stored?: string;
+  config_hash_current?: string;
+  reason?: string;
+};
+
+export type CausalGraph = {
+  nodes: Array<{
+    id: string;
+    event_type: string;
+    event_family: string;
+    event_time: string;
+  }>;
+  edges: Array<{ from: string; to: string; relation: string }>;
+  roots: string[];
+};
+
+export type AnalyticsOverview = {
+  period: string;
+  total_decisions: number;
+  approval_rate: number;
+  rejection_trends: Array<{ date: string; approved: number; rejected: number }>;
+  rejection_breakdown: Record<string, number>;
+  provider_contribution: Array<{ provider_id: string; count: number }>;
+  by_symbol: Array<{
+    symbol: string;
+    total: number;
+    approved: number;
+    approval_rate: number;
+  }>;
+  outcome_summary: {
+    total_trades: number;
+    win_rate: number;
+    total_pnl: number;
+  };
+};
+
+export type AnalyticsHeatmap = {
+  period: string;
+  data: Array<{ hour: number; day: string; win_rate: number; trades: number }>;
+};
+
+export type WalkForwardRequest = {
+  symbol?: string;
+  timeframe?: string;
+  start_date?: string;
+  end_date?: string;
+  windows?: number;
+  train_ratio?: number;
+};
+
+export type WalkForwardResult = {
+  symbol: string;
+  timeframe: string;
+  windows: Array<{
+    window: number;
+    test_start: string;
+    test_end: string;
+    status: string;
+    engine_metrics?: Record<string, unknown>;
+    outcome_metrics?: Record<string, unknown>;
+    error?: string;
+  }>;
 };
 
 export type LiveJob = {

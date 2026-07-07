@@ -150,7 +150,7 @@ async def test_re_execute_produces_decision_diff(db_session: AsyncSession) -> No
         await persist_event(db_session, event)
     await db_session.commit()
 
-    _, diff = await re_execute_cycle(db_session, events)
+    _, diff, _drift = await re_execute_cycle(db_session, events)
     assert diff.correlation_id == correlation_id
     assert diff.original_result == "approved"
     assert diff.reexecuted_result in ("approved", "rejected")

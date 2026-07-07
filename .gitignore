@@ -11,5 +11,7 @@ build/
 node_modules/
 .next/
 pgdata/
+frontend/test-results/
+playwright-report/
 *.log
 *.tsbuildinfo

@@ -4,7 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   CheckCircle2,
+  Download,
   Layers,
+  Loader2,
   TrendingUp,
   XCircle,
 } from "lucide-react";
@@ -25,6 +27,7 @@ import {
 export default function DecisionMonitorPage() {
   const [selected, setSelected] = useState<DecisionSummary | null>(null);
   const [filters, setFilters] = useState<DecisionFilters>({ limit: 50 });
+  const [exporting, setExporting] = useState(false);
   useDecisionWebSocket();
 
   const { data: stats } = useQuery({
@@ -60,9 +63,31 @@ export default function DecisionMonitorPage() {
         title="Decision Monitor"
         description="Real-time view of engine decisions — approvals, rejections, and provider consensus."
         action={
-          <Badge variant="accent" dot>
-            Monitor
-          </Badge>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="btn-secondary text-xs"
+              disabled={exporting}
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  await api.exportDecisions();
+                } finally {
+                  setExporting(false);
+                }
+              }}
+            >
+              {exporting ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Download className="h-3 w-3" />
+              )}
+              Export CSV
+            </button>
+            <Badge variant="accent" dot>
+              Monitor
+            </Badge>
+          </div>
         }
       />
 

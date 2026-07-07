@@ -40,20 +40,28 @@ export default function LoginPage() {
 
         <form onSubmit={onSubmit} className="glass-card space-y-4 p-6">
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-muted">
+            <label
+              htmlFor="username"
+              className="text-xs font-medium uppercase tracking-wider text-muted"
+            >
               Username
             </label>
             <input
+              id="username"
               className="input-field mt-2"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
           </div>
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-muted">
+            <label
+              htmlFor="password"
+              className="text-xs font-medium uppercase tracking-wider text-muted"
+            >
               Password
             </label>
             <input
+              id="password"
               type="password"
               className="input-field mt-2"
               value={password}

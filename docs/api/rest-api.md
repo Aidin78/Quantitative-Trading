@@ -127,6 +127,10 @@ Decision موجودیت اصلی API است. هر cycle یک Decision تولید
 
 `provider_signals` شامل `rationale` structured است — [explainability.md](../architecture/explainability.md).
 
+### GET `/decisions/export`
+
+Query: `format=csv`, `limit=1000` — دانلود CSV از decision records.
+
 ### GET `/engine/stats`
 
 آمار Decision Monitor.
@@ -270,6 +274,27 @@ Provider config نباید period اندیکاتور را تغییر دهد؛ آ
 
 حذف نتایج validation.
 
+### POST `/validation/walk-forward`
+
+اجرای validation در چند پنجره rolling.
+
+```json
+{
+  "symbol": "BTC/USDT",
+  "timeframe": "1h",
+  "start_date": "2026-01-01",
+  "end_date": "2026-06-01",
+  "windows": 3,
+  "train_ratio": 0.7
+}
+```
+
+پاسخ: لیست windowها با `engine_metrics` و `outcome_metrics` برای هر بازه test.
+
+### GET `/validation/{id}/export`
+
+Query: `format=csv` — دانلود metrics و config به‌صورت CSV.
+
 ---
 
 ## Live
@@ -330,42 +355,43 @@ Provider config نباید period اندیکاتور را تغییر دهد؛ آ
 
 Forensic replay از `event_log` — [replay-engine.md](../architecture/replay-engine.md).
 
+### GET `/replay/cycle/{correlation_id}/timeline`
+
+Query: `mode=strict|re_execute`, `revision_id` (اختیاری برای re-execute)
+
+```json
+{
+  "correlation_id": "cycle_btc_1h_xxx",
+  "mode": "re_execute",
+  "timeline": [
+    {
+      "event_id": "evt_001",
+      "event_type": "FeatureSetBuilt",
+      "event_time": "2026-07-06T10:00:00Z",
+      "causation_id": "evt_000"
+    }
+  ],
+  "causal_graph": {
+    "nodes": [{ "id": "evt_001", "event_type": "FeatureSetBuilt" }],
+    "edges": [{ "from": "evt_000", "to": "evt_001", "relation": "caused_by" }],
+    "roots": ["evt_000"]
+  },
+  "decision_diff": { "changed": false },
+  "feature_drift": {
+    "detected": false,
+    "drift_count": 0,
+    "drifted_features": []
+  }
+}
+```
+
+### GET `/replay/cycle/{correlation_id}/graph`
+
+گراف causation (nodes + edges) برای یک cycle.
+
 ### POST `/replay/cycle/{correlation_id}`
 
-```json
-// Request
-{ "mode": "strict" }  // strict | re_execute
-
-// Response 202
-{
-  "job_id": "replay_abc",
-  "correlation_id": "cycle_btc_1h_xxx",
-  "status": "running"
-}
-```
-
-### GET `/replay/{job_id}/timeline`
-
-```json
-{
-  "job_id": "replay_abc",
-  "status": "completed",
-  "events": [
-    { "event_type": "FeatureSetBuilt", "event_time": "...", "processing_time": "..." },
-    { "event_type": "ProviderOpinion", "payload": { "provider_id": "ema_crossover" } },
-    { "event_type": "DecisionApproved", "payload": { "decision_id": "dec_abc" } },
-    { "event_type": "FillReceived", "payload": { "fill_id": "fill_001" } }
-  ]
-}
-```
-
-### GET `/replay/{job_id}/causal/{decision_id}`
-
-گراف علت برای یک تصمیم.
-
-### GET `/replay/{job_id}/diff`
-
-فقط `mode=re_execute` — `DecisionDiff` نسبت به recorded.
+همان پارامترهای timeline — alias برای اجرای replay.
 
 ---
 
@@ -472,27 +498,38 @@ bundle کامل yamlها + hashها.
 
 ### GET `/analytics/overview`
 
-```json
-// Query: period=30d
+Query: `period=7d|30d|90d`
 
+```json
 {
   "period": "30d",
-  "total_signals": 45,
-  "win_rate": 0.624,
-  "profit_pct": 4.2,
-  "max_drawdown_pct": -8.1,
-  "sharpe_ratio": 1.2,
-  "by_symbol": [...],
-  "by_strategy": [...]
+  "total_decisions": 120,
+  "approval_rate": 0.22,
+  "rejection_trends": [
+    { "date": "2026-06-01", "approved": 3, "rejected": 8 }
+  ],
+  "rejection_breakdown": { "risk": 12, "low_volatility": 5 },
+  "provider_contribution": [
+    { "provider_id": "ema_crossover", "count": 18 }
+  ],
+  "by_symbol": [
+    { "symbol": "BTC/USDT", "total": 120, "approved": 26, "approval_rate": 0.22 }
+  ],
+  "outcome_summary": {
+    "total_trades": 45,
+    "win_rate": 0.58,
+    "total_pnl": 1250.5
+  }
 }
 ```
 
 ### GET `/analytics/heatmap`
 
-```json
-// Query: period=90d&type=hourly
+Query: `period=30d` — نرخ approval بر اساس ساعت UTC و روز هفته.
 
+```json
 {
+  "period": "30d",
   "data": [
     { "hour": 9, "day": "Monday", "win_rate": 0.65, "trades": 12 }
   ]
@@ -519,6 +556,28 @@ bundle کامل yamlها + hashها.
 ### GET `/risk/status`
 
 وضعیت فعلی نسبت به محدودیت‌ها.
+
+---
+
+## Observability
+
+### GET `/health` (بدون prefix `/api/v1`)
+
+```json
+{
+  "status": "ok",
+  "phase": "8-production-mvp",
+  "environment": "development",
+  "default_symbol": "BTC/USDT",
+  "default_timeframe": "1h"
+}
+```
+
+### GET `/metrics` (بدون auth)
+
+Prometheus text format — counters: `qtp_decisions_total`, `qtp_validation_runs_total`, `qtp_live_cycles_total`.
+
+برای Grafana: `docker compose --profile observability up -d` → Grafana روی پورت `3001`.
 
 ---
 

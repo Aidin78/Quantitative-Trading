@@ -12,6 +12,7 @@ from src.events.envelopes import (
     ExecutionEventType,
     MarketEventType,
 )
+from src.replay.graph import build_causal_graph
 from src.replay.reexecutor import ReExecuteError, re_execute_cycle
 from src.replay.timeline import build_timeline
 
@@ -24,6 +25,8 @@ class ReplayResult:
     families_present: set[EventFamily]
     mode: Literal["strict", "re_execute"] = "strict"
     decision_diff: dict | None = None
+    feature_drift: dict | None = None
+    causal_graph: dict | None = None
 
 
 class ReplayEngine:
@@ -41,6 +44,8 @@ class ReplayEngine:
         *,
         mode: Literal["strict", "re_execute"] = "strict",
         decision_diff: dict | None = None,
+        feature_drift: dict | None = None,
+        causal_graph: dict | None = None,
     ) -> ReplayResult:
         cycle_events = sorted(
             [e for e in self._events if e.correlation_id == correlation_id],
@@ -48,6 +53,7 @@ class ReplayEngine:
         )
         timeline = build_timeline(cycle_events)
         families = {e.event_family for e in cycle_events}
+        graph = causal_graph or build_causal_graph(cycle_events)
         return ReplayResult(
             correlation_id=correlation_id,
             events=tuple(cycle_events),
@@ -55,6 +61,8 @@ class ReplayEngine:
             families_present=families,
             mode=mode,
             decision_diff=decision_diff,
+            feature_drift=feature_drift,
+            causal_graph=graph,
         )
 
     async def replay_cycle_async(
@@ -72,13 +80,22 @@ class ReplayEngine:
         if not cycle_events:
             return self.replay_cycle(correlation_id, mode=mode)
         diff_dict: dict | None = None
+        drift_dict: dict | None = None
         if mode == "re_execute":
             try:
-                _, diff = await re_execute_cycle(session, cycle_events, revision_id=revision_id)
+                _, diff, drift = await re_execute_cycle(
+                    session, cycle_events, revision_id=revision_id
+                )
                 diff_dict = diff.to_dict()
+                drift_dict = drift
             except ReExecuteError:
                 raise
-        return self.replay_cycle(correlation_id, mode=mode, decision_diff=diff_dict)
+        return self.replay_cycle(
+            correlation_id,
+            mode=mode,
+            decision_diff=diff_dict,
+            feature_drift=drift_dict,
+        )
 
     def has_full_chain(self, correlation_id: str) -> bool:
         result = self.replay_cycle(correlation_id)

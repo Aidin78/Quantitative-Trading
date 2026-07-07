@@ -350,15 +350,15 @@ Engine = unchanged since Phase 1
 - [x] `LiveGovernanceGate` — live فقط با validation موفق revision
 - [x] Replay re-execute + `DecisionDiff` — [replay-engine.md](../architecture/replay-engine.md)
 - [x] `governance/` — Experiment API + A/B comparison — [governance.md](../architecture/governance.md)
-- [ ] Feature drift detection در replay
-- [ ] Causal graph UI
-- [ ] Analytics — rejection trends, provider contribution over time
-- [ ] Walk-forward validation UI
-- [ ] Engine A/B testing (دو config موازی)
-- [ ] Export PDF/CSV
-- [ ] Prometheus + Grafana
-- [ ] E2E tests (Playwright)
-- [ ] Production hardening
+- [x] Feature drift detection در replay
+- [x] Causal graph UI
+- [x] Analytics — rejection trends, provider contribution over time
+- [x] Walk-forward validation UI
+- [ ] Engine A/B testing (دو config موازی) — خارج از MVP
+- [x] Export CSV
+- [x] Prometheus + Grafana (`/metrics` + profile `observability`)
+- [x] E2E tests (Playwright)
+- [x] Production hardening
 
 ---
 

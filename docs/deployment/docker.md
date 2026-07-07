@@ -71,6 +71,19 @@ volumes:
   pgdata:
 ```
 
+### Observability (Phase 8)
+
+```bash
+docker compose --profile observability up -d
+```
+
+| سرویس | پورت | توضیح |
+|--------|------|--------|
+| Prometheus | 9090 | scrape از `backend:8000/metrics` |
+| Grafana | 3001 | داشبورد پیش‌فرض `QTP Overview` (admin/admin) |
+
+متغیرهای اختیاری: `GRAFANA_USER`, `GRAFANA_PASSWORD`.
+
 ### Dockerfile — Backend
 
 ```dockerfile

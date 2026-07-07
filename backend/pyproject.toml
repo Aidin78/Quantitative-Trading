@@ -25,6 +25,7 @@ httpx = "^0.28.0"
 ccxt = "^4.5.64"
 apscheduler = "^3.11.3"
 python-telegram-bot = {version = ">=21.7", extras = ["socks"]}
+prometheus-client = "^0.21.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"

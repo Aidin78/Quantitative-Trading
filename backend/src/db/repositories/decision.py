@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.contracts.event import EventEnvelope, EventFamily
 from src.db.models import DecisionRecordRow, EventLogRow, FeatureSetRow
 from src.events.envelopes import DecisionEventType, MarketEventType, SignalEventType
+from src.observability.metrics import DECISIONS_TOTAL
 
 
 async def persist_decision_from_event(session: AsyncSession, event: EventEnvelope) -> None:
@@ -26,6 +27,7 @@ async def persist_decision_from_event(session: AsyncSession, event: EventEnvelop
             created_at=event.event_time,
         )
     )
+    DECISIONS_TOTAL.labels(result=payload["result"]).inc()
 
 
 async def persist_feature_set_from_event(session: AsyncSession, event: EventEnvelope) -> None:

@@ -18,8 +18,10 @@ from src.engine.config import (
 )
 from src.engine.decision_engine import DecisionEngine
 from src.events.envelopes import DecisionEventType, MarketEventType, SignalEventType
-from src.governance.revision_store import get_revision
+from src.features.drift import compare_features
+from src.governance.revision_store import compute_config_revision, get_revision
 from src.replay.diff import DecisionDiff, build_decision_diff
+from src.replay.feature_rebuild import rebuild_indicators
 
 
 class ReExecuteError(ValueError):
@@ -103,7 +105,7 @@ async def re_execute_cycle(
     events: list[EventEnvelope],
     *,
     revision_id: str | None = None,
-) -> tuple[Decision, DecisionDiff]:
+) -> tuple[Decision, DecisionDiff, dict | None]:
     if not events:
         raise ReExecuteError("No events for cycle")
     correlation_id = events[0].correlation_id
@@ -143,4 +145,39 @@ async def re_execute_cycle(
         experiment_id=made.experiment_id,
     )
     diff = build_decision_diff(correlation_id, original, reexecuted, revision_id=revision_id)
-    return reexecuted, diff
+    feature_drift = _detect_feature_drift(feature_event)
+    return reexecuted, diff, feature_drift
+
+
+def _detect_feature_drift(
+    feature_event: EventEnvelope,
+) -> dict:
+    stored_indicators = feature_event.payload.get("indicators") or {}
+    stored_hash = feature_event.payload.get("config_hash", "")
+    current = compute_config_revision()
+
+    rebuilt = rebuild_indicators(feature_event)
+    if rebuilt is not None:
+        drift = compare_features(stored_indicators, rebuilt)
+    else:
+        drift = {
+            "detected": False,
+            "drift_count": 0,
+            "drifts": [],
+            "rebuild_skipped": True,
+            "reason": "ohlcv_unavailable",
+        }
+
+    drift["drifted_features"] = [
+        str(item["key"]) for item in drift.get("drifts", []) if item.get("key") is not None
+    ]
+
+    if stored_hash and stored_hash != current.features_config_hash:
+        return {
+            **drift,
+            "detected": True,
+            "config_hash_stored": stored_hash,
+            "config_hash_current": current.features_config_hash,
+            "reason": drift.get("reason") or "config_hash_mismatch",
+        }
+    return drift
