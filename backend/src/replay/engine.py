@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,7 @@ from src.events.envelopes import (
     ExecutionEventType,
     MarketEventType,
 )
+from src.replay.reexecutor import ReExecuteError, re_execute_cycle
 from src.replay.timeline import build_timeline
 
 
@@ -20,6 +22,8 @@ class ReplayResult:
     events: tuple[EventEnvelope, ...]
     timeline: list[dict]
     families_present: set[EventFamily]
+    mode: Literal["strict", "re_execute"] = "strict"
+    decision_diff: dict | None = None
 
 
 class ReplayEngine:
@@ -31,7 +35,13 @@ class ReplayEngine:
         events = await fetch_events_by_correlation(session, correlation_id)
         return cls(events)
 
-    def replay_cycle(self, correlation_id: str) -> ReplayResult:
+    def replay_cycle(
+        self,
+        correlation_id: str,
+        *,
+        mode: Literal["strict", "re_execute"] = "strict",
+        decision_diff: dict | None = None,
+    ) -> ReplayResult:
         cycle_events = sorted(
             [e for e in self._events if e.correlation_id == correlation_id],
             key=lambda e: (e.event_time, e.processing_time),
@@ -43,7 +53,32 @@ class ReplayEngine:
             events=tuple(cycle_events),
             timeline=timeline,
             families_present=families,
+            mode=mode,
+            decision_diff=decision_diff,
         )
+
+    async def replay_cycle_async(
+        self,
+        session: AsyncSession,
+        correlation_id: str,
+        *,
+        mode: Literal["strict", "re_execute"] = "strict",
+        revision_id: str | None = None,
+    ) -> ReplayResult:
+        cycle_events = sorted(
+            [e for e in self._events if e.correlation_id == correlation_id],
+            key=lambda e: (e.event_time, e.processing_time),
+        )
+        if not cycle_events:
+            return self.replay_cycle(correlation_id, mode=mode)
+        diff_dict: dict | None = None
+        if mode == "re_execute":
+            try:
+                _, diff = await re_execute_cycle(session, cycle_events, revision_id=revision_id)
+                diff_dict = diff.to_dict()
+            except ReExecuteError:
+                raise
+        return self.replay_cycle(correlation_id, mode=mode, decision_diff=diff_dict)
 
     def has_full_chain(self, correlation_id: str) -> bool:
         result = self.replay_cycle(correlation_id)

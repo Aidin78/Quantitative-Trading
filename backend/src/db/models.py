@@ -24,6 +24,9 @@ class EventLogRow(Base):
     symbol: Mapped[str] = mapped_column(String(32))
     timeframe: Mapped[str] = mapped_column(String(16))
     mode: Mapped[str] = mapped_column(String(16))
+    revision_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    experiment_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    causation_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     payload: Mapped[dict] = mapped_column(JsonType)
 
 
@@ -35,6 +38,8 @@ class DecisionRecordRow(Base):
     result: Mapped[str] = mapped_column(String(16))
     state_snapshot_id: Mapped[str] = mapped_column(String(64))
     decision_log: Mapped[dict] = mapped_column(JsonType)
+    revision_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    experiment_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
@@ -109,3 +114,48 @@ class FillRow(Base):
     fill_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     fill_model_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ConfigRevisionRow(Base):
+    __tablename__ = "config_revisions"
+
+    revision_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    engine_config_hash: Mapped[str] = mapped_column(String(64))
+    features_config_hash: Mapped[str] = mapped_column(String(64))
+    providers_config_hash: Mapped[str] = mapped_column(String(64))
+    fill_model_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    risk_limits_hash: Mapped[str] = mapped_column(String(64))
+    label: Mapped[str] = mapped_column(String(128))
+    parent_revision_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    config_bundle: Mapped[dict] = mapped_column(JsonType)
+
+
+class ExperimentRow(Base):
+    __tablename__ = "experiments"
+
+    experiment_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(128))
+    description: Mapped[str] = mapped_column(String(512), default="")
+    revision_id: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(String(32))
+    mode: Mapped[str] = mapped_column(String(32))
+    symbols: Mapped[list] = mapped_column(JsonType)
+    timeframes: Mapped[list] = mapped_column(JsonType)
+    date_range: Mapped[dict | None] = mapped_column(JsonType, nullable=True)
+    created_by: Mapped[str] = mapped_column(String(64), default="system")
+    tags: Mapped[list] = mapped_column(JsonType)
+    hypothesis: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ExperimentRunRow(Base):
+    __tablename__ = "experiment_runs"
+
+    run_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    experiment_id: Mapped[str] = mapped_column(String(64), index=True)
+    revision_id: Mapped[str] = mapped_column(String(64), index=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(32))
+    metrics_summary: Mapped[dict | None] = mapped_column(JsonType, nullable=True)

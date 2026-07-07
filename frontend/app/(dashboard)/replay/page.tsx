@@ -13,10 +13,16 @@ function ReplayContent() {
   const [correlationId, setCorrelationId] = useState(
     params.get("correlation_id") ?? "",
   );
+  const [mode, setMode] = useState<"strict" | "re_execute">("strict");
+  const [revisionId, setRevisionId] = useState("");
 
   const { data, refetch, isFetching, isSuccess } = useQuery({
-    queryKey: ["replay", correlationId],
-    queryFn: () => api.replay(correlationId),
+    queryKey: ["replay", correlationId, mode, revisionId],
+    queryFn: () =>
+      api.replay(correlationId, {
+        mode,
+        revision_id: revisionId || undefined,
+      }),
     enabled: false,
   });
 
@@ -24,40 +30,116 @@ function ReplayContent() {
     <div className="page-container">
       <PageHeader
         title="Forensic Replay"
-        description="Inspect the full event chain for any decision cycle by correlation ID."
+        description="Inspect event chains or re-execute decisions with a different engine revision."
       />
 
       <Card
         title="Cycle Search"
         subtitle="Enter a correlation_id from a decision"
       >
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <input
-            className="input-field flex-1 font-mono text-sm"
-            value={correlationId}
-            onChange={(e) => setCorrelationId(e.target.value)}
-            placeholder="cycle_btc_1h_..."
-          />
-          <button
-            type="button"
-            onClick={() => refetch()}
-            disabled={!correlationId || isFetching}
-            className="btn-primary shrink-0"
-          >
-            {isFetching ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Search className="h-4 w-4" />
-            )}
-            Load Timeline
-          </button>
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              className="input-field flex-1 font-mono text-sm"
+              value={correlationId}
+              onChange={(e) => setCorrelationId(e.target.value)}
+              placeholder="cycle_btc_1h_..."
+            />
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={!correlationId || isFetching}
+              className="btn-primary shrink-0"
+            >
+              {isFetching ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+              Load Timeline
+            </button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-muted">
+                Mode
+              </label>
+              <select
+                className="input-field mt-2"
+                value={mode}
+                onChange={(e) =>
+                  setMode(e.target.value as "strict" | "re_execute")
+                }
+              >
+                <option value="strict">Strict replay</option>
+                <option value="re_execute">Re-execute</option>
+              </select>
+            </div>
+            {mode === "re_execute" ? (
+              <div>
+                <label className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Revision ID (optional)
+                </label>
+                <input
+                  className="input-field mt-2 font-mono text-sm"
+                  value={revisionId}
+                  onChange={(e) => setRevisionId(e.target.value)}
+                  placeholder="rev_..."
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
       </Card>
+
+      {isSuccess && data?.decision_diff ? (
+        <Card title="Decision Diff" subtitle="Original vs re-executed">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg border border-[var(--border)] p-4">
+              <p className="text-xs font-semibold uppercase text-muted">
+                Original
+              </p>
+              <p className="mt-2 text-sm">
+                {data.decision_diff.original.result}
+                {data.decision_diff.original.side
+                  ? ` · ${data.decision_diff.original.side}`
+                  : ""}
+              </p>
+              {data.decision_diff.original.rejection_reason ? (
+                <p className="mt-1 text-xs text-danger">
+                  {data.decision_diff.original.rejection_reason}
+                </p>
+              ) : null}
+            </div>
+            <div className="rounded-lg border border-[var(--border)] p-4">
+              <p className="text-xs font-semibold uppercase text-muted">
+                Re-executed
+              </p>
+              <p className="mt-2 text-sm">
+                {data.decision_diff.reexecuted.result}
+                {data.decision_diff.reexecuted.side
+                  ? ` · ${data.decision_diff.reexecuted.side}`
+                  : ""}
+              </p>
+              {data.decision_diff.reexecuted.rejection_reason ? (
+                <p className="mt-1 text-xs text-danger">
+                  {data.decision_diff.reexecuted.rejection_reason}
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <div className="mt-4">
+            <Badge variant={data.decision_diff.changed ? "warning" : "success"}>
+              {data.decision_diff.changed ? "Decision changed" : "No change"}
+            </Badge>
+          </div>
+        </Card>
+      ) : null}
 
       {isSuccess && data?.timeline && (
         <Card
           title="Event Timeline"
-          subtitle={`${data.timeline.length} events`}
+          subtitle={`${data.timeline.length} events · ${data.mode}`}
           className="animate-fade-in"
         >
           {data.timeline.length === 0 ? (

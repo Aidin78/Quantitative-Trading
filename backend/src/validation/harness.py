@@ -28,6 +28,9 @@ class ValidationResult:
     events: list[EventEnvelope] = field(default_factory=list)
     engine_metrics: dict = field(default_factory=dict)
     outcome_metrics: dict = field(default_factory=dict)
+    revision_id: str | None = None
+    experiment_id: str | None = None
+    experiment_run_id: str | None = None
 
 
 class ValidationHarness:
@@ -39,12 +42,16 @@ class ValidationHarness:
         event_log: EventLogHandler,
         *,
         config: ValidationConfig,
+        revision_id: str | None = None,
+        experiment_id: str | None = None,
     ) -> None:
         self._runtime = runtime
         self._data_provider = data_provider
         self._clock = clock
         self._event_log = event_log
         self._config = config
+        self._revision_id = revision_id
+        self._experiment_id = experiment_id
 
     async def run(self) -> ValidationResult:
         import uuid
@@ -76,6 +83,8 @@ class ValidationHarness:
                 self._config.symbol,
                 self._config.timeframe,
                 correlation_id=f"val_{i}_{bar_time.isoformat()}",
+                revision_id=self._revision_id,
+                experiment_id=self._experiment_id,
             )
             cycles.append(result)
 
@@ -87,4 +96,6 @@ class ValidationHarness:
             events=events,
             engine_metrics=compute_engine_metrics(cycles, events),
             outcome_metrics=compute_outcome_metrics(events),
+            revision_id=self._revision_id,
+            experiment_id=self._experiment_id,
         )

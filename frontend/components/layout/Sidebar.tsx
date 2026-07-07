@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   Cpu,
+  FlaskConical,
   GitBranch,
   Layers,
   LineChart,
@@ -19,6 +20,7 @@ const links = [
   { href: "/replay", label: "Replay", icon: GitBranch },
   { href: "/signals", label: "Signals", icon: LineChart },
   { href: "/validation", label: "Validation", icon: PlayCircle },
+  { href: "/experiments", label: "Experiments", icon: FlaskConical },
   { href: "/providers", label: "Providers", icon: Layers },
 ];
 

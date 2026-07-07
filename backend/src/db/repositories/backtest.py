@@ -29,13 +29,24 @@ async def persist_event(session: AsyncSession, event: EventEnvelope) -> None:
         symbol=event.symbol,
         timeframe=event.timeframe,
         mode=event.mode,
+        revision_id=event.revision_id,
+        experiment_id=event.experiment_id,
+        causation_id=event.causation_id,
         payload=event.payload,
     )
     session.add(row)
 
 
-async def persist_validation_result(session: AsyncSession, result: ValidationResult) -> None:
+async def persist_validation_result(
+    session: AsyncSession,
+    result: ValidationResult,
+    *,
+    revision_id: str | None = None,
+    experiment_id: str | None = None,
+) -> None:
     now = datetime.now(UTC)
+    rev = revision_id or result.revision_id
+    exp = experiment_id or result.experiment_id
     session.add(
         BacktestRunRow(
             run_id=result.run_id,
@@ -44,6 +55,8 @@ async def persist_validation_result(session: AsyncSession, result: ValidationRes
             config={
                 "start": result.config.start.isoformat(),
                 "end": result.config.end.isoformat(),
+                "revision_id": rev,
+                "experiment_id": exp,
             },
             metrics={
                 "engine": result.engine_metrics,
@@ -95,6 +108,8 @@ async def persist_validation_result(session: AsyncSession, result: ValidationRes
                     result=event.payload["result"],
                     state_snapshot_id=event.payload["state_snapshot_id"],
                     decision_log=event.payload["decision_log"],
+                    revision_id=event.revision_id or rev,
+                    experiment_id=event.experiment_id or exp,
                     created_at=event.event_time,
                 )
             )

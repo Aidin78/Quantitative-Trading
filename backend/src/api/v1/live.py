@@ -21,6 +21,7 @@ class LiveStartRequest(BaseModel):
     symbol: str | None = None
     timeframe: str | None = None
     revision_id: str | None = None
+    experiment_id: str | None = None
 
 
 class LiveModeRequest(BaseModel):
@@ -33,12 +34,18 @@ async def live_status() -> dict:
 
 
 @router.post("/start")
-async def live_start(body: LiveStartRequest) -> dict:
+async def live_start(
+    body: LiveStartRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
     gate = LiveGovernanceGate()
-    if not gate.allow_start(body.revision_id):
+    if not await gate.allow_start(db, body.revision_id):
         raise HTTPException(
             status_code=403,
-            detail="revision_id required to start live in production",
+            detail=(
+                "Live start blocked: revision_id required "
+                "with successful validation in production"
+            ),
         )
     jobs: list[tuple[str, str]] | None = None
     if body.symbol and body.timeframe:
@@ -48,9 +55,8 @@ async def live_start(body: LiveStartRequest) -> dict:
             mode=body.mode,
             jobs=jobs,
             revision_id=body.revision_id,
+            experiment_id=body.experiment_id,
         )
-    except ValueError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -95,6 +101,8 @@ async def live_decision_log(
             else "rejected",
             "mode": row.mode,
             "correlation_id": row.correlation_id,
+            "revision_id": row.revision_id,
+            "experiment_id": row.experiment_id,
             "payload": row.payload,
         }
         for row in rows

@@ -21,6 +21,8 @@ class ValidationRunRequest(BaseModel):
     start_date: str | None = None
     end_date: str | None = None
     csv_path: str | None = None
+    experiment_id: str | None = None
+    revision_id: str | None = None
 
 
 async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
@@ -37,6 +39,8 @@ async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
             end_date=body.end_date,
             csv_path=body.csv_path,
             persist_db=True,
+            experiment_id=body.experiment_id,
+            revision_id=body.revision_id,
         )
         job.result = result
         job.status = "completed"
@@ -69,6 +73,8 @@ async def get_validation(job_id: str, db: AsyncSession = Depends(get_db)) -> dic
                 "engine_metrics": job.result.engine_metrics,
                 "outcome_metrics": job.result.outcome_metrics,
                 "run_id": job.result.run_id,
+                "revision_id": job.result.revision_id,
+                "experiment_id": job.result.experiment_id,
             }
 
     row = await db.get(BacktestRunRow, job_id)

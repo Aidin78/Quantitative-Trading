@@ -41,7 +41,7 @@ async def test_health_public(api_client) -> None:
     resp = await client.get("/health")
     assert resp.status_code == 200
     body = resp.json()
-    assert body["phase"] == "7-live-adapters"
+    assert body["phase"] == "8-governance-foundation"
     assert body["default_symbol"] == "BTC/USDT"
     assert body["default_timeframe"] == "1h"
 

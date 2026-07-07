@@ -78,10 +78,32 @@ export const api = {
     }),
   validation: (id: string) =>
     apiFetch<ValidationJob>(`/api/v1/validation/${id}`),
-  replay: (correlationId: string) =>
-    apiFetch<{ timeline: TimelineEntry[] }>(
-      `/api/v1/replay/cycle/${correlationId}/timeline`,
+  replay: (
+    correlationId: string,
+    opts?: { mode?: "strict" | "re_execute"; revision_id?: string },
+  ) => {
+    const params = new URLSearchParams();
+    if (opts?.mode) params.set("mode", opts.mode);
+    if (opts?.revision_id) params.set("revision_id", opts.revision_id);
+    const qs = params.toString();
+    return apiFetch<ReplayResult>(
+      `/api/v1/replay/cycle/${encodeURIComponent(correlationId)}/timeline${qs ? `?${qs}` : ""}`,
+    );
+  },
+  configRevisions: () =>
+    apiFetch<{ items: ConfigRevision[]; total: number }>(
+      "/api/v1/config/revisions",
     ),
+  configRevision: (id: string) =>
+    apiFetch<ConfigRevision>(`/api/v1/config/revisions/${id}`),
+  experiments: () =>
+    apiFetch<{ items: Experiment[]; total: number }>("/api/v1/experiments"),
+  experiment: (id: string) => apiFetch<Experiment>(`/api/v1/experiments/${id}`),
+  createExperiment: (body: ExperimentCreateRequest) =>
+    apiFetch<Experiment>("/api/v1/experiments", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   liveStatus: () => apiFetch<LiveStatus>("/api/v1/live/status"),
   startLive: (body: LiveStartRequest) =>
     apiFetch<LiveStatus>("/api/v1/live/start", {
@@ -127,6 +149,8 @@ export type DecisionSummary = {
   provider_ids: string[];
   timestamp: string;
   correlation_id: string;
+  revision_id?: string | null;
+  experiment_id?: string | null;
 };
 
 export type DecisionDetail = DecisionSummary & {
@@ -175,6 +199,8 @@ export type ValidationRequest = {
   timeframe?: string;
   start_date?: string;
   end_date?: string;
+  experiment_id?: string;
+  revision_id?: string;
 };
 
 export type ValidationJob = {
@@ -183,6 +209,64 @@ export type ValidationJob = {
   engine_metrics?: Record<string, unknown>;
   outcome_metrics?: Record<string, unknown>;
   error?: string;
+  revision_id?: string;
+  experiment_id?: string;
+};
+
+export type DecisionDiff = {
+  correlation_id: string;
+  original: {
+    result: string;
+    side?: string | null;
+    rejection_reason?: string | null;
+    confidence?: number | null;
+  };
+  reexecuted: {
+    result: string;
+    side?: string | null;
+    rejection_reason?: string | null;
+    confidence?: number | null;
+  };
+  changed: boolean;
+  revision_id?: string | null;
+};
+
+export type ReplayResult = {
+  correlation_id: string;
+  mode: "strict" | "re_execute";
+  timeline: TimelineEntry[];
+  families_present?: string[];
+  decision_diff?: DecisionDiff;
+};
+
+export type ConfigRevision = {
+  revision_id: string;
+  created_at: string;
+  engine_config_hash: string;
+  features_config_hash: string;
+  providers_config_hash: string;
+  label: string;
+  parent_revision_id?: string | null;
+};
+
+export type Experiment = {
+  experiment_id: string;
+  name: string;
+  description: string;
+  revision_id: string;
+  status: string;
+  mode: string;
+  symbols: string[];
+  timeframes: string[];
+  hypothesis?: string | null;
+};
+
+export type ExperimentCreateRequest = {
+  name: string;
+  revision_id?: string;
+  mode?: string;
+  description?: string;
+  hypothesis?: string;
 };
 
 export type TimelineEntry = {
@@ -207,6 +291,7 @@ export type LiveStatus = {
   last_signal_at?: string | null;
   last_error?: string | null;
   revision_id?: string | null;
+  experiment_id?: string | null;
   jobs: LiveJob[];
 };
 
@@ -215,4 +300,5 @@ export type LiveStartRequest = {
   symbol?: string;
   timeframe?: string;
   revision_id?: string;
+  experiment_id?: string;
 };

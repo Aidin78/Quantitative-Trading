@@ -346,10 +346,10 @@ Engine = unchanged since Phase 1
 
 ## Phase 8: Polish + Production Hardening (اختیاری)
 
-- [ ] Replay re-execute + `DecisionDiff` — [replay-engine.md](../architecture/replay-engine.md)
-- [ ] `governance/` — Experiment API + A/B comparison — [governance.md](../architecture/governance.md)
-- [ ] `revision_id` / `experiment_id` در تمام `event_log`
-- [ ] `LiveGovernanceGate` — live فقط با validation موفق revision
+- [x] `revision_id` / `experiment_id` در تمام `event_log`
+- [x] `LiveGovernanceGate` — live فقط با validation موفق revision
+- [x] Replay re-execute + `DecisionDiff` — [replay-engine.md](../architecture/replay-engine.md)
+- [x] `governance/` — Experiment API + A/B comparison — [governance.md](../architecture/governance.md)
 - [ ] Feature drift detection در replay
 - [ ] Causal graph UI
 - [ ] Analytics — rejection trends, provider contribution over time
@@ -396,7 +396,7 @@ Engine = unchanged since Phase 1
 - [x] FeatureStore — `feature_version` + `config_hash`
 - [x] Strict replay per `correlation_id` (MVP)
 - [x] Explainability در API (`ProviderRationale`, `RiskVerdict`)
-- [ ] Governance — `revision_id` در decisions و events
+- [x] Governance — `revision_id` در decisions و events
 
 ### Feature Builder
 - [x] OHLCV → FeatureSet یکسان در Validation و Live (همان `DefaultFeatureBuilder` در Runtime)

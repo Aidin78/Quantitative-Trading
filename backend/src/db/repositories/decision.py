@@ -21,6 +21,8 @@ async def persist_decision_from_event(session: AsyncSession, event: EventEnvelop
             result=payload["result"],
             state_snapshot_id=payload["state_snapshot_id"],
             decision_log=payload["decision_log"],
+            revision_id=event.revision_id,
+            experiment_id=event.experiment_id,
             created_at=event.event_time,
         )
     )
@@ -289,6 +291,8 @@ def _row_to_summary(
         "feature_set_version": "v1",
         "timestamp": row.created_at.isoformat(),
         "correlation_id": row.correlation_id,
+        "revision_id": row.revision_id,
+        "experiment_id": row.experiment_id,
     }
 
 

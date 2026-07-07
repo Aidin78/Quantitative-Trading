@@ -38,5 +38,8 @@ def _row_to_envelope(row: EventLogRow) -> EventEnvelope:
         symbol=row.symbol,
         timeframe=row.timeframe,
         mode=row.mode,  # type: ignore[arg-type]
+        revision_id=row.revision_id,
+        experiment_id=row.experiment_id,
+        causation_id=row.causation_id,
         payload=row.payload,
     )

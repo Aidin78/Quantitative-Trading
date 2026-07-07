@@ -13,7 +13,6 @@ from src.api.services.live_runner import (
     check_connectivity,
     default_live_jobs,
 )
-from src.governance.live_gate import LiveGovernanceGate
 from src.runtime.scheduler import cron_for_timeframe
 
 
@@ -48,6 +47,7 @@ class LiveRuntimeState:
     exchange_connected: bool = False
     alerts_connected: bool = False
     revision_id: str | None = None
+    experiment_id: str | None = None
     jobs: list[LiveJobInfo] = field(default_factory=list)
 
 
@@ -59,7 +59,6 @@ class LiveRuntimeManager:
         self._scheduler: AsyncIOScheduler | None = None
         self._stack: LiveStack | None = None
         self._lock = asyncio.Lock()
-        self._gate = LiveGovernanceGate()
 
     @property
     def state(self) -> LiveRuntimeState:
@@ -77,6 +76,7 @@ class LiveRuntimeManager:
             else None,
             "last_error": self._state.last_error,
             "revision_id": self._state.revision_id,
+            "experiment_id": self._state.experiment_id,
             "jobs": [
                 {"symbol": j.symbol, "timeframe": j.timeframe, "next_run_at": j.next_run_at}
                 for j in self._state.jobs
@@ -89,17 +89,15 @@ class LiveRuntimeManager:
         mode: Literal["paper", "live"] = "paper",
         jobs: list[tuple[str, str]] | None = None,
         revision_id: str | None = None,
+        experiment_id: str | None = None,
     ) -> dict:
-        if not self._gate.allow_start(revision_id):
-            raise ValueError(
-                "Live start blocked by governance gate (revision_id required in production)"
-            )
         async with self._lock:
             if self._scheduler is not None and self._state.status == "running":
                 return self.status_dict()
             await self._rebuild_stack(mode)
             self._state.mode = mode
             self._state.revision_id = revision_id
+            self._state.experiment_id = experiment_id
             self._state.status = "running"
             self._state.jobs = []
             job_list = jobs or default_live_jobs()
@@ -148,6 +146,7 @@ class LiveRuntimeManager:
             was_running = self._state.status == "running"
             jobs = [(j.symbol, j.timeframe) for j in self._state.jobs]
             revision_id = self._state.revision_id
+            experiment_id = self._state.experiment_id
             if self._scheduler is not None:
                 try:
                     self._scheduler.shutdown(wait=False)
@@ -157,7 +156,12 @@ class LiveRuntimeManager:
             self._state.status = "stopped"
             self._stack = None
             if was_running and jobs:
-                return await self.start(mode=mode, jobs=jobs, revision_id=revision_id)
+                return await self.start(
+                    mode=mode,
+                    jobs=jobs,
+                    revision_id=revision_id,
+                    experiment_id=experiment_id,
+                )
             self._state.mode = mode
             return self.status_dict()
 
@@ -174,6 +178,7 @@ class LiveRuntimeManager:
                     timeframe,
                     correlation_id=corr,
                     revision_id=self._state.revision_id,
+                    experiment_id=self._state.experiment_id,
                 )
                 self._state.last_run_at = datetime.now(UTC)
                 self._state.last_error = None

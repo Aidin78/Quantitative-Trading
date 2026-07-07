@@ -81,6 +81,16 @@ export function LiveStatusCard() {
                 : "—"}
             </p>
           </div>
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--background-elevated)]/50 p-3">
+            <p className="text-xs text-muted">Revision</p>
+            <p className="mt-1 font-mono text-xs">{live?.revision_id ?? "—"}</p>
+          </div>
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--background-elevated)]/50 p-3">
+            <p className="text-xs text-muted">Experiment</p>
+            <p className="mt-1 font-mono text-xs">
+              {live?.experiment_id ?? "—"}
+            </p>
+          </div>
         </div>
 
         {live?.last_error ? (
