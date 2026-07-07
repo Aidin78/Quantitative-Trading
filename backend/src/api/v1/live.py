@@ -63,7 +63,10 @@ async def live_start(
 
 @router.post("/stop")
 async def live_stop() -> dict:
-    return await get_live_manager().stop()
+    try:
+        return await get_live_manager().stop()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to stop live engine: {exc}") from exc
 
 
 @router.post("/mode")

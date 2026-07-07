@@ -15,6 +15,9 @@ async def persist_decision_from_event(session: AsyncSession, event: EventEnvelop
     if event.event_type != DecisionEventType.DECISION_MADE:
         return
     payload = event.payload
+    existing = await session.get(DecisionRecordRow, payload["decision_id"])
+    if existing is not None:
+        return
     session.add(
         DecisionRecordRow(
             decision_id=payload["decision_id"],

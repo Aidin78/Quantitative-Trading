@@ -31,6 +31,15 @@ def _job_next_run(scheduler: AsyncIOScheduler, job_id: str) -> str | None:
     return next_time.astimezone(UTC).isoformat()
 
 
+def _shutdown_scheduler(scheduler: AsyncIOScheduler | None) -> None:
+    if scheduler is None:
+        return
+    try:
+        scheduler.shutdown(wait=False)
+    except Exception:
+        pass
+
+
 @dataclass
 class LiveJobInfo:
     symbol: str
@@ -84,6 +93,59 @@ class LiveRuntimeManager:
             ],
         }
 
+    def _stop_unlocked(self) -> AsyncIOScheduler | None:
+        """Caller must hold ``_lock``."""
+        self._state.status = "stopped"
+        scheduler = self._scheduler
+        self._scheduler = None
+        self._stack = None
+        self._state.jobs = []
+        return scheduler
+
+    async def _start_unlocked(
+        self,
+        *,
+        mode: Literal["paper", "live"] = "paper",
+        jobs: list[tuple[str, str]] | None = None,
+        revision_id: str | None = None,
+        experiment_id: str | None = None,
+    ) -> dict:
+        """Caller must hold ``_lock``."""
+        if self._scheduler is not None and self._state.status == "running":
+            return self.status_dict()
+        await self._rebuild_stack(mode)
+        self._state.mode = mode
+        self._state.revision_id = revision_id
+        self._state.experiment_id = experiment_id
+        self._state.status = "running"
+        self._state.jobs = []
+        job_list = jobs or default_live_jobs()
+        self._scheduler = AsyncIOScheduler()
+        for symbol, timeframe in job_list:
+            trigger = cron_for_timeframe(timeframe)
+
+            def make_job(sym: str = symbol, tf: str = timeframe):
+                async def _job() -> None:
+                    await self.run_cycle(sym, tf)
+
+                return _job
+
+            self._scheduler.add_job(
+                make_job(),
+                trigger=trigger,
+                id=_job_id(symbol, timeframe),
+                replace_existing=True,
+            )
+        self._scheduler.start()
+        self._state.jobs = []
+        for symbol, timeframe in job_list:
+            job_id = _job_id(symbol, timeframe)
+            next_at = _job_next_run(self._scheduler, job_id)
+            self._state.jobs.append(
+                LiveJobInfo(symbol=symbol, timeframe=timeframe, next_run_at=next_at)
+            )
+        return self.status_dict()
+
     async def start(
         self,
         *,
@@ -93,54 +155,18 @@ class LiveRuntimeManager:
         experiment_id: str | None = None,
     ) -> dict:
         async with self._lock:
-            if self._scheduler is not None and self._state.status == "running":
-                return self.status_dict()
-            await self._rebuild_stack(mode)
-            self._state.mode = mode
-            self._state.revision_id = revision_id
-            self._state.experiment_id = experiment_id
-            self._state.status = "running"
-            self._state.jobs = []
-            job_list = jobs or default_live_jobs()
-            self._scheduler = AsyncIOScheduler()
-            for symbol, timeframe in job_list:
-                trigger = cron_for_timeframe(timeframe)
-                job_id = _job_id(symbol, timeframe)
-
-                def make_job(sym: str = symbol, tf: str = timeframe):
-                    async def _job() -> None:
-                        await self.run_cycle(sym, tf)
-
-                    return _job
-
-                self._scheduler.add_job(
-                    make_job(),
-                    trigger=trigger,
-                    id=job_id,
-                    replace_existing=True,
-                )
-            self._scheduler.start()
-            self._state.jobs = []
-            for symbol, timeframe in job_list:
-                job_id = _job_id(symbol, timeframe)
-                next_at = _job_next_run(self._scheduler, job_id)
-                self._state.jobs.append(
-                    LiveJobInfo(symbol=symbol, timeframe=timeframe, next_run_at=next_at)
-                )
-            return self.status_dict()
+            return await self._start_unlocked(
+                mode=mode,
+                jobs=jobs,
+                revision_id=revision_id,
+                experiment_id=experiment_id,
+            )
 
     async def stop(self) -> dict:
         async with self._lock:
-            if self._scheduler is not None:
-                try:
-                    self._scheduler.shutdown(wait=False)
-                except Exception:
-                    pass
-                self._scheduler = None
-            self._stack = None
-            self._state.status = "stopped"
-            self._state.jobs = []
-            return self.status_dict()
+            scheduler = self._stop_unlocked()
+        _shutdown_scheduler(scheduler)
+        return self.status_dict()
 
     async def set_mode(self, mode: Literal["paper", "live"]) -> dict:
         async with self._lock:
@@ -148,47 +174,57 @@ class LiveRuntimeManager:
             jobs = [(j.symbol, j.timeframe) for j in self._state.jobs]
             revision_id = self._state.revision_id
             experiment_id = self._state.experiment_id
-            if self._scheduler is not None:
-                try:
-                    self._scheduler.shutdown(wait=False)
-                except Exception:
-                    pass
-                self._scheduler = None
-            self._state.status = "stopped"
-            self._stack = None
+            scheduler = self._stop_unlocked()
             if was_running and jobs:
-                return await self.start(
+                result = await self._start_unlocked(
                     mode=mode,
                     jobs=jobs,
                     revision_id=revision_id,
                     experiment_id=experiment_id,
                 )
-            self._state.mode = mode
-            return self.status_dict()
+            else:
+                self._state.mode = mode
+                result = self.status_dict()
+        _shutdown_scheduler(scheduler)
+        return result
 
     async def run_cycle(self, symbol: str, timeframe: str) -> None:
         async with self._lock:
-            try:
-                if self._stack is None:
-                    await self._rebuild_stack(self._state.mode)
-                assert self._stack is not None
-                ts = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
-                corr = f"live_{symbol.replace('/', '')}_{timeframe}_{ts}"
-                result = await self._stack.runtime.run_cycle(
-                    symbol,
-                    timeframe,
-                    correlation_id=corr,
-                    revision_id=self._state.revision_id,
-                    experiment_id=self._state.experiment_id,
-                )
+            if self._state.status != "running":
+                return
+            mode = self._state.mode
+            revision_id = self._state.revision_id
+            experiment_id = self._state.experiment_id
+            if self._stack is None:
+                await self._rebuild_stack(mode)
+            stack = self._stack
+
+        if stack is None:
+            return
+
+        try:
+            ts = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+            corr = f"live_{symbol.replace('/', '')}_{timeframe}_{ts}"
+            result = await stack.runtime.run_cycle(
+                symbol,
+                timeframe,
+                correlation_id=corr,
+                revision_id=revision_id,
+                experiment_id=experiment_id,
+            )
+            async with self._lock:
+                if self._state.status != "running":
+                    return
                 self._state.last_run_at = datetime.now(UTC)
                 self._state.last_error = None
                 LIVE_CYCLES_TOTAL.labels(mode=self._state.mode).inc()
                 if result.decision.is_approved:
                     self._state.last_signal_at = datetime.now(UTC)
-            except Exception as exc:
-                self._state.last_error = str(exc)
-                raise
+        except Exception as exc:
+            async with self._lock:
+                if self._state.status == "running":
+                    self._state.last_error = str(exc)
+            raise
 
     async def _rebuild_stack(self, mode: Literal["paper", "live"]) -> None:
         self._stack = await build_live_stack(mode)

@@ -7,14 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.contracts.event import EventEnvelope
 from src.db.models import (
     BacktestRunRow,
-    DecisionRecordRow,
     EventLogRow,
     FeatureSetRow,
     SimulatedTradeRow,
     StateSnapshotRow,
 )
-from src.db.repositories.order import persist_execution_event
-from src.events.envelopes import DecisionEventType, ExecutionEventType
+from src.events.envelopes import ExecutionEventType
 from src.validation.harness import ValidationResult
 
 
@@ -71,52 +69,39 @@ async def persist_validation_result(
     for cycle in result.cycles:
         fs = cycle.feature_set
         if fs.feature_set_id not in seen_feature_sets:
-            session.add(
-                FeatureSetRow(
-                    feature_set_id=fs.feature_set_id,
-                    feature_version=fs.feature_version,
-                    config_hash=fs.config_hash,
-                    payload=fs.model_dump(mode="json"),
-                    created_at=fs.processing_time,
+            if await session.get(FeatureSetRow, fs.feature_set_id) is None:
+                session.add(
+                    FeatureSetRow(
+                        feature_set_id=fs.feature_set_id,
+                        feature_version=fs.feature_version,
+                        config_hash=fs.config_hash,
+                        payload=fs.model_dump(mode="json"),
+                        created_at=fs.processing_time,
+                    )
                 )
-            )
             seen_feature_sets.add(fs.feature_set_id)
 
         snap = cycle.snapshot
-        session.add(
-            StateSnapshotRow(
-                snapshot_id=snap.snapshot_id,
-                correlation_id=cycle.correlation_id,
-                portfolio=snap.portfolio.model_dump(mode="json"),
-                risk=snap.risk.model_dump(mode="json"),
-                version=snap.version,
-                created_at=snap.created_at,
-            )
-        )
-
-    for event in result.events:
-        if event.event_type in (
-            ExecutionEventType.ORDER_SUBMITTED,
-            ExecutionEventType.FILL_RECEIVED,
-        ):
-            await persist_execution_event(session, event)
-        if event.event_type == DecisionEventType.DECISION_MADE:
+        if await session.get(StateSnapshotRow, snap.snapshot_id) is None:
             session.add(
-                DecisionRecordRow(
-                    decision_id=event.payload["decision_id"],
-                    correlation_id=event.correlation_id,
-                    result=event.payload["result"],
-                    state_snapshot_id=event.payload["state_snapshot_id"],
-                    decision_log=event.payload["decision_log"],
-                    revision_id=event.revision_id or rev,
-                    experiment_id=event.experiment_id or exp,
-                    created_at=event.event_time,
+                StateSnapshotRow(
+                    snapshot_id=snap.snapshot_id,
+                    correlation_id=cycle.correlation_id,
+                    portfolio=snap.portfolio.model_dump(mode="json"),
+                    risk=snap.risk.model_dump(mode="json"),
+                    version=snap.version,
+                    created_at=snap.created_at,
                 )
             )
+
+    for event in result.events:
         if event.event_type == ExecutionEventType.POSITION_CLOSED:
+            trade_id = f"trade_{event.payload['fill_id']}"
+            if await session.get(SimulatedTradeRow, trade_id) is not None:
+                continue
             session.add(
                 SimulatedTradeRow(
-                    trade_id=f"trade_{event.payload['fill_id']}",
+                    trade_id=trade_id,
                     run_id=result.run_id,
                     position_id=event.payload["position_id"],
                     correlation_id=event.correlation_id,

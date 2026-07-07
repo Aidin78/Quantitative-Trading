@@ -9,10 +9,18 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from src.core.contracts.event import EventEnvelope, EventFamily
 from src.db.base import Base
-from src.db.models import EventLogRow, FeatureSetRow, FillRow, OrderRow, StateSnapshotRow
+from src.db.models import (
+    DecisionRecordRow,
+    EventLogRow,
+    FeatureSetRow,
+    FillRow,
+    OrderRow,
+    StateSnapshotRow,
+)
 from src.db.repositories.backtest import persist_event, persist_validation_result
+from src.db.repositories.decision import persist_decision_from_event
 from src.db.repositories.event_log import fetch_events_by_correlation
-from src.events.envelopes import build_envelope
+from src.events.envelopes import DecisionEventType, build_envelope
 from src.replay.engine import ReplayEngine
 from src.validation.harness import ValidationConfig, ValidationResult
 
@@ -215,3 +223,90 @@ async def test_persist_validation_result_stores_snapshots_and_features(
     assert fs_rows[0].feature_set_id == "fs_db_1"
     assert len(snap_rows) == 1
     assert snap_rows[0].snapshot_id == snapshot.snapshot_id
+
+
+@pytest.mark.asyncio
+async def test_persist_decision_from_event_is_idempotent(db_session: AsyncSession) -> None:
+    now = datetime.now(UTC)
+    event = build_envelope(
+        event_family=EventFamily.DECISION,
+        event_type=DecisionEventType.DECISION_MADE,
+        event_time=now,
+        processing_time=now,
+        correlation_id="dup_decision",
+        symbol="BTC/USDT",
+        timeframe="1h",
+        mode="validation",
+        payload={
+            "decision_id": "dec_dup_test",
+            "result": "rejected",
+            "state_snapshot_id": "snap_1",
+            "decision_log": {
+                "market_filter": {"passed": False},
+                "provider_signals": [],
+                "aggregation": {"method": "majority", "side": "HOLD", "confidence": 0.5},
+                "risk_check": {"passed": True, "checks": [], "state_snapshot_id": "snap_1"},
+                "state_snapshot_id": "snap_1",
+                "portfolio_version": 1,
+                "risk_state_version": 1,
+            },
+        },
+    )
+    await persist_decision_from_event(db_session, event)
+    await persist_decision_from_event(db_session, event)
+    await db_session.commit()
+
+    rows = (await db_session.execute(select(DecisionRecordRow))).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].decision_id == "dec_dup_test"
+
+
+@pytest.mark.asyncio
+async def test_persist_validation_result_skips_existing_decisions(
+    db_session: AsyncSession,
+) -> None:
+    now = datetime.now(UTC)
+    decision_event = build_envelope(
+        event_family=EventFamily.DECISION,
+        event_type=DecisionEventType.DECISION_MADE,
+        event_time=now,
+        processing_time=now,
+        correlation_id="val_cycle",
+        symbol="BTC/USDT",
+        timeframe="1h",
+        mode="validation",
+        payload={
+            "decision_id": "dec_val_dup",
+            "result": "rejected",
+            "state_snapshot_id": "snap_val",
+            "decision_log": {
+                "market_filter": {"passed": False},
+                "provider_signals": [],
+                "aggregation": {"method": "majority", "side": "HOLD", "confidence": 0.5},
+                "risk_check": {"passed": True, "checks": [], "state_snapshot_id": "snap_val"},
+                "state_snapshot_id": "snap_val",
+                "portfolio_version": 1,
+                "risk_state_version": 1,
+            },
+        },
+    )
+    await persist_decision_from_event(db_session, decision_event)
+    await db_session.commit()
+
+    result = ValidationResult(
+        run_id=f"run_{uuid.uuid4().hex[:8]}",
+        config=ValidationConfig(
+            symbol="BTC/USDT",
+            timeframe="1h",
+            start=now,
+            end=now,
+        ),
+        cycles=[],
+        events=[decision_event],
+        engine_metrics={},
+        outcome_metrics={},
+    )
+    await persist_validation_result(db_session, result)
+
+    rows = (await db_session.execute(select(DecisionRecordRow))).scalars().all()
+    assert len(rows) == 1

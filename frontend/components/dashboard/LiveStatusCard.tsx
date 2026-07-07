@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pause, Play, Radio } from "lucide-react";
+import { useState } from "react";
 import { Badge, Card } from "@/components/ui/Card";
 import { api } from "@/lib/api";
 
@@ -13,19 +14,33 @@ export function LiveStatusCard() {
     refetchInterval: 10_000,
   });
 
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const start = useMutation({
     mutationFn: () => api.startLive({ mode: live?.mode ?? "paper" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["live-status"] }),
+    onSuccess: () => {
+      setActionError(null);
+      qc.invalidateQueries({ queryKey: ["live-status"] });
+    },
+    onError: (err) => setActionError(err.message),
   });
 
   const stop = useMutation({
     mutationFn: () => api.stopLive(),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["live-status"] }),
+    onSuccess: () => {
+      setActionError(null);
+      qc.invalidateQueries({ queryKey: ["live-status"] });
+    },
+    onError: (err) => setActionError(err.message),
   });
 
   const setMode = useMutation({
     mutationFn: (mode: "paper" | "live") => api.setLiveMode(mode),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["live-status"] }),
+    onSuccess: () => {
+      setActionError(null);
+      qc.invalidateQueries({ queryKey: ["live-status"] });
+    },
+    onError: (err) => setActionError(err.message),
   });
 
   if (isLoading && !live) {
@@ -93,9 +108,9 @@ export function LiveStatusCard() {
           </div>
         </div>
 
-        {live?.last_error ? (
+        {live?.last_error || actionError ? (
           <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] px-3 py-2 text-xs text-danger">
-            {live.last_error}
+            {actionError ?? live?.last_error}
           </p>
         ) : null}
 
