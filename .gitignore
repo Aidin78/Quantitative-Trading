@@ -13,5 +13,6 @@ node_modules/
 pgdata/
 frontend/test-results/
 playwright-report/
+backend/ci_e2e.db
 *.log
 *.tsbuildinfo

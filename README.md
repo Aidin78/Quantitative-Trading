@@ -119,6 +119,14 @@ docker compose --profile observability up -d
 
 تنظیمات پیش‌فرض symbol و timeframe در [`config/settings.yaml`](./config/settings.yaml) تعریف شده‌اند.
 
+### CI
+
+GitHub Actions workflow [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) روی هر push/PR به `main`:
+
+- `poetry run pytest` (backend)
+- `npm run lint` + `npm run build` (frontend)
+- Playwright smoke tests (E2E)
+
 ## ساختار پروژه
 
 ```
