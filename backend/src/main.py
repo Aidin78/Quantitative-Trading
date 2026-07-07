@@ -39,13 +39,17 @@ app.include_router(api_v1_router, prefix="/api/v1")
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
+async def health() -> dict:
     app_config = load_app_yaml_config()
     return {
         "status": "ok",
         "phase": "6-observability",
         "environment": settings.environment,
         "app": app_config.app.name,
+        "default_symbol": app_config.default_symbols[0] if app_config.default_symbols else None,
+        "default_timeframe": app_config.timeframes[0] if app_config.timeframes else None,
+        "symbols": list(app_config.default_symbols),
+        "timeframes": list(app_config.timeframes),
     }
 
 

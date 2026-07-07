@@ -40,7 +40,10 @@ async def test_health_public(api_client) -> None:
     client, _ = api_client
     resp = await client.get("/health")
     assert resp.status_code == 200
-    assert resp.json()["phase"] == "6-observability"
+    body = resp.json()
+    assert body["phase"] == "6-observability"
+    assert body["default_symbol"] == "BTC/USDT"
+    assert body["default_timeframe"] == "1h"
 
 
 @pytest.mark.asyncio

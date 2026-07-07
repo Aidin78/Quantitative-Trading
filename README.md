@@ -75,19 +75,40 @@ docker compose up -d postgres redis
 # Backend (development) — see backend/README.md for Windows Poetry setup
 cd backend
 # Windows: .\scripts\setup.ps1   OR   Git Bash: bash scripts/setup.sh
+poetry install
 poetry run pytest
-poetry run uvicorn src.main:app --reload
+poetry run uvicorn src.main:app --reload --port 8000
 
-# Frontend (Phase 6 — placeholder)
-cd frontend && npm install && npm run dev
+# Frontend dashboard (Phase 6)
+cd ../frontend
+npm install
+npm run dev
 ```
+
+داشبورد روی [http://localhost:3000](http://localhost:3000) و API روی [http://localhost:8000](http://localhost:8000) در دسترس است.
+
+### متغیرهای محیطی مهم
+
+| متغیر | پیش‌فرض | توضیح |
+|--------|---------|--------|
+| `AUTH_REQUIRED` | `false` | در dev بدون لاگین |
+| `CORS_ORIGINS` | `http://localhost:3000` | origin فرانت‌اند |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | آدرس API برای فرانت‌اند |
+
+### اولین استفاده از داشبورد
+
+1. Backend و Frontend را اجرا کنید.
+2. به صفحه **Validation** بروید و یک harness اجرا کنید.
+3. نتایج در **Decision Monitor**، **Signals** و **Replay** نمایش داده می‌شوند.
+
+تنظیمات پیش‌فرض symbol و timeframe در [`config/settings.yaml`](./config/settings.yaml) تعریف شده‌اند.
 
 ## ساختار پروژه
 
 ```
 quantitative-trading/
 ├── backend/          # Python — Core + API (Phase 0+)
-├── frontend/         # Next.js — Dashboard (Phase 6)
+├── frontend/         # Next.js 14 — Decision Monitor dashboard
 ├── config/           # تنظیمات مشترک (engine, features, providers)
 ├── docs/             # مستندات فنی
 ├── data/             # داده تاریخی CSV

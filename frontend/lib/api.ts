@@ -32,6 +32,7 @@ export async function apiFetch<T>(
 }
 
 export const api = {
+  health: () => apiFetch<HealthStatus>("/health"),
   login: (username: string, password: string) =>
     apiFetch<{ access_token: string }>("/api/v1/auth/login", {
       method: "POST",
@@ -69,6 +70,17 @@ export const api = {
     apiFetch<{ timeline: TimelineEntry[] }>(
       `/api/v1/replay/cycle/${correlationId}/timeline`,
     ),
+};
+
+export type HealthStatus = {
+  status: string;
+  phase: string;
+  environment: string;
+  app: string;
+  default_symbol?: string;
+  default_timeframe?: string;
+  symbols?: string[];
+  timeframes?: string[];
 };
 
 export type DecisionSummary = {
