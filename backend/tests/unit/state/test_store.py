@@ -17,7 +17,7 @@ def test_snapshot_creates_immutable_state() -> None:
     assert snap.snapshot_id.startswith("snap_")
 
 
-def test_apply_transition_not_implemented() -> None:
+def test_apply_transition_requires_payload() -> None:
     store = InMemoryStateStore(portfolio_id="p1")
     event = StateTransitionEvent(
         transition_id="tr_1",
@@ -26,5 +26,5 @@ def test_apply_transition_not_implemented() -> None:
         event_time=datetime.now(UTC),
         correlation_id="cycle_001",
     )
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(KeyError):
         store.apply_transition(event)

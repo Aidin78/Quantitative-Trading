@@ -16,10 +16,12 @@ from src.events.envelopes import (
     build_envelope,
 )
 from src.events.in_memory_bus import InMemoryEventBus
+from src.execution.engine import ExecutionEngine
 from src.features.builder import DefaultFeatureBuilder
 from src.features.store import FeatureStore
 from src.runtime.models import CycleResult
 from src.state.store import StateStore
+from src.state.transitions import StateTransitionEvent
 
 
 class MarketDataProvider(Protocol):
@@ -47,6 +49,7 @@ class PlatformRuntime:
         clock: Clock,
         portfolio_id: str,
         mode: Literal["validation", "live", "paper", "replay"] = "validation",
+        execution_engine: ExecutionEngine | None = None,
     ) -> None:
         self._data_provider = data_provider
         self._feature_store = feature_store
@@ -62,6 +65,7 @@ class PlatformRuntime:
         self._clock = clock
         self._portfolio_id = portfolio_id
         self._mode = mode
+        self._execution_engine = execution_engine
 
     async def run_cycle(
         self,
@@ -84,6 +88,31 @@ class PlatformRuntime:
         if hasattr(self._clock, "set_event_time"):
             self._clock.set_event_time(event_time)  # type: ignore[attr-defined]
 
+        bar = {
+            "open": float(last_row["open"]),
+            "high": float(last_row["high"]),
+            "low": float(last_row["low"]),
+            "close": float(last_row["close"]),
+            "volume": float(last_row["volume"]),
+        }
+
+        execution_events: list[EventEnvelope] = []
+
+        if self._execution_engine is not None:
+            pre_snapshot = self._state_store.snapshot(self._portfolio_id, correlation_id=cycle_id)
+            bar_eval = await self._execution_engine.evaluate_bar(
+                bar,
+                pre_snapshot,
+                symbol=symbol,
+                timeframe=timeframe,
+                correlation_id=cycle_id,
+                event_time=event_time,
+                processing_time=processing_time,
+            )
+            for transition in bar_eval.transitions:
+                self._state_store.apply_transition(transition)
+            execution_events.extend(bar_eval.events)
+
         candle_event = build_envelope(
             event_family=EventFamily.MARKET,
             event_type=MarketEventType.CANDLE_RECEIVED,
@@ -94,11 +123,11 @@ class PlatformRuntime:
             timeframe=timeframe,
             mode=self._mode,
             payload={
-                "open": float(last_row["open"]),
-                "high": float(last_row["high"]),
-                "low": float(last_row["low"]),
-                "close": float(last_row["close"]),
-                "volume": float(last_row["volume"]),
+                "open": bar["open"],
+                "high": bar["high"],
+                "low": bar["low"],
+                "close": bar["close"],
+                "volume": bar["volume"],
             },
             revision_id=revision_id,
             experiment_id=experiment_id,
@@ -279,6 +308,53 @@ class PlatformRuntime:
             )
         events.append(outcome_event)
 
+        if decision.is_approved:
+            risk_transition = StateTransitionEvent(
+                transition_id=f"trans_{uuid.uuid4().hex[:12]}",
+                portfolio_id=self._portfolio_id,
+                transition_type="risk_updated",
+                payload={"signals_today": snapshot.risk.signals_today + 1},
+                event_time=event_time,
+                correlation_id=cycle_id,
+            )
+            self._state_store.apply_transition(risk_transition)
+
+        if decision.is_approved and self._execution_engine is not None:
+            open_positions = self._state_store.get_portfolio(self._portfolio_id).open_positions
+            if open_positions and decision.final_signal is not None:
+                signal_snapshot = self._state_store.snapshot(
+                    self._portfolio_id, correlation_id=cycle_id
+                )
+                signal_eval = await self._execution_engine.evaluate_bar(
+                    bar,
+                    signal_snapshot,
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    correlation_id=cycle_id,
+                    event_time=event_time,
+                    processing_time=processing_time,
+                    approved_side=decision.final_signal.side,
+                    increment_bars=False,
+                )
+                for transition in signal_eval.transitions:
+                    self._state_store.apply_transition(transition)
+                execution_events.extend(signal_eval.events)
+
+            exec_snapshot = self._state_store.snapshot(self._portfolio_id, correlation_id=cycle_id)
+            exec_result = await self._execution_engine.execute(
+                decision,
+                exec_snapshot,
+                bar,
+                symbol=symbol,
+                timeframe=timeframe,
+                correlation_id=cycle_id,
+                processing_time=processing_time,
+            )
+            for transition in exec_result.transitions:
+                self._state_store.apply_transition(transition)
+            execution_events.extend(exec_result.events)
+
+        events.extend(execution_events)
         await self._event_bus.publish_many(events)
 
         return CycleResult(
@@ -289,6 +365,7 @@ class PlatformRuntime:
             signals=tuple(signals),
             decision=decision,
             events=tuple(events),
+            execution_events=tuple(execution_events),
         )
 
     @staticmethod

@@ -19,3 +19,4 @@ class CycleResult:
     signals: tuple[StrategySignal, ...]
     decision: Decision
     events: tuple[EventEnvelope, ...]
+    execution_events: tuple[EventEnvelope, ...] = ()

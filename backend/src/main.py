@@ -15,7 +15,7 @@ async def health() -> dict[str, str]:
     app_config = load_app_yaml_config()
     return {
         "status": "ok",
-        "phase": "3-platform-runtime",
+        "phase": "4-validation-harness",
         "environment": settings.environment,
         "app": app_config.app.name,
     }

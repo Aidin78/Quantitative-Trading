@@ -13,6 +13,13 @@ timeframes:
 validation:
   default_start: "2024-01-01"
   min_trades: 100
+  max_bars_in_trade: 48
+  risk_pct_per_trade: 1.0
 
 fill_models:
   default: close_price_v1
+  models:
+    close_price_v1:
+      slippage_bps: 5
+      fee_bps: 10
+      fill_at: close

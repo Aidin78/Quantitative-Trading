@@ -23,6 +23,29 @@ class CsvDataProvider:
     def timeframe(self) -> str:
         return self._timeframe
 
+    def timestamps(
+        self,
+        symbol: str,
+        timeframe: str,
+        start: datetime,
+        end: datetime,
+    ) -> list[datetime]:
+        self._validate_symbol_timeframe(symbol, timeframe)
+        df = self._df.copy()
+        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+        start_ts = pd.Timestamp(start)
+        end_ts = pd.Timestamp(end)
+        if start_ts.tzinfo is None:
+            start_ts = start_ts.tz_localize("UTC")
+        else:
+            start_ts = start_ts.tz_convert("UTC")
+        if end_ts.tzinfo is None:
+            end_ts = end_ts.tz_localize("UTC")
+        else:
+            end_ts = end_ts.tz_convert("UTC")
+        mask = (df["timestamp"] >= start_ts) & (df["timestamp"] <= end_ts)
+        return [ts.to_pydatetime() for ts in df.loc[mask, "timestamp"]]
+
     def get_ohlcv(
         self,
         symbol: str,
@@ -34,9 +57,17 @@ class CsvDataProvider:
         df = self._df.copy()
         if "timestamp" in df.columns:
             df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-            mask = (df["timestamp"] >= pd.Timestamp(start, tz="UTC")) & (
-                df["timestamp"] <= pd.Timestamp(end, tz="UTC")
-            )
+            start_ts = pd.Timestamp(start)
+            end_ts = pd.Timestamp(end)
+            if start_ts.tzinfo is None:
+                start_ts = start_ts.tz_localize("UTC")
+            else:
+                start_ts = start_ts.tz_convert("UTC")
+            if end_ts.tzinfo is None:
+                end_ts = end_ts.tz_localize("UTC")
+            else:
+                end_ts = end_ts.tz_convert("UTC")
+            mask = (df["timestamp"] >= start_ts) & (df["timestamp"] <= end_ts)
             return df.loc[mask].reset_index(drop=True)
         return df
 

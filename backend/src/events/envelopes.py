@@ -27,11 +27,13 @@ class DecisionEventType:
 class ExecutionEventType:
     ORDER_INTENT_CREATED = "OrderIntentCreated"
     ORDER_SUBMITTED = "OrderSubmitted"
+    ORDER_ACKNOWLEDGED = "OrderAcknowledged"
     FILL_RECEIVED = "FillReceived"
     POSITION_OPENED = "PositionOpened"
     POSITION_CLOSED = "PositionClosed"
     SIGNAL_PUBLISHED = "SignalPublished"
     ORDER_REJECTED = "OrderRejected"
+    EXECUTION_FAILED = "ExecutionFailed"
 
 
 def build_envelope(
