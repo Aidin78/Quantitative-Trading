@@ -19,8 +19,9 @@ from src.api.services.validation_runner import (
 )
 from src.api.services.validation_service import validation_jobs
 from src.core.settings import load_app_yaml_config
-from src.db.models import BacktestRunRow
+from src.db.models import BacktestRunRow, SimulatedTradeRow
 from src.observability.metrics import VALIDATION_RUNS_TOTAL
+from src.validation.trades import build_trade_ledger
 from src.validation.walk_forward import build_walk_forward_windows
 
 router = APIRouter(
@@ -35,6 +36,7 @@ class ValidationRunRequest(BaseModel):
     end_date: str | None = None
     csv_path: str | None = None
     source: Literal["exchange", "csv"] = "exchange"
+    initial_capital: float = 10000.0
     experiment_id: str | None = None
     revision_id: str | None = None
 
@@ -45,6 +47,7 @@ class WalkForwardRequest(BaseModel):
     start_date: str | None = None
     end_date: str | None = None
     source: Literal["exchange", "csv"] = "exchange"
+    initial_capital: float = 10000.0
     windows: int = 3
     train_ratio: float = 0.7
 
@@ -63,6 +66,7 @@ async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
             end_date=body.end_date,
             csv_path=body.csv_path,
             source=body.source,
+            initial_capital=body.initial_capital,
             persist_db=True,
             experiment_id=body.experiment_id,
             revision_id=body.revision_id,
@@ -108,6 +112,7 @@ async def walk_forward_validation(body: WalkForwardRequest) -> dict:
                 start_date=window.test_start.date().isoformat(),
                 end_date=window.test_end.date().isoformat(),
                 source=body.source,
+                initial_capital=body.initial_capital,
                 persist_db=False,
             )
             results.append(
@@ -174,6 +179,54 @@ async def export_validation(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=validation_{job_id}.csv"},
     )
+
+
+@router.get("/{job_id}/trades")
+async def get_validation_trades(job_id: str, db: AsyncSession = Depends(get_db)) -> dict:
+    job = validation_jobs.get(job_id)
+    if job is not None and job.result is not None:
+        trades = build_trade_ledger(job.result.events)
+        return {"run_id": job.result.run_id, "trades": trades, "total": len(trades)}
+
+    row = await db.get(BacktestRunRow, job_id)
+    if row is None:
+        stmt = select(BacktestRunRow).where(BacktestRunRow.run_id == job_id)
+        row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Validation job not found")
+
+    stmt = (
+        select(SimulatedTradeRow)
+        .where(SimulatedTradeRow.run_id == row.run_id)
+        .order_by(SimulatedTradeRow.trade_id)
+    )
+    trade_rows = (await db.execute(stmt)).scalars().all()
+    trades = []
+    for trade_row in trade_rows:
+        payload = trade_row.payload or {}
+        entry_price = float(payload.get("entry_price", 0))
+        quantity = float(payload.get("quantity", 0))
+        pnl = trade_row.pnl
+        notional = entry_price * quantity
+        trades.append(
+            {
+                "position_id": trade_row.position_id,
+                "symbol": trade_row.symbol,
+                "side": payload.get("side"),
+                "entry_price": entry_price,
+                "exit_price": float(payload.get("exit_price", 0)),
+                "stop_loss": payload.get("stop_loss"),
+                "take_profit": payload.get("take_profit"),
+                "quantity": quantity,
+                "exit_reason": trade_row.exit_reason,
+                "pnl": pnl,
+                "return_pct": (pnl / notional * 100) if notional > 0 else 0.0,
+                "bars_held": payload.get("bars_held"),
+                "exit_time": None,
+                "win": pnl > 0,
+            }
+        )
+    return {"run_id": row.run_id, "trades": trades, "total": len(trades)}
 
 
 @router.get("/{job_id}")

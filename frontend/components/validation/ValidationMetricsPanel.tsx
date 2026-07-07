@@ -1,6 +1,7 @@
 "use client";
 
 import { StatCard } from "@/components/ui/Card";
+import type { ValidationTrade } from "@/lib/api";
 
 function fmtNum(value: unknown, digits = 2): string {
   if (typeof value === "number") {
@@ -12,6 +13,13 @@ function fmtNum(value: unknown, digits = 2): string {
 
 function fmtPct(value: unknown): string {
   if (typeof value === "number") return `${(value * 100).toFixed(1)}%`;
+  return "—";
+}
+
+function fmtMoney(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  }
   return "—";
 }
 
@@ -27,9 +35,11 @@ function MetricRow({ label, value }: { label: string; value: string }) {
 export function ValidationMetricsPanel({
   engine,
   outcome,
+  trades,
 }: {
   engine?: Record<string, unknown>;
   outcome?: Record<string, unknown>;
+  trades?: ValidationTrade[];
 }) {
   if (!engine && !outcome) return null;
 
@@ -41,6 +51,62 @@ export function ValidationMetricsPanel({
 
   return (
     <div className="space-y-6">
+      {outcome && typeof outcome.initial_capital === "number" ? (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+            Capital simulation
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Initial capital"
+              value={fmtMoney(outcome.initial_capital)}
+            />
+            <StatCard
+              label="Ending equity"
+              value={fmtMoney(outcome.ending_equity)}
+            />
+            <StatCard
+              label="Return"
+              value={
+                typeof outcome.return_pct === "number"
+                  ? `${outcome.return_pct.toFixed(2)}%`
+                  : "—"
+              }
+              trend={
+                typeof outcome.return_pct === "number"
+                  ? outcome.return_pct >= 0
+                    ? "up"
+                    : "down"
+                  : "neutral"
+              }
+            />
+            <StatCard
+              label="Max drawdown"
+              value={
+                typeof outcome.max_drawdown_pct === "number"
+                  ? `${outcome.max_drawdown_pct.toFixed(2)}%`
+                  : fmtNum(outcome.max_drawdown)
+              }
+              trend="down"
+            />
+          </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <MetricRow
+              label="Positions opened"
+              value={fmtNum(outcome.positions_opened, 0)}
+            />
+            <MetricRow
+              label="Positions closed"
+              value={fmtNum(outcome.positions_closed, 0)}
+            />
+            <MetricRow
+              label="Orders rejected"
+              value={fmtNum(outcome.orders_rejected, 0)}
+            />
+          </div>
+        </div>
+      ) : null}
+
       {engine ? (
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
@@ -120,11 +186,6 @@ export function ValidationMetricsPanel({
               }
             />
             <StatCard
-              label="Max drawdown"
-              value={fmtNum(outcome.max_drawdown)}
-              trend="down"
-            />
-            <StatCard
               label="Profit factor"
               value={fmtNum(outcome.profit_factor)}
             />
@@ -137,6 +198,56 @@ export function ValidationMetricsPanel({
               value={fmtNum(outcome.gross_profit)}
             />
             <StatCard label="Gross loss" value={fmtNum(outcome.gross_loss)} />
+          </div>
+        </div>
+      ) : null}
+
+      {trades && trades.length > 0 ? (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+            Trade ledger
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)] text-left text-xs uppercase text-muted">
+                  <th className="pb-2 pr-3">Side</th>
+                  <th className="pb-2 pr-3">Entry</th>
+                  <th className="pb-2 pr-3">Exit</th>
+                  <th className="pb-2 pr-3">SL / TP</th>
+                  <th className="pb-2 pr-3">Exit reason</th>
+                  <th className="pb-2 pr-3">PnL</th>
+                  <th className="pb-2">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trades.map((t) => (
+                  <tr
+                    key={t.position_id}
+                    className="border-b border-[var(--border)]/50"
+                  >
+                    <td className="py-2 pr-3 font-medium">{t.side}</td>
+                    <td className="py-2 pr-3 font-mono text-xs">
+                      {fmtNum(t.entry_price)}
+                    </td>
+                    <td className="py-2 pr-3 font-mono text-xs">
+                      {fmtNum(t.exit_price)}
+                    </td>
+                    <td className="py-2 pr-3 font-mono text-xs text-muted">
+                      {t.stop_loss != null ? fmtNum(t.stop_loss) : "—"} /{" "}
+                      {t.take_profit != null ? fmtNum(t.take_profit) : "—"}
+                    </td>
+                    <td className="py-2 pr-3 text-xs">{t.exit_reason}</td>
+                    <td
+                      className={`py-2 pr-3 font-mono text-xs ${t.pnl >= 0 ? "text-[var(--success)]" : "text-danger"}`}
+                    >
+                      {fmtNum(t.pnl)}
+                    </td>
+                    <td className="py-2 text-xs">{t.win ? "Win" : "Loss"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : null}

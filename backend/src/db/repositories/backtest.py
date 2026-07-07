@@ -53,6 +53,7 @@ async def persist_validation_result(
             config={
                 "start": result.config.start.isoformat(),
                 "end": result.config.end.isoformat(),
+                "initial_capital": result.config.initial_capital,
                 "revision_id": rev,
                 "experiment_id": exp,
             },

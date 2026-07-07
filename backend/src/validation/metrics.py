@@ -52,8 +52,16 @@ def compute_engine_metrics(
     }
 
 
-def compute_outcome_metrics(events: list[EventEnvelope]) -> dict:
+def compute_outcome_metrics(
+    events: list[EventEnvelope],
+    *,
+    initial_capital: float = 10000.0,
+    ending_equity: float | None = None,
+) -> dict:
     closed = [e for e in events if e.event_type == ExecutionEventType.POSITION_CLOSED]
+    opened = [e for e in events if e.event_type == ExecutionEventType.POSITION_OPENED]
+    rejected = [e for e in events if e.event_type == ExecutionEventType.ORDER_REJECTED]
+
     pnls = [float(e.payload.get("pnl", 0)) for e in closed]
     wins = [p for p in pnls if p > 0]
     losses = [p for p in pnls if p <= 0]
@@ -64,16 +72,19 @@ def compute_outcome_metrics(events: list[EventEnvelope]) -> dict:
         gross_profit / gross_loss if gross_loss > 0 else float("inf") if gross_profit else 0.0
     )
 
-    equity_curve = [0.0]
+    equity_curve = [initial_capital]
     for pnl in pnls:
         equity_curve.append(equity_curve[-1] + pnl)
 
-    peak = 0.0
+    peak = initial_capital
     max_dd = 0.0
+    max_dd_pct = 0.0
     for value in equity_curve:
         peak = max(peak, value)
         dd = peak - value
         max_dd = max(max_dd, dd)
+        if peak > 0:
+            max_dd_pct = max(max_dd_pct, dd / peak * 100)
 
     returns = []
     for i in range(1, len(equity_curve)):
@@ -91,13 +102,26 @@ def compute_outcome_metrics(events: list[EventEnvelope]) -> dict:
         if std > 0:
             sharpe = mean_r / std * (252**0.5)
 
+    final_equity = ending_equity if ending_equity is not None else equity_curve[-1]
+    return_pct = (
+        (final_equity - initial_capital) / initial_capital * 100 if initial_capital > 0 else 0.0
+    )
+
     return {
         "total_trades": len(closed),
         "win_rate": len(wins) / len(pnls) if pnls else 0.0,
         "profit_factor": profit_factor,
         "max_drawdown": max_dd,
+        "max_drawdown_pct": max_dd_pct,
         "sharpe_ratio": sharpe,
         "gross_profit": gross_profit,
         "gross_loss": gross_loss,
         "total_pnl": sum(pnls),
+        "initial_capital": initial_capital,
+        "ending_equity": final_equity,
+        "return_pct": return_pct,
+        "equity_curve": equity_curve,
+        "orders_rejected": len(rejected),
+        "positions_opened": len(opened),
+        "positions_closed": len(closed),
     }

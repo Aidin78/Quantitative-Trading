@@ -18,6 +18,7 @@ class ValidationConfig:
     start: datetime
     end: datetime
     csv_path: str | None = None
+    initial_capital: float = 10000.0
 
 
 @dataclass
@@ -88,14 +89,66 @@ class ValidationHarness:
             )
             cycles.append(result)
 
+        await self._liquidate_open_positions(bar_times[-1])
+
         events = self._event_log.events
+        portfolio_id = self._runtime._portfolio_id  # noqa: SLF001
+        ending_equity = self._runtime._state_store.get_portfolio(portfolio_id).equity  # noqa: SLF001
         return ValidationResult(
             run_id=run_id,
             config=self._config,
             cycles=cycles,
             events=events,
             engine_metrics=compute_engine_metrics(cycles, events),
-            outcome_metrics=compute_outcome_metrics(events),
+            outcome_metrics=compute_outcome_metrics(
+                events,
+                initial_capital=self._config.initial_capital,
+                ending_equity=ending_equity,
+            ),
             revision_id=self._revision_id,
             experiment_id=self._experiment_id,
         )
+
+    async def _liquidate_open_positions(self, last_bar_time: datetime) -> None:
+        runtime = self._runtime
+        execution_engine = runtime._execution_engine  # noqa: SLF001
+        if execution_engine is None:
+            return
+
+        portfolio_id = runtime._portfolio_id  # noqa: SLF001
+        portfolio = runtime._state_store.get_portfolio(portfolio_id)  # noqa: SLF001
+        open_for_symbol = [p for p in portfolio.open_positions if p.symbol == self._config.symbol]
+        if not open_for_symbol:
+            return
+
+        df = self._data_provider.get_latest(
+            self._config.symbol,
+            self._config.timeframe,
+            end=last_bar_time,
+        )
+        last_row = df.iloc[-1]
+        bar = {
+            "open": float(last_row["open"]),
+            "high": float(last_row["high"]),
+            "low": float(last_row["low"]),
+            "close": float(last_row["close"]),
+            "volume": float(last_row["volume"]),
+        }
+        processing_time = last_bar_time + timedelta(seconds=2)
+        snapshot = runtime._state_store.snapshot(  # noqa: SLF001
+            portfolio_id,
+            correlation_id=f"val_liquidate_{last_bar_time.isoformat()}",
+        )
+        result = await execution_engine.liquidate_open_positions(
+            bar,
+            snapshot,
+            symbol=self._config.symbol,
+            timeframe=self._config.timeframe,
+            correlation_id=f"val_liquidate_{last_bar_time.isoformat()}",
+            event_time=last_bar_time,
+            processing_time=processing_time,
+        )
+        for transition in result.transitions:
+            runtime._state_store.apply_transition(transition)  # noqa: SLF001
+        if result.events:
+            await runtime._event_bus.publish_many(list(result.events))  # noqa: SLF001

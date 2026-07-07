@@ -233,3 +233,76 @@ async def test_execution_failed_on_zero_quantity() -> None:
         processing_time=utc_now(),
     )
     assert any(e.event_type == "ExecutionFailed" for e in result.events)
+
+
+def test_position_size_capped_by_available_cash(engine: SimulatedExecutionEngine) -> None:
+    snapshot = make_snapshot(exposure_pct=0.0)
+    qty = engine._position_size(snapshot, entry=100_000.0, stop_loss=99_500.0)
+    max_affordable = snapshot.portfolio.cash / 100_000.0
+    assert qty <= max_affordable + 1e-12
+    assert qty > 0
+
+
+@pytest.mark.asyncio
+async def test_tight_stop_btc_passes_risk_gate(engine: SimulatedExecutionEngine) -> None:
+    snapshot = make_snapshot(exposure_pct=0.0)
+    decision = _approved_decision(snapshot)
+    decision = decision.model_copy(
+        update={
+            "final_signal": decision.final_signal.model_copy(
+                update={
+                    "entry_price": 100_000.0,
+                    "stop_loss": 99_500.0,
+                    "take_profit": 103_000.0,
+                }
+            )
+        }
+    )
+    bar = {"open": 99900, "high": 100100, "low": 99800, "close": 100_000, "volume": 100}
+    result = await engine.execute(
+        decision,
+        snapshot,
+        bar,
+        symbol="BTC/USDT",
+        timeframe="1h",
+        correlation_id="cycle_tight_stop",
+        processing_time=utc_now(),
+    )
+    assert not any(e.event_type == "OrderRejected" for e in result.events)
+    assert any(e.event_type == "PositionOpened" for e in result.events)
+
+
+@pytest.mark.asyncio
+async def test_liquidate_open_positions_end_of_run(engine: SimulatedExecutionEngine) -> None:
+    from src.core.contracts.state import PositionState
+
+    now = utc_now()
+    position = PositionState(
+        position_id="pos_eor",
+        symbol="BTC/USDT",
+        side="LONG",
+        quantity=0.01,
+        entry_price=67000.0,
+        entry_time=now,
+        stop_loss=66000.0,
+        take_profit=69000.0,
+    )
+    snapshot = make_snapshot(exposure_pct=0.0)
+    portfolio = snapshot.portfolio.model_copy(update={"open_positions": (position,)})
+    snap = snapshot.model_copy(update={"portfolio": portfolio})
+    engine._position_bars["pos_eor"] = 5
+    engine._position_orders["pos_eor"] = "ord_eor"
+
+    bar = {"open": 67100, "high": 67200, "low": 67000, "close": 67150, "volume": 100}
+    result = await engine.liquidate_open_positions(
+        bar,
+        snap,
+        symbol="BTC/USDT",
+        timeframe="1h",
+        correlation_id="liquidate_test",
+        event_time=now,
+        processing_time=now,
+    )
+    close = next(e for e in result.events if e.event_type == "PositionClosed")
+    assert close.payload["exit_reason"] == "end_of_run"
+    assert close.payload["exit_price"] == 67150.0

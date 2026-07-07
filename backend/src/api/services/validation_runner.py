@@ -102,6 +102,7 @@ async def run_validation_job(
     end_date: str | None = None,
     csv_path: str | None = None,
     source: Literal["exchange", "csv"] = "exchange",
+    initial_capital: float = 10000.0,
     persist_db: bool = True,
     experiment_id: str | None = None,
     revision_id: str | None = None,
@@ -142,7 +143,10 @@ async def run_validation_job(
     end = timestamps[-1]
     clock = SimulatedClock(event_time=start)
     feature_store = InMemoryFeatureStore()
-    state_store = InMemoryStateStore(portfolio_id="portfolio_default")
+    state_store = InMemoryStateStore(
+        portfolio_id="portfolio_default",
+        initial_cash=initial_capital,
+    )
     fill_model = load_default_fill_model(resolve_config_dir())
     execution_engine = SimulatedExecutionEngine(fill_model, clock)
     log_handler = EventLogHandler()
@@ -163,7 +167,14 @@ async def run_validation_job(
         mode="validation",
         execution_engine=execution_engine,
     )
-    config = ValidationConfig(symbol=sym, timeframe=tf, start=start, end=end, csv_path=str(csv))
+    config = ValidationConfig(
+        symbol=sym,
+        timeframe=tf,
+        start=start,
+        end=end,
+        csv_path=str(csv),
+        initial_capital=initial_capital,
+    )
 
     rev_id = revision_id
     exp_id = experiment_id

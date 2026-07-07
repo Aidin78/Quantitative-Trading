@@ -77,3 +77,17 @@ async def test_validation_event_chain_includes_execution_when_approved(validatio
     if approved_cycles:
         assert EventFamily.EXECUTION in families
         assert any(e.event_type == ExecutionEventType.ORDER_INTENT_CREATED for e in result.events)
+
+
+@pytest.mark.asyncio
+async def test_validation_outcome_metrics_include_capital_fields(validation_stack) -> None:
+    harness, _ = validation_stack
+    result = await harness.run()
+    outcome = result.outcome_metrics
+    assert "initial_capital" in outcome
+    assert "ending_equity" in outcome
+    assert "return_pct" in outcome
+    assert outcome["positions_closed"] == outcome["total_trades"]
+    if outcome["positions_opened"] > 0:
+        assert outcome["total_trades"] > 0
+        assert 0.0 <= outcome["win_rate"] <= 1.0

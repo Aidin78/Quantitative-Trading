@@ -99,6 +99,8 @@ export const api = {
     }),
   validation: (id: string) =>
     apiFetch<ValidationJob>(`/api/v1/validation/${id}`),
+  validationTrades: (id: string) =>
+    apiFetch<ValidationTradesResponse>(`/api/v1/validation/${id}/trades`),
   replay: (
     correlationId: string,
     opts?: { mode?: "strict" | "re_execute"; revision_id?: string },
@@ -237,8 +239,33 @@ export type ValidationRequest = {
   start_date?: string;
   end_date?: string;
   source?: "exchange" | "csv";
+  initial_capital?: number;
   experiment_id?: string;
   revision_id?: string;
+};
+
+export type ValidationTrade = {
+  position_id: string;
+  symbol: string;
+  side?: string;
+  entry_price: number;
+  exit_price: number;
+  stop_loss?: number;
+  take_profit?: number;
+  quantity?: number;
+  exit_reason?: string;
+  pnl: number;
+  return_pct: number;
+  bars_held?: number;
+  entry_time?: string;
+  exit_time?: string;
+  win: boolean;
+};
+
+export type ValidationTradesResponse = {
+  run_id: string;
+  trades: ValidationTrade[];
+  total: number;
 };
 
 export type ValidationJob = {
@@ -368,6 +395,7 @@ export type WalkForwardRequest = {
   start_date?: string;
   end_date?: string;
   source?: "exchange" | "csv";
+  initial_capital?: number;
   windows?: number;
   train_ratio?: number;
 };

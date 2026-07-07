@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from src.core.contracts.event import EventFamily
 from src.runtime.models import CycleResult
 from src.validation.metrics import compute_engine_metrics, compute_outcome_metrics
@@ -112,7 +114,12 @@ def test_outcome_metrics_from_closed_positions() -> None:
             },
         ),
     ]
-    om = compute_outcome_metrics(events)
+    om = compute_outcome_metrics(events, initial_capital=10_000.0)
     assert om["total_trades"] == 2
     assert om["win_rate"] == 0.5
     assert om["total_pnl"] == 50.0
+    assert om["initial_capital"] == 10_000.0
+    assert om["ending_equity"] == 10_050.0
+    assert om["return_pct"] == pytest.approx(0.5)
+    assert om["equity_curve"][0] == 10_000.0
+    assert om["positions_closed"] == 2

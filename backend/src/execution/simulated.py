@@ -474,8 +474,15 @@ class SimulatedExecutionEngine:
             payload={
                 "position_id": position.position_id,
                 "exit_reason": exit_reason,
+                "exit_price": fill_price,
                 "pnl": pnl,
                 "fill_id": fill.fill_id,
+                "entry_price": position.entry_price,
+                "side": position.side,
+                "quantity": position.quantity,
+                "stop_loss": position.stop_loss,
+                "take_profit": position.take_profit,
+                "bars_held": self._position_bars.get(position.position_id, 0),
             },
         )
 
@@ -520,11 +527,57 @@ class SimulatedExecutionEngine:
         )
 
     def _position_size(self, snapshot: StateSnapshot, entry: float, stop_loss: float) -> float:
-        risk_amount = snapshot.portfolio.equity * self._config.risk_pct_per_trade / 100
+        portfolio = snapshot.portfolio
+        risk = snapshot.risk
+        risk_amount = portfolio.equity * self._config.risk_pct_per_trade / 100
         risk_per_unit = abs(entry - stop_loss)
-        if risk_per_unit <= 0:
+        if risk_per_unit <= 0 or entry <= 0:
             return 0.0
-        return round(risk_amount / risk_per_unit, 8)
+        risk_based_qty = risk_amount / risk_per_unit
+
+        max_cash_qty = portfolio.cash / entry if portfolio.cash > 0 else 0.0
+        remaining_exposure = max(
+            0.0,
+            risk.limits.max_exposure_pct - risk.open_exposure_pct,
+        )
+        max_exposure_qty = (remaining_exposure / 100 * portfolio.equity) / entry
+
+        quantity = min(risk_based_qty, max_cash_qty, max_exposure_qty)
+        return round(quantity, 8) if quantity > 0 else 0.0
+
+    async def liquidate_open_positions(
+        self,
+        bar: dict[str, Any],
+        snapshot: StateSnapshot,
+        *,
+        symbol: str,
+        timeframe: str,
+        correlation_id: str,
+        event_time: datetime,
+        processing_time: datetime,
+    ) -> ExecutionResult:
+        events: list = []
+        transitions: list[StateTransitionEvent] = []
+        exit_price = float(bar["close"])
+
+        for position in snapshot.portfolio.open_positions:
+            if position.symbol != symbol:
+                continue
+            close_events, transition = self._close_position(
+                position=position,
+                exit_price=exit_price,
+                exit_reason="end_of_run",
+                snapshot=snapshot,
+                symbol=symbol,
+                timeframe=timeframe,
+                correlation_id=correlation_id,
+                event_time=event_time,
+                processing_time=processing_time,
+            )
+            events.extend(close_events)
+            transitions.append(transition)
+
+        return ExecutionResult(events=tuple(events), transitions=tuple(transitions))
 
     def _fill_price(self, bar: dict[str, Any], side: str, *, use_next_open: bool = False) -> float:
         if use_next_open or self._fill_model.fill_at == "next_open":

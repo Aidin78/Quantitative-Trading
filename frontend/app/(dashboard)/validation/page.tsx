@@ -20,6 +20,7 @@ export default function ValidationPage() {
     new Date().toISOString().slice(0, 10),
   );
   const [source, setSource] = useState<"exchange" | "csv">("exchange");
+  const [initialCapital, setInitialCapital] = useState(10000);
   const [wfWindows, setWfWindows] = useState(3);
   const [wfTrainRatio, setWfTrainRatio] = useState(0.7);
   const [exporting, setExporting] = useState(false);
@@ -31,6 +32,7 @@ export default function ValidationPage() {
         start_date: startDate,
         end_date: endDate || undefined,
         source,
+        initial_capital: initialCapital,
         timeframe: "1h",
       }),
     onSuccess: (res) => setJobId(res.id),
@@ -43,6 +45,7 @@ export default function ValidationPage() {
         start_date: startDate,
         end_date: endDate || undefined,
         source,
+        initial_capital: initialCapital,
         timeframe: "1h",
         windows: wfWindows,
         train_ratio: wfTrainRatio,
@@ -57,6 +60,12 @@ export default function ValidationPage() {
       q.state.data?.status === "completed" || q.state.data?.status === "failed"
         ? false
         : 2000,
+  });
+
+  const { data: tradesData } = useQuery({
+    queryKey: ["validation-trades", jobId],
+    queryFn: () => api.validationTrades(jobId!),
+    enabled: !!jobId && job?.status === "completed",
   });
 
   const statusVariant =
@@ -130,6 +139,19 @@ export default function ValidationPage() {
                 className="input-field mt-2"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-muted">
+                Initial Capital
+              </label>
+              <input
+                type="number"
+                min={100}
+                step={100}
+                className="input-field mt-2"
+                value={initialCapital}
+                onChange={(e) => setInitialCapital(Number(e.target.value))}
               />
             </div>
             <div>
@@ -217,6 +239,7 @@ export default function ValidationPage() {
           <ValidationMetricsPanel
             engine={job.engine_metrics}
             outcome={job.outcome_metrics}
+            trades={tradesData?.trades}
           />
         </Card>
       )}
