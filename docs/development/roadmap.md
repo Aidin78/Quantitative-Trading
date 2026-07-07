@@ -279,31 +279,31 @@ Engine = unchanged since Phase 1
 ### Tasks
 
 **API (FastAPI):**
-- [ ] `GET /api/v1/decisions` — لیست تصمیمات (approved + rejected)
-- [ ] `GET /api/v1/decisions/{id}` — decision log + explainability کامل
-- [ ] `POST /api/v1/replay/cycle/{correlation_id}` — strict replay
-- [ ] `GET /api/v1/replay/{job_id}/timeline`
-- [ ] `GET /api/v1/engine/config` + `PATCH` — تنظیمات engine
-- [ ] `GET /api/v1/engine/stats` — approval rate, rejection breakdown
-- [ ] `GET /api/v1/signals` — فقط approved decisions
-- [ ] `POST /api/v1/validation/run` — اجرای harness
-- [ ] `GET /api/v1/providers` + `PATCH` — مدیریت providers
-- [ ] `WS /ws/decisions` — real-time decision stream
-- [ ] Auth (JWT)
+- [x] `GET /api/v1/decisions` — لیست تصمیمات (approved + rejected)
+- [x] `GET /api/v1/decisions/{id}` — decision log + explainability کامل
+- [x] `POST /api/v1/replay/cycle/{correlation_id}` — strict replay
+- [x] `GET /api/v1/replay/cycle/{correlation_id}/timeline`
+- [x] `GET /api/v1/engine/config` + `PATCH` — تنظیمات engine
+- [x] `GET /api/v1/engine/stats` — approval rate, rejection breakdown
+- [x] `GET /api/v1/signals` — فقط approved decisions
+- [x] `POST /api/v1/validation/run` — اجرای harness
+- [x] `GET /api/v1/providers` + `PATCH` — مدیریت providers
+- [x] `WS /ws/decisions` — real-time decision stream
+- [x] Auth (JWT)
 
 **Frontend:**
-- [ ] Layout + sidebar
-- [ ] **صفحه Decision Monitor** (اولین صفحه — نه Overview کلاسیک)
-- [ ] Engine Config page
-- [ ] Signals list + detail (با decision log)
-- [ ] Validation run + results
-- [ ] Providers list (secondary)
-- [ ] Dark theme
+- [x] Layout + sidebar
+- [x] **صفحه Decision Monitor** (اولین صفحه — نه Overview کلاسیک)
+- [x] Engine Config page
+- [x] Signals list + detail (با decision log)
+- [x] Validation run + results
+- [x] Providers list (secondary)
+- [x] Dark theme
 
 ### خروجی / معیار قبولی
-- [ ] هر rejection در UI با دلیل نمایش داده می‌شود
-- [ ] validation از dashboard اجرا می‌شود
-- [ ] تغییر engine config بدون redeploy provider
+- [x] هر rejection در UI با دلیل نمایش داده می‌شود
+- [x] validation از dashboard اجرا می‌شود
+- [x] تغییر engine config بدون redeploy provider
 
 ---
 
@@ -395,7 +395,7 @@ Engine = unchanged since Phase 1
 - [x] ExecutionEngine — Order/Fill chain — [execution-model](../architecture/execution-model.md)
 - [x] FeatureStore — `feature_version` + `config_hash`
 - [x] Strict replay per `correlation_id` (MVP)
-- [ ] Explainability در API (`ProviderRationale`, `RiskVerdict`)
+- [x] Explainability در API (`ProviderRationale`, `RiskVerdict`)
 - [ ] Governance — `revision_id` در decisions و events
 
 ### Feature Builder
@@ -411,8 +411,8 @@ Engine = unchanged since Phase 1
 - [x] افزودن سوم بدون touch Engine
 
 ### Observability
-- [ ] Decision Monitor با rejection reasons
-- [ ] validation از UI
+- [x] Decision Monitor با rejection reasons
+- [x] validation از UI
 
 ### Live
 - [ ] paper mode پایدار

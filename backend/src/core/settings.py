@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     jwt_secret: str = "change-me-in-production"
     jwt_expire_minutes: int = 60
+    admin_username: str = "admin"
+    admin_password: str = "changeme"
+    cors_origins: str = "http://localhost:3000"
     telegram_bot_token: str = ""
     telegram_channel_id: str = ""
     exchange_id: str = "binance"
@@ -50,6 +53,7 @@ class Settings(BaseSettings):
     exchange_api_secret: str = ""
     config_dir: str | None = None
     environment: Literal["development", "staging", "production"] = "development"
+    auth_required: bool = False
 
 
 def resolve_config_dir(settings: Settings | None = None) -> Path:

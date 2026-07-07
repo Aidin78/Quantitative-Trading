@@ -4,6 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.core.contracts.event import EventEnvelope
 from src.db.repositories.backtest import persist_event
+from src.db.repositories.decision import (
+    persist_decision_from_event,
+    persist_feature_set_from_event,
+)
 from src.db.repositories.order import persist_execution_event
 
 
@@ -24,6 +28,8 @@ class DatabaseEventHandler:
         self._buffer.append(event)
         async with self._session_factory() as session:
             await persist_event(session, event)
+            await persist_feature_set_from_event(session, event)
+            await persist_decision_from_event(session, event)
             await persist_execution_event(session, event)
             await session.commit()
 
