@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_current_user, get_db
 from src.api.services.config_service import read_engine_config, write_engine_config
-from src.db.repositories.decision import compute_engine_stats
+from src.db.repositories.decision import DASHBOARD_MODES, compute_engine_stats
 from src.governance.revision_store import compute_config_revision, save_revision
 
 router = APIRouter(prefix="/engine", tags=["engine"], dependencies=[Depends(get_current_user)])
@@ -38,5 +38,9 @@ async def patch_engine_config(
 
 
 @router.get("/stats")
-async def get_engine_stats(db: AsyncSession = Depends(get_db)) -> dict:
-    return await compute_engine_stats(db)
+async def get_engine_stats(
+    db: AsyncSession = Depends(get_db),
+    scope: str = Query("live", pattern="^(live|all)$"),
+) -> dict:
+    modes = None if scope == "all" else DASHBOARD_MODES
+    return await compute_engine_stats(db, modes=modes)

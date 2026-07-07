@@ -10,6 +10,10 @@ from src.db.models import DecisionRecordRow, EventLogRow, FeatureSetRow
 from src.events.envelopes import DecisionEventType, MarketEventType, SignalEventType
 from src.observability.metrics import DECISIONS_TOTAL
 
+# Modes shown on the live Decision Monitor dashboard. Validation/replay backtests
+# are excluded so repeated validation runs do not inflate live decision stats.
+DASHBOARD_MODES: tuple[str, ...] = ("live", "paper")
+
 
 async def persist_decision_from_event(session: AsyncSession, event: EventEnvelope) -> None:
     if event.event_type != DecisionEventType.DECISION_MADE:
@@ -25,6 +29,7 @@ async def persist_decision_from_event(session: AsyncSession, event: EventEnvelop
             result=payload["result"],
             state_snapshot_id=payload["state_snapshot_id"],
             decision_log=payload["decision_log"],
+            mode=event.mode,
             revision_id=event.revision_id,
             experiment_id=event.experiment_id,
             created_at=event.event_time,
@@ -63,6 +68,7 @@ class DecisionFilters:
         provider: str | None = None,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
+        modes: tuple[str, ...] | None = None,
     ) -> None:
         self.symbol = symbol
         self.result = result
@@ -71,6 +77,7 @@ class DecisionFilters:
         self.provider = provider
         self.start_date = start_date
         self.end_date = end_date
+        self.modes = modes
 
 
 async def list_decisions(
@@ -84,6 +91,8 @@ async def list_decisions(
     base = select(DecisionRecordRow).order_by(DecisionRecordRow.created_at.desc())
     if filters.result:
         base = base.where(DecisionRecordRow.result == filters.result)
+    if filters.modes:
+        base = base.where(DecisionRecordRow.mode.in_(filters.modes))
     if filters.start_date:
         base = base.where(DecisionRecordRow.created_at >= filters.start_date)
     if filters.end_date:
@@ -164,10 +173,15 @@ async def get_decision(session: AsyncSession, decision_id: str) -> dict | None:
     }
 
 
-async def compute_engine_stats(session: AsyncSession) -> dict:
-    total = (
-        await session.execute(select(func.count()).select_from(DecisionRecordRow))
-    ).scalar_one()
+async def compute_engine_stats(
+    session: AsyncSession,
+    *,
+    modes: tuple[str, ...] | None = None,
+) -> dict:
+    count_stmt = select(func.count()).select_from(DecisionRecordRow)
+    if modes:
+        count_stmt = count_stmt.where(DecisionRecordRow.mode.in_(modes))
+    total = (await session.execute(count_stmt)).scalar_one()
     if total == 0:
         return {
             "decisions_today": 0,
@@ -176,10 +190,14 @@ async def compute_engine_stats(session: AsyncSession) -> dict:
             "active_providers": 0,
             "feature_set_version": "v1",
         }
-    approved = (
-        await session.execute(select(func.count()).where(DecisionRecordRow.result == "approved"))
-    ).scalar_one()
-    rows = (await session.execute(select(DecisionRecordRow))).scalars().all()
+    approved_stmt = select(func.count()).where(DecisionRecordRow.result == "approved")
+    if modes:
+        approved_stmt = approved_stmt.where(DecisionRecordRow.mode.in_(modes))
+    approved = (await session.execute(approved_stmt)).scalar_one()
+    rows_stmt = select(DecisionRecordRow)
+    if modes:
+        rows_stmt = rows_stmt.where(DecisionRecordRow.mode.in_(modes))
+    rows = (await session.execute(rows_stmt)).scalars().all()
     breakdown: dict[str, int] = {}
     for row in rows:
         if row.result != "rejected":

@@ -38,6 +38,7 @@ class DecisionRecordRow(Base):
     result: Mapped[str] = mapped_column(String(16))
     state_snapshot_id: Mapped[str] = mapped_column(String(64))
     decision_log: Mapped[dict] = mapped_column(JsonType)
+    mode: Mapped[str | None] = mapped_column(String(16), index=True, nullable=True)
     revision_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     experiment_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

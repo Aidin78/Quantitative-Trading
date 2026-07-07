@@ -77,7 +77,7 @@ async def test_login_and_list_decisions(api_client, auth_headers) -> None:
         correlation_id="cycle_api_test",
         symbol="BTC/USDT",
         timeframe="1h",
-        mode="validation",
+        mode="paper",
         payload={
             "decision_id": "dec_api_test",
             "result": "rejected",
@@ -101,7 +101,7 @@ async def test_login_and_list_decisions(api_client, auth_headers) -> None:
         correlation_id="cycle_api_test",
         symbol="BTC/USDT",
         timeframe="1h",
-        mode="validation",
+        mode="paper",
         payload={
             "decision_id": "dec_api_test",
             "state_snapshot_id": "snap_1",
@@ -128,6 +128,66 @@ async def test_login_and_list_decisions(api_client, auth_headers) -> None:
     assert detail.status_code == 200
     body = detail.json()
     assert body["rejection_stage"] == "market_filter"
+
+
+@pytest.mark.asyncio
+async def test_validation_decisions_excluded_from_dashboard(api_client, auth_headers) -> None:
+    client, factory = api_client
+    from datetime import UTC, datetime
+
+    from src.core.contracts.event import EventFamily
+    from src.db.repositories.backtest import persist_event
+    from src.db.repositories.decision import persist_decision_from_event
+
+    def _make(decision_id: str, mode: str):
+        return build_envelope(
+            event_family=EventFamily.DECISION,
+            event_type=DecisionEventType.DECISION_MADE,
+            event_time=datetime.now(UTC),
+            processing_time=datetime.now(UTC),
+            correlation_id=f"corr_{decision_id}",
+            symbol="BTC/USDT",
+            timeframe="1h",
+            mode=mode,
+            payload={
+                "decision_id": decision_id,
+                "result": "approved",
+                "state_snapshot_id": "snap_x",
+                "decision_log": {
+                    "market_filter": {"passed": True},
+                    "provider_signals": [],
+                    "aggregation": {"method": "majority", "side": "BUY", "confidence": 0.7},
+                    "risk_check": {"passed": True, "checks": [], "state_snapshot_id": "snap_x"},
+                    "state_snapshot_id": "snap_x",
+                    "portfolio_version": 1,
+                    "risk_state_version": 1,
+                },
+            },
+        )
+
+    val_event = _make("dec_val_only", "validation")
+    paper_event = _make("dec_paper_only", "paper")
+    async with factory() as session:
+        await persist_decision_from_event(session, val_event)
+        await persist_decision_from_event(session, paper_event)
+        await persist_event(session, val_event)
+        await persist_event(session, paper_event)
+        await session.commit()
+
+    default_resp = await client.get("/api/v1/decisions", headers=auth_headers)
+    default_ids = {item["id"] for item in default_resp.json()["items"]}
+    assert "dec_paper_only" in default_ids
+    assert "dec_val_only" not in default_ids
+
+    all_resp = await client.get("/api/v1/decisions?scope=all", headers=auth_headers)
+    all_ids = {item["id"] for item in all_resp.json()["items"]}
+    assert "dec_val_only" in all_ids
+    assert "dec_paper_only" in all_ids
+
+    stats = await client.get("/api/v1/engine/stats", headers=auth_headers)
+    assert stats.json()["decisions_today"] == 1
+    stats_all = await client.get("/api/v1/engine/stats?scope=all", headers=auth_headers)
+    assert stats_all.json()["decisions_today"] == 2
 
 
 @pytest.mark.asyncio
