@@ -1,7 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Cpu, Filter, Save, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { api } from "@/lib/api";
 
@@ -39,45 +41,69 @@ export default function EngineConfigPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Engine Config</h1>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card title="Risk Rules">
-          <label className="block text-sm text-muted">Min Confidence</label>
+    <div className="page-container">
+      <PageHeader
+        title="Engine Config"
+        description="Tune aggregation, market filter, and risk rules. Changes apply without redeploying providers."
+        action={
+          <button
+            type="button"
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+            className="btn-primary"
+          >
+            <Save className="h-4 w-4" />
+            {mutation.isPending ? "Saving…" : "Save Changes"}
+          </button>
+        }
+      />
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card title="Risk Rules" subtitle="Pre-trade confidence thresholds">
+          <div className="flex items-center gap-2 text-accent">
+            <Shield className="h-4 w-4" />
+          </div>
+          <label className="mt-4 block text-xs font-medium uppercase tracking-wider text-muted">
+            Min Confidence
+          </label>
           <input
-            className="mt-1 w-full rounded border border-border bg-background px-3 py-2"
+            className="input-field mt-2"
             value={minConfidence}
             onChange={(e) => setMinConfidence(e.target.value)}
           />
         </Card>
-        <Card title="Aggregation">
-          <label className="block text-sm text-muted">
+
+        <Card title="Aggregation" subtitle="Provider consensus rules">
+          <div className="flex items-center gap-2 text-accent">
+            <Cpu className="h-4 w-4" />
+          </div>
+          <label className="mt-4 block text-xs font-medium uppercase tracking-wider text-muted">
             Min Agreeing Providers
           </label>
           <input
-            className="mt-1 w-full rounded border border-border bg-background px-3 py-2"
+            className="input-field mt-2"
             value={minAgreeing}
             onChange={(e) => setMinAgreeing(e.target.value)}
           />
         </Card>
-        <Card title="Market Filter">
-          <label className="block text-sm text-muted">Min ATR %</label>
+
+        <Card title="Market Filter" subtitle="Volatility and session gates">
+          <div className="flex items-center gap-2 text-accent">
+            <Filter className="h-4 w-4" />
+          </div>
+          <label className="mt-4 block text-xs font-medium uppercase tracking-wider text-muted">
+            Min ATR %
+          </label>
           <input
-            className="mt-1 w-full rounded border border-border bg-background px-3 py-2"
+            className="input-field mt-2"
             value={minAtrPct}
             onChange={(e) => setMinAtrPct(e.target.value)}
           />
         </Card>
       </div>
-      <button
-        type="button"
-        onClick={() => mutation.mutate()}
-        className="rounded bg-accent px-4 py-2 text-sm text-white"
-      >
-        Save Config
-      </button>
-      <Card title="Current Config">
-        <pre className="overflow-auto text-xs">
+
+      <Card title="Current Configuration" subtitle="Live YAML snapshot">
+        <pre className="overflow-auto rounded-lg bg-[var(--background)] p-4 font-mono text-xs leading-relaxed text-muted">
           {JSON.stringify(data?.engine, null, 2)}
         </pre>
       </Card>

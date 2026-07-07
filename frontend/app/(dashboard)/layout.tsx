@@ -1,4 +1,6 @@
+import { AppFooter } from "@/components/layout/AppFooter";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { TopBar } from "@/components/layout/TopBar";
 
 export default function DashboardLayout({
   children,
@@ -8,7 +10,11 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 p-6">{children}</main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar />
+        <main className="flex-1 p-6 lg:p-8">{children}</main>
+        <AppFooter />
+      </div>
     </div>
   );
 }

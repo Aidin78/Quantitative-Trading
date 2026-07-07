@@ -3,17 +3,124 @@
 @import "tailwindcss/utilities";
 
 :root {
-  --background: #0f1419;
-  --foreground: #e7e9ea;
-  --card: #16202a;
-  --border: #2f3336;
-  --accent: #1d9bf0;
-  --muted: #8b98a5;
-  --success: #00ba7c;
-  --danger: #f4212e;
+  --background: #090c10;
+  --background-elevated: #0f1419;
+  --foreground: #f0f3f6;
+  --card: rgba(22, 32, 42, 0.72);
+  --card-hover: rgba(28, 40, 52, 0.9);
+  --border: rgba(148, 163, 184, 0.12);
+  --border-strong: rgba(148, 163, 184, 0.22);
+  --accent: #3b9eff;
+  --accent-dim: rgba(59, 158, 255, 0.15);
+  --muted: #94a3b8;
+  --success: #34d399;
+  --success-dim: rgba(52, 211, 153, 0.15);
+  --danger: #f87171;
+  --danger-dim: rgba(248, 113, 113, 0.15);
+  --warning: #fbbf24;
+  --glow: rgba(59, 158, 255, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      rgba(59, 158, 255, 0.12),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 100% 0%,
+      rgba(52, 211, 153, 0.06),
+      transparent
+    ),
+    linear-gradient(180deg, #090c10 0%, #0c1016 50%, #090c10 100%);
+  pointer-events: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+@layer components {
+  .glass-card {
+    @apply rounded-xl border border-[var(--border)] bg-[var(--card)] backdrop-blur-md;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.04) inset,
+      0 4px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-200;
+  }
+
+  .glass-card-hover:hover {
+    @apply border-[var(--border-strong)] bg-[var(--card-hover)];
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border border-[var(--border)] bg-[var(--background-elevated)] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors;
+  }
+
+  .input-field:focus {
+    @apply border-[var(--accent)] ring-2 ring-[var(--accent-dim)];
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-all;
+    box-shadow: 0 4px 14px var(--glow);
+  }
+
+  .btn-primary:hover {
+    @apply brightness-110;
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--border-strong)] bg-[var(--background-elevated)] px-4 py-2.5 text-sm font-medium text-foreground transition-all hover:border-[var(--muted)] hover:bg-[var(--card-hover)];
+  }
+
+  .page-container {
+    @apply mx-auto max-w-7xl space-y-8;
+  }
 }

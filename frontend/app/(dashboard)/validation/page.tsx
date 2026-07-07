@@ -1,8 +1,10 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Loader2, PlayCircle } from "lucide-react";
 import { useState } from "react";
-import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { api } from "@/lib/api";
 
 export default function ValidationPage() {
@@ -21,50 +23,108 @@ export default function ValidationPage() {
     queryFn: () => api.validation(jobId!),
     enabled: !!jobId,
     refetchInterval: (q) =>
-      q.state.data?.status === "completed" ? false : 2000,
+      q.state.data?.status === "completed" || q.state.data?.status === "failed"
+        ? false
+        : 2000,
   });
 
+  const statusVariant =
+    job?.status === "completed"
+      ? "success"
+      : job?.status === "failed"
+        ? "danger"
+        : "accent";
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Validation</h1>
-      <Card title="Run Harness">
-        <div className="grid gap-3 md:grid-cols-2">
-          <input
-            className="rounded border border-border bg-background px-3 py-2"
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            placeholder="Symbol"
-          />
-          <input
-            className="rounded border border-border bg-background px-3 py-2"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            placeholder="Start date"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => run.mutate()}
-          className="mt-3 rounded bg-accent px-4 py-2 text-sm text-white"
+    <div className="page-container">
+      <PageHeader
+        title="Validation Harness"
+        description="Run historical backtests to measure engine quality and outcome metrics."
+      />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title="Run Configuration" subtitle="Historical CSV validation">
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-muted">
+                Symbol
+              </label>
+              <input
+                className="input-field mt-2"
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-muted">
+                Start Date
+              </label>
+              <input
+                className="input-field mt-2"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => run.mutate()}
+              disabled={run.isPending}
+              className="btn-primary w-full"
+            >
+              {run.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PlayCircle className="h-4 w-4" />
+              )}
+              Run Validation
+            </button>
+          </div>
+        </Card>
+
+        <Card
+          title="Job Status"
+          subtitle={jobId ? `ID: ${jobId}` : "No active job"}
         >
-          Run Validation
-        </button>
-      </Card>
-      {job && (
-        <Card title={`Job ${job.id}`}>
-          <p className="text-sm">Status: {job.status}</p>
-          {job.engine_metrics && (
-            <pre className="mt-3 overflow-auto text-xs">
+          {!job ? (
+            <EmptyState
+              message="No validation job yet"
+              hint="Configure and run a harness above"
+            />
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Badge variant={statusVariant} dot>
+                  {job.status}
+                </Badge>
+                {(job.status === "pending" || job.status === "running") && (
+                  <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                )}
+              </div>
+              {job.error && (
+                <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger">
+                  {job.error}
+                </p>
+              )}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {job?.engine_metrics && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card title="Engine Metrics">
+            <pre className="overflow-auto rounded-lg bg-[var(--background)] p-4 font-mono text-xs text-muted">
               {JSON.stringify(job.engine_metrics, null, 2)}
             </pre>
-          )}
+          </Card>
           {job.outcome_metrics && (
-            <pre className="mt-3 overflow-auto text-xs">
-              {JSON.stringify(job.outcome_metrics, null, 2)}
-            </pre>
+            <Card title="Outcome Metrics">
+              <pre className="overflow-auto rounded-lg bg-[var(--background)] p-4 font-mono text-xs text-muted">
+                {JSON.stringify(job.outcome_metrics, null, 2)}
+              </pre>
+            </Card>
           )}
-          {job.error && <p className="mt-2 text-sm text-danger">{job.error}</p>}
-        </Card>
+        </div>
       )}
     </div>
   );

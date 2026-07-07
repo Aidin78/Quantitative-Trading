@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
+import { ArrowLeft, GitBranch } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, Card } from "@/components/ui/Card";
 import { api } from "@/lib/api";
 
@@ -15,48 +17,78 @@ export default function SignalDetailPage() {
     queryFn: () => api.signal(id),
   });
 
-  if (isLoading) return <p className="text-muted">Loading...</p>;
-  if (error || !data) return <p className="text-danger">Signal not found</p>;
+  if (isLoading) {
+    return (
+      <div className="page-container">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 w-48 rounded-lg bg-[var(--card)]" />
+          <div className="h-40 rounded-xl bg-[var(--card)]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="page-container">
+        <p className="text-danger">Signal not found</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/signals" className="text-sm text-accent hover:underline">
-          ← Back to signals
-        </Link>
-        <h1 className="text-2xl font-semibold">Signal {id}</h1>
-        <Badge variant="success">{data.side}</Badge>
+    <div className="page-container">
+      <Link
+        href="/signals"
+        className="inline-flex items-center gap-2 text-sm text-muted transition-colors hover:text-accent"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to signals
+      </Link>
+
+      <PageHeader
+        title={`Signal ${id}`}
+        description={data.explainability.summary}
+        action={<Badge variant="success">{data.side}</Badge>}
+      />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title="Final Signal">
+          <pre className="overflow-auto rounded-lg bg-[var(--background)] p-4 font-mono text-xs text-muted">
+            {JSON.stringify(data.final_signal, null, 2)}
+          </pre>
+        </Card>
+
+        <Card title="Provider Votes">
+          <div className="space-y-2">
+            {data.provider_signals.map((s, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--background-elevated)] px-3 py-2.5 text-sm"
+              >
+                <span className="font-medium">{String(s.provider_id)}</span>
+                <span className="text-muted">
+                  {String(s.side)} ({String(s.confidence)})
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
 
-      <Card title="Final Signal">
-        <pre className="overflow-auto text-xs">
-          {JSON.stringify(data.final_signal, null, 2)}
-        </pre>
-      </Card>
-
       <Card title="Decision Log">
-        <p className="mb-2 text-sm text-muted">{data.explainability.summary}</p>
-        <pre className="overflow-auto text-xs">
+        <pre className="max-h-80 overflow-auto rounded-lg bg-[var(--background)] p-4 font-mono text-xs text-muted">
           {JSON.stringify(data.decision_log, null, 2)}
         </pre>
       </Card>
 
-      <Card title="Provider Votes">
-        <div className="space-y-2">
-          {data.provider_signals.map((s, i) => (
-            <div key={i} className="rounded bg-background p-2 text-sm">
-              {String(s.provider_id)}: {String(s.side)} ({String(s.confidence)})
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <a
+      <Link
         href={`/replay?correlation_id=${data.correlation_id}`}
-        className="text-sm text-accent hover:underline"
+        className="btn-secondary inline-flex"
       >
+        <GitBranch className="h-4 w-4" />
         View replay timeline
-      </a>
+      </Link>
     </div>
   );
 }
