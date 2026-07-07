@@ -93,10 +93,9 @@ async def check_connectivity(
     mode: Literal["paper", "live"],
     provider: LiveProvider,
 ) -> tuple[bool, bool]:
-    exchange_ok = provider.ping()
-    alerts_ok = False
-    if mode == "live":
-        from src.events.handlers.telegram_handler import TelegramEventHandler
+    from src.events.handlers.telegram_handler import TelegramEventHandler
 
-        alerts_ok = await TelegramEventHandler().ping()
+    exchange_ok = provider.ping()
+    telegram = TelegramEventHandler()
+    alerts_ok = await telegram.ping() if telegram.is_configured() else False
     return exchange_ok, alerts_ok

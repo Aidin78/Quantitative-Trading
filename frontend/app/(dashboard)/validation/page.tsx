@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2, PlayCircle } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ValidationMetricsPanel } from "@/components/validation/ValidationMetricsPanel";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { api } from "@/lib/api";
 
@@ -111,20 +112,12 @@ export default function ValidationPage() {
       </div>
 
       {job?.engine_metrics && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card title="Engine Metrics">
-            <pre className="overflow-auto rounded-lg bg-[var(--background)] p-4 font-mono text-xs text-muted">
-              {JSON.stringify(job.engine_metrics, null, 2)}
-            </pre>
-          </Card>
-          {job.outcome_metrics && (
-            <Card title="Outcome Metrics">
-              <pre className="overflow-auto rounded-lg bg-[var(--background)] p-4 font-mono text-xs text-muted">
-                {JSON.stringify(job.outcome_metrics, null, 2)}
-              </pre>
-            </Card>
-          )}
-        </div>
+        <Card title="Validation Results" subtitle="Engine and outcome metrics">
+          <ValidationMetricsPanel
+            engine={job.engine_metrics}
+            outcome={job.outcome_metrics}
+          />
+        </Card>
       )}
     </div>
   );

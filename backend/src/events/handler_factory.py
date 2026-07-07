@@ -16,9 +16,16 @@ def build_handlers(
     session_factory: async_sessionmaker[AsyncSession] | None = None,
     persist_db: bool = True,
 ) -> list[EventHandler]:
+    from src.core.settings import get_settings
+
     handlers: list[EventHandler] = [WebSocketEventHandler()]
     if persist_db and session_factory is not None:
         handlers.append(DatabaseEventHandler(session_factory))
-    if mode == "live":
-        handlers.append(TelegramEventHandler())
+    telegram = TelegramEventHandler()
+    settings = get_settings()
+    telegram_in_paper = (
+        mode == "paper" and telegram.is_configured() and settings.environment == "development"
+    )
+    if mode == "live" or telegram_in_paper:
+        handlers.append(telegram)
     return handlers

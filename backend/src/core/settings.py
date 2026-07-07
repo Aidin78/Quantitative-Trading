@@ -32,9 +32,30 @@ class AppYamlConfig(BaseModel, frozen=True):
     fill_models: FillModelDefaults
 
 
+def _resolve_env_files() -> tuple[str, ...]:
+    """Load .env from cwd, backend/, or monorepo root (first existing wins)."""
+    here = Path(__file__).resolve()
+    backend_root = here.parents[2]
+    repo_root = here.parents[3]
+    candidates = [
+        Path.cwd() / ".env",
+        backend_root / ".env",
+        repo_root / ".env",
+    ]
+    seen: set[Path] = set()
+    files: list[str] = []
+    for path in candidates:
+        resolved = path.resolve()
+        if resolved in seen or not resolved.is_file():
+            continue
+        seen.add(resolved)
+        files.append(str(resolved))
+    return tuple(files) if files else (".env",)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_resolve_env_files(),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -48,6 +69,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     telegram_bot_token: str = ""
     telegram_channel_id: str = ""
+    telegram_proxy_url: str = ""
     exchange_id: str = "binance"
     exchange_api_key: str = ""
     exchange_api_secret: str = ""

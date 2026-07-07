@@ -38,10 +38,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ username, password }),
     }),
-  decisions: (params?: string) =>
-    apiFetch<{ items: DecisionSummary[]; total: number }>(
-      `/api/v1/decisions${params ? `?${params}` : ""}`,
-    ),
+  decisions: (params?: string | DecisionFilters) => {
+    const qs =
+      typeof params === "string"
+        ? params
+        : params
+          ? new URLSearchParams(
+              Object.entries({
+                ...params,
+                limit: String(params.limit ?? 50),
+              }).filter(([, v]) => v != null && v !== "") as [string, string][],
+            ).toString()
+          : "limit=50";
+    return apiFetch<{ items: DecisionSummary[]; total: number }>(
+      `/api/v1/decisions?${qs}`,
+    );
+  },
   decision: (id: string) => apiFetch<DecisionDetail>(`/api/v1/decisions/${id}`),
   stats: () => apiFetch<EngineStats>("/api/v1/engine/stats"),
   engineConfig: () =>
@@ -82,6 +94,14 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ mode }),
     }),
+};
+
+export type DecisionFilters = {
+  result?: string;
+  side?: string;
+  rejection_reason?: string;
+  provider?: string;
+  limit?: number;
 };
 
 export type HealthStatus = {

@@ -14,7 +14,10 @@ from src.events.handlers.telegram_handler import TelegramEventHandler
 async def test_telegram_handler_formats_and_sends() -> None:
     mock_bot = MagicMock()
     mock_bot.send_message = AsyncMock()
-    with patch("src.events.handlers.telegram_handler.Bot", return_value=mock_bot):
+    with patch(
+        "src.events.handlers.telegram_handler.build_telegram_bot",
+        return_value=mock_bot,
+    ):
         handler = TelegramEventHandler(bot_token="token", channel_id="channel")
     event = EventEnvelope(
         event_id="evt_1",

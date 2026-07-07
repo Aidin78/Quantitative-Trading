@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 
-from telegram import Bot
 from telegram.error import TelegramError
 
 from src.core.contracts.event import EventEnvelope
 from src.core.settings import get_settings
 from src.events.envelopes import ExecutionEventType
+from src.events.handlers.telegram_client import build_telegram_bot
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class TelegramEventHandler:
         settings = get_settings()
         self._token = bot_token if bot_token is not None else settings.telegram_bot_token
         self._channel_id = channel_id if channel_id is not None else settings.telegram_channel_id
-        self._bot: Bot | None = Bot(self._token) if self._token else None
+        self._bot = build_telegram_bot(settings, token=self._token) if self._token else None
 
     def is_configured(self) -> bool:
         return bool(self._token and self._channel_id and self._bot)

@@ -11,13 +11,20 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { DecisionFiltersBar } from "@/components/dashboard/DecisionFilters";
 import { LiveStatusCard } from "@/components/dashboard/LiveStatusCard";
 import { Badge, Card, EmptyState, StatCard } from "@/components/ui/Card";
 import { useDecisionWebSocket } from "@/hooks/useDecisionWebSocket";
-import { api, DecisionSummary, type EngineStats } from "@/lib/api";
+import {
+  api,
+  DecisionSummary,
+  type DecisionFilters,
+  type EngineStats,
+} from "@/lib/api";
 
 export default function DecisionMonitorPage() {
   const [selected, setSelected] = useState<DecisionSummary | null>(null);
+  const [filters, setFilters] = useState<DecisionFilters>({ limit: 50 });
   useDecisionWebSocket();
 
   const { data: stats } = useQuery({
@@ -26,9 +33,14 @@ export default function DecisionMonitorPage() {
     refetchInterval: 30_000,
   });
 
+  const { data: providers } = useQuery({
+    queryKey: ["providers"],
+    queryFn: () => api.providers(),
+  });
+
   const { data: decisions } = useQuery({
-    queryKey: ["decisions"],
-    queryFn: () => api.decisions("limit=50"),
+    queryKey: ["decisions", filters],
+    queryFn: () => api.decisions(filters),
     refetchInterval: 30_000,
   });
 
@@ -88,9 +100,18 @@ export default function DecisionMonitorPage() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
         <Card
           title="Decision Feed"
-          subtitle="Click a row to inspect provider votes"
+          subtitle={
+            decisions
+              ? `${decisions.items.length} of ${decisions.total} decisions`
+              : "Click a row to inspect provider votes"
+          }
           className="xl:col-span-3"
         >
+          <DecisionFiltersBar
+            filters={filters}
+            providers={(providers?.items ?? []).map((p) => p.provider_id)}
+            onChange={setFilters}
+          />
           <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
             {decisions?.items.map((d) => (
               <button
