@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { LiveStatusCard } from "@/components/dashboard/LiveStatusCard";
 import { Badge, Card, EmptyState, StatCard } from "@/components/ui/Card";
 import { useDecisionWebSocket } from "@/hooks/useDecisionWebSocket";
 import { api, DecisionSummary, type EngineStats } from "@/lib/api";
@@ -47,36 +48,41 @@ export default function DecisionMonitorPage() {
         title="Decision Monitor"
         description="Real-time view of engine decisions — approvals, rejections, and provider consensus."
         action={
-          <Badge variant="success" dot>
-            Live
+          <Badge variant="accent" dot>
+            Monitor
           </Badge>
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Total Decisions"
-          value={stats?.decisions_today ?? "—"}
-          icon={<Activity className="h-4 w-4" />}
-        />
-        <StatCard
-          label="Approval Rate"
-          value={stats ? `${(stats.approval_rate * 100).toFixed(1)}` : "—"}
-          suffix="%"
-          trend={stats && stats.approval_rate > 0.15 ? "up" : "neutral"}
-          icon={<TrendingUp className="h-4 w-4" />}
-        />
-        <StatCard
-          label="Rejections"
-          value={rejectionTotal}
-          trend={rejectionTotal > 0 ? "down" : "neutral"}
-          icon={<XCircle className="h-4 w-4" />}
-        />
-        <StatCard
-          label="Active Providers"
-          value={stats?.active_providers ?? "—"}
-          icon={<Layers className="h-4 w-4" />}
-        />
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              label="Total Decisions"
+              value={stats?.decisions_today ?? "—"}
+              icon={<Activity className="h-4 w-4" />}
+            />
+            <StatCard
+              label="Approval Rate"
+              value={stats ? `${(stats.approval_rate * 100).toFixed(1)}` : "—"}
+              suffix="%"
+              trend={stats && stats.approval_rate > 0.15 ? "up" : "neutral"}
+              icon={<TrendingUp className="h-4 w-4" />}
+            />
+            <StatCard
+              label="Rejections"
+              value={rejectionTotal}
+              trend={rejectionTotal > 0 ? "down" : "neutral"}
+              icon={<XCircle className="h-4 w-4" />}
+            />
+            <StatCard
+              label="Active Providers"
+              value={stats?.active_providers ?? "—"}
+              icon={<Layers className="h-4 w-4" />}
+            />
+          </div>
+        </div>
+        <LiveStatusCard />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">

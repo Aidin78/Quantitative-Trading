@@ -43,7 +43,7 @@ async def health() -> dict:
     app_config = load_app_yaml_config()
     return {
         "status": "ok",
-        "phase": "6-observability",
+        "phase": "7-live-adapters",
         "environment": settings.environment,
         "app": app_config.app.name,
         "default_symbol": app_config.default_symbols[0] if app_config.default_symbols else None,

@@ -282,7 +282,7 @@ Provider config نباید period اندیکاتور را تغییر دهد؛ آ
   "status": "running",
   "mode": "live",
   "exchange_connected": true,
-  "telegram_connected": true,
+  "alerts_connected": true,
   "last_run_at": "2026-07-06T10:01:00Z",
   "last_signal_at": "2026-07-06T08:30:00Z",
   "jobs": [

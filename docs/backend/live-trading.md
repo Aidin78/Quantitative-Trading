@@ -119,7 +119,7 @@ GET /api/v1/live/status
   "experiment_id": "exp_live_001",
   "last_run": "2026-07-06T10:01:00Z",
   "exchange_connected": true,
-  "telegram_connected": true
+  "alerts_connected": true,
 }
 ```
 

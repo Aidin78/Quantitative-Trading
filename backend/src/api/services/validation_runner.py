@@ -4,16 +4,15 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
-from src.api.websocket.decisions import broadcast_decision
 from src.core.settings import load_app_yaml_config, resolve_config_dir
 from src.data.csv_provider import CsvDataProvider
 from src.db.repositories.backtest import persist_validation_result
 from src.db.session import get_session_factory
 from src.engine.config import load_engine_config
 from src.engine.decision_engine import DecisionEngine
-from src.events.envelopes import DecisionEventType
 from src.events.handlers.database_handler import DatabaseEventHandler
 from src.events.handlers.event_log_handler import EventLogHandler
+from src.events.handlers.websocket_handler import WebSocketEventHandler
 from src.events.in_memory_bus import InMemoryEventBus
 from src.execution.config import load_default_fill_model
 from src.execution.simulated import SimulatedExecutionEngine
@@ -76,7 +75,7 @@ async def run_validation_job(
     fill_model = load_default_fill_model(resolve_config_dir())
     execution_engine = SimulatedExecutionEngine(fill_model, clock)
     log_handler = EventLogHandler()
-    handlers: list = [log_handler]
+    handlers: list = [log_handler, WebSocketEventHandler()]
     if persist_db:
         handlers.append(DatabaseEventHandler(get_session_factory()))
     bus = InMemoryEventBus(handlers=handlers)
@@ -96,27 +95,6 @@ async def run_validation_job(
     config = ValidationConfig(symbol=sym, timeframe=tf, start=start, end=end, csv_path=str(csv))
     harness = ValidationHarness(runtime, provider, clock, log_handler, config=config)
     result = await harness.run()
-
-    for event in result.events:
-        if event.event_type == DecisionEventType.DECISION_APPROVED:
-            fs = event.payload.get("final_signal") or {}
-            await broadcast_decision(
-                decision_id=event.payload["decision_id"],
-                symbol=event.symbol,
-                result="approved",
-                correlation_id=event.correlation_id,
-                side=fs.get("side"),
-                confidence=fs.get("confidence"),
-            )
-        elif event.event_type == DecisionEventType.DECISION_REJECTED:
-            await broadcast_decision(
-                decision_id=event.payload["decision_id"],
-                symbol=event.symbol,
-                result="rejected",
-                correlation_id=event.correlation_id,
-                rejection_reason=event.payload.get("rejection_reason"),
-                rejection_stage=event.payload.get("rejection_stage"),
-            )
 
     if persist_db:
         async with get_session_factory()() as session:

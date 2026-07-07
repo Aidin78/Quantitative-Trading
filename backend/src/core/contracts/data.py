@@ -13,4 +13,11 @@ class MarketDataProvider(Protocol):
         end: datetime,
     ) -> pd.DataFrame: ...
 
-    def get_latest(self, symbol: str, timeframe: str, limit: int = 200) -> pd.DataFrame: ...
+    def get_latest(
+        self,
+        symbol: str,
+        timeframe: str,
+        limit: int = 200,
+        *,
+        end: datetime | None = None,
+    ) -> pd.DataFrame: ...

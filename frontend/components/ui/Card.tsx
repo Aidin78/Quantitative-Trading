@@ -36,7 +36,7 @@ export function Badge({
   dot = false,
 }: {
   children: React.ReactNode;
-  variant?: "default" | "success" | "danger" | "accent";
+  variant?: "default" | "success" | "danger" | "accent" | "warning";
   dot?: boolean;
 }) {
   const styles = {
@@ -44,12 +44,14 @@ export function Badge({
     success: "bg-[var(--success-dim)] text-success border border-success/20",
     danger: "bg-[var(--danger-dim)] text-danger border border-danger/20",
     accent: "bg-[var(--accent-dim)] text-accent border border-accent/20",
+    warning: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
   };
   const dotColors = {
     default: "bg-muted",
     success: "bg-success",
     danger: "bg-danger",
     accent: "bg-accent",
+    warning: "bg-amber-400",
   };
   return (
     <span

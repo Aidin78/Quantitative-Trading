@@ -2,37 +2,27 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Literal, Protocol
+from typing import Literal
 
-from src.core.contracts.event import EventEnvelope, EventFamily
+from src.core.contracts.data import MarketDataProvider
+from src.core.contracts.event import EventBus, EventEnvelope, EventFamily
 from src.core.contracts.provider import SignalProvider
 from src.core.contracts.signal import StrategySignal
 from src.core.contracts.time import Clock
 from src.engine.decision_engine import DecisionEngine
 from src.events.envelopes import (
     DecisionEventType,
+    ExecutionEventType,
     MarketEventType,
     SignalEventType,
     build_envelope,
 )
-from src.events.in_memory_bus import InMemoryEventBus
 from src.execution.engine import ExecutionEngine
 from src.features.builder import DefaultFeatureBuilder
 from src.features.store import FeatureStore
 from src.runtime.models import CycleResult
 from src.state.store import StateStore
 from src.state.transitions import StateTransitionEvent
-
-
-class MarketDataProvider(Protocol):
-    def get_latest(
-        self,
-        symbol: str,
-        timeframe: str,
-        limit: int = 200,
-        *,
-        end: datetime | None = None,
-    ): ...
 
 
 class PlatformRuntime:
@@ -45,7 +35,7 @@ class PlatformRuntime:
         state_store: StateStore,
         providers: list[SignalProvider],
         decision_engine: DecisionEngine,
-        event_bus: InMemoryEventBus,
+        event_bus: EventBus,
         clock: Clock,
         portfolio_id: str,
         mode: Literal["validation", "live", "paper", "replay"] = "validation",
@@ -307,6 +297,34 @@ class PlatformRuntime:
                 experiment_id=experiment_id,
             )
         events.append(outcome_event)
+        causation_id = outcome_event.event_id
+
+        if decision.is_approved and decision.final_signal is not None:
+            fs = decision.final_signal
+            signal_event = build_envelope(
+                event_family=EventFamily.EXECUTION,
+                event_type=ExecutionEventType.SIGNAL_PUBLISHED,
+                event_time=event_time,
+                processing_time=processing_time,
+                correlation_id=cycle_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                mode=self._mode,
+                causation_id=causation_id,
+                payload={
+                    "decision_id": decision.decision_id,
+                    "side": fs.side,
+                    "entry_price": fs.entry_price,
+                    "stop_loss": fs.stop_loss,
+                    "take_profit": fs.take_profit,
+                    "confidence": fs.confidence,
+                    "risk_reward": fs.risk_reward,
+                    "provider_ids": list(fs.contributing_providers),
+                },
+                revision_id=revision_id,
+                experiment_id=experiment_id,
+            )
+            events.append(signal_event)
 
         if decision.is_approved:
             risk_transition = StateTransitionEvent(

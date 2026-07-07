@@ -22,6 +22,9 @@ pandas = "^2.2.0"
 numpy = "^2.1.0"
 pyyaml = "^6.0.2"
 httpx = "^0.28.0"
+ccxt = "^4.5.64"
+apscheduler = "^3.11.3"
+python-telegram-bot = ">=21.7"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
@@ -29,6 +32,7 @@ pytest-asyncio = "^0.24.0"
 ruff = "^0.8.0"
 pre-commit = "^4.0.0"
 aiosqlite = "^0.20.0"
+fakeredis = "^2.36.2"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

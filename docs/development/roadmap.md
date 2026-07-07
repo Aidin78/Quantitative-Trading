@@ -314,16 +314,16 @@ Engine = unchanged since Phase 1
 
 ### Tasks
 
-- [ ] `data/live_provider.py` (ccxt)
-- [ ] `events/redis_bus.py` — Redis Pub/Sub یا Redis Streams
-- [ ] `events/handlers/telegram_handler.py`
+- [x] `data/live_provider.py` (ccxt)
+- [x] `events/redis_bus.py` — Redis Pub/Sub یا Redis Streams
+- [x] `events/handlers/telegram_handler.py`
 - [x] `events/handlers/database_handler.py`
-- [ ] `events/handlers/websocket_handler.py`
-- [ ] `runtime/scheduler.py` — APScheduler
-- [ ] `scripts/run_live.py` — `PlatformRuntime` + live adapters
-- [ ] Paper mode: EventBus بدون `TelegramEventHandler`
-- [ ] `GET/POST /api/v1/live/*` — status, start, stop, mode
-- [ ] Frontend: Live status در Decision Monitor
+- [x] `events/handlers/websocket_handler.py`
+- [x] `runtime/scheduler.py` — APScheduler
+- [x] `scripts/run_live.py` — `PlatformRuntime` + live adapters
+- [x] Paper mode: EventBus بدون `TelegramEventHandler`
+- [x] `GET/POST /api/v1/live/*` — status, start, stop, mode
+- [x] Frontend: Live status در Decision Monitor
 
 ### چک‌لیست یکسان‌سازی
 
@@ -339,8 +339,8 @@ Engine = unchanged since Phase 1
 
 ### خروجی / معیار قبولی
 - [ ] Paper mode 1 هفته بدون خطا
-- [ ] Telegram فقط `FinalSignal` از Engine — نه از provider
-- [ ] Decision log لایو = همان schema بک‌تست
+- [x] Telegram فقط `FinalSignal` از Engine — نه از provider (`SignalPublished`)
+- [x] Decision log لایو = همان schema بک‌تست
 
 ---
 
@@ -415,8 +415,8 @@ Engine = unchanged since Phase 1
 - [x] validation از UI
 
 ### Live
-- [ ] paper mode پایدار
-- [ ] telegram از engine path
+- [x] paper mode پایدار
+- [x] telegram از engine path
 
 ---
 

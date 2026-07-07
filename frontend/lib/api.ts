@@ -70,6 +70,18 @@ export const api = {
     apiFetch<{ timeline: TimelineEntry[] }>(
       `/api/v1/replay/cycle/${correlationId}/timeline`,
     ),
+  liveStatus: () => apiFetch<LiveStatus>("/api/v1/live/status"),
+  startLive: (body: LiveStartRequest) =>
+    apiFetch<LiveStatus>("/api/v1/live/start", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  stopLive: () => apiFetch<LiveStatus>("/api/v1/live/stop", { method: "POST" }),
+  setLiveMode: (mode: "paper" | "live") =>
+    apiFetch<LiveStatus>("/api/v1/live/mode", {
+      method: "POST",
+      body: JSON.stringify({ mode }),
+    }),
 };
 
 export type HealthStatus = {
@@ -158,4 +170,29 @@ export type TimelineEntry = {
   event_time: string;
   event_family?: string;
   summary?: string;
+};
+
+export type LiveJob = {
+  symbol: string;
+  timeframe: string;
+  next_run_at?: string | null;
+};
+
+export type LiveStatus = {
+  status: "stopped" | "running" | "paused";
+  mode: "paper" | "live";
+  exchange_connected: boolean;
+  alerts_connected: boolean;
+  last_run_at?: string | null;
+  last_signal_at?: string | null;
+  last_error?: string | null;
+  revision_id?: string | null;
+  jobs: LiveJob[];
+};
+
+export type LiveStartRequest = {
+  mode?: "paper" | "live";
+  symbol?: string;
+  timeframe?: string;
+  revision_id?: string;
 };
