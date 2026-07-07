@@ -9,6 +9,13 @@ import pandas as pd
 from src.core.exceptions import DataProviderError
 
 
+def _to_utc_timestamp(value: datetime) -> pd.Timestamp:
+    ts = pd.Timestamp(value)
+    if ts.tzinfo is None:
+        return ts.tz_localize("UTC")
+    return ts.tz_convert("UTC")
+
+
 class LiveProvider:
     """Fetches OHLCV from a live exchange via ccxt."""
 
@@ -47,23 +54,76 @@ class LiveProvider:
         start: datetime,
         end: datetime,
     ) -> pd.DataFrame:
-        df = self.get_latest(symbol, timeframe, limit=1000)
-        if "timestamp" not in df.columns:
-            return df
-        df = df.copy()
-        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-        start_ts = pd.Timestamp(start)
-        end_ts = pd.Timestamp(end)
-        if start_ts.tzinfo is None:
-            start_ts = start_ts.tz_localize("UTC")
-        else:
-            start_ts = start_ts.tz_convert("UTC")
-        if end_ts.tzinfo is None:
-            end_ts = end_ts.tz_localize("UTC")
-        else:
-            end_ts = end_ts.tz_convert("UTC")
+        return self.fetch_ohlcv_range(symbol, timeframe, start, end)
+
+    def fetch_ohlcv_range(
+        self,
+        symbol: str,
+        timeframe: str,
+        start: datetime,
+        end: datetime,
+        *,
+        limit: int = 1000,
+    ) -> pd.DataFrame:
+        start_ts = _to_utc_timestamp(start)
+        end_ts = _to_utc_timestamp(end)
+        if start_ts > end_ts:
+            raise DataProviderError("Start date must be on or before end date")
+
+        timeframe_ms = int(self._exchange.parse_timeframe(timeframe) * 1000)
+        since_ms = int(start_ts.timestamp() * 1000)
+        end_ms = int(end_ts.timestamp() * 1000)
+        all_rows: list[list] = []
+        last_error: Exception | None = None
+
+        while since_ms <= end_ms:
+            batch: list | None = None
+            for attempt in range(3):
+                try:
+                    batch = self._exchange.fetch_ohlcv(
+                        symbol,
+                        timeframe,
+                        since=since_ms,
+                        limit=limit,
+                    )
+                    break
+                except ccxt.RateLimitExceeded as exc:
+                    last_error = exc
+                    time.sleep((self._exchange.rateLimit / 1000) * (attempt + 1))
+                except Exception as exc:
+                    last_error = exc
+                    time.sleep(1)
+            if batch is None:
+                raise DataProviderError(
+                    f"Failed to fetch historical OHLCV for {symbol}: {last_error}"
+                ) from last_error
+            if not batch:
+                break
+            all_rows.extend(batch)
+            last_ts = batch[-1][0]
+            if last_ts >= end_ms:
+                break
+            next_since = last_ts + timeframe_ms
+            if next_since <= since_ms:
+                break
+            since_ms = next_since
+
+        if not all_rows:
+            raise DataProviderError(
+                f"No OHLCV data returned for {symbol} {timeframe} "
+                f"between {start_ts.isoformat()} and {end_ts.isoformat()}"
+            )
+
+        df = self._to_dataframe(all_rows)
+        df = df.drop_duplicates(subset=["timestamp"]).sort_values("timestamp")
         mask = (df["timestamp"] >= start_ts) & (df["timestamp"] <= end_ts)
-        return df.loc[mask].reset_index(drop=True)
+        filtered = df.loc[mask].reset_index(drop=True)
+        if filtered.empty:
+            raise DataProviderError(
+                f"No OHLCV bars in range for {symbol} {timeframe} "
+                f"between {start_ts.isoformat()} and {end_ts.isoformat()}"
+            )
+        return filtered
 
     def get_latest(
         self,

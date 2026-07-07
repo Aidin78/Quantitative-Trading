@@ -14,5 +14,6 @@ pgdata/
 frontend/test-results/
 playwright-report/
 backend/ci_e2e.db
+backend/data/cache/
 *.log
 *.tsbuildinfo

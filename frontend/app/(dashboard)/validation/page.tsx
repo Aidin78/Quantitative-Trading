@@ -11,14 +11,28 @@ import { api } from "@/lib/api";
 export default function ValidationPage() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [symbol, setSymbol] = useState("BTC/USDT");
-  const [startDate, setStartDate] = useState("2026-01-01");
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [source, setSource] = useState<"exchange" | "csv">("exchange");
   const [wfWindows, setWfWindows] = useState(3);
   const [wfTrainRatio, setWfTrainRatio] = useState(0.7);
   const [exporting, setExporting] = useState(false);
 
   const run = useMutation({
     mutationFn: () =>
-      api.runValidation({ symbol, start_date: startDate, timeframe: "1h" }),
+      api.runValidation({
+        symbol,
+        start_date: startDate,
+        end_date: endDate || undefined,
+        source,
+        timeframe: "1h",
+      }),
     onSuccess: (res) => setJobId(res.id),
   });
 
@@ -27,6 +41,8 @@ export default function ValidationPage() {
       api.walkForward({
         symbol,
         start_date: startDate,
+        end_date: endDate || undefined,
+        source,
         timeframe: "1h",
         windows: wfWindows,
         train_ratio: wfTrainRatio,
@@ -68,8 +84,33 @@ export default function ValidationPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card title="Run Configuration" subtitle="Historical CSV validation">
+        <Card
+          title="Run Configuration"
+          subtitle="Historical validation with live exchange data"
+        >
           <div className="space-y-4">
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-muted">
+                Data Source
+              </label>
+              <select
+                className="input-field mt-2"
+                value={source}
+                onChange={(e) =>
+                  setSource(e.target.value as "exchange" | "csv")
+                }
+              >
+                <option value="exchange">
+                  Exchange (Binance, free public data)
+                </option>
+                <option value="csv">Sample CSV (bundled fixture)</option>
+              </select>
+              <p className="mt-2 text-xs text-muted">
+                {source === "exchange"
+                  ? "Downloads OHLCV from Binance public API. First run caches data on disk."
+                  : "Uses the bundled sample CSV (2026-01-01 to 2026-01-05)."}
+              </p>
+            </div>
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-muted">
                 Symbol
@@ -85,11 +126,32 @@ export default function ValidationPage() {
                 Start Date
               </label>
               <input
+                type="date"
                 className="input-field mt-2"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-muted">
+                End Date
+              </label>
+              <input
+                type="date"
+                className="input-field mt-2"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+            {(run.error || walkForward.error) && (
+              <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger">
+                {run.error instanceof Error
+                  ? run.error.message
+                  : walkForward.error instanceof Error
+                    ? walkForward.error.message
+                    : "Validation request failed"}
+              </p>
+            )}
             <button
               type="button"
               onClick={() => run.mutate()}
@@ -236,12 +298,28 @@ export default function ValidationPage() {
                     <td className="py-2">
                       {w.outcome_metrics?.total_trades != null
                         ? String(w.outcome_metrics.total_trades)
-                        : "—"}
+                        : w.error
+                          ? "—"
+                          : "—"}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            {walkForward.data.windows.some((w) => w.error) ? (
+              <div className="mt-4 space-y-2">
+                {walkForward.data.windows
+                  .filter((w) => w.error)
+                  .map((w) => (
+                    <p
+                      key={`err-${w.window}`}
+                      className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger"
+                    >
+                      Window {w.window + 1}: {w.error}
+                    </p>
+                  ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </Card>

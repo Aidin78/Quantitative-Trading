@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 from datetime import UTC, datetime
+from typing import Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -11,7 +12,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_current_user, get_db
-from src.api.services.validation_runner import new_validation_job_id, run_validation_job
+from src.api.services.validation_runner import (
+    format_validation_error,
+    new_validation_job_id,
+    run_validation_job,
+)
 from src.api.services.validation_service import validation_jobs
 from src.core.settings import load_app_yaml_config
 from src.db.models import BacktestRunRow
@@ -29,6 +34,7 @@ class ValidationRunRequest(BaseModel):
     start_date: str | None = None
     end_date: str | None = None
     csv_path: str | None = None
+    source: Literal["exchange", "csv"] = "exchange"
     experiment_id: str | None = None
     revision_id: str | None = None
 
@@ -38,6 +44,7 @@ class WalkForwardRequest(BaseModel):
     timeframe: str | None = None
     start_date: str | None = None
     end_date: str | None = None
+    source: Literal["exchange", "csv"] = "exchange"
     windows: int = 3
     train_ratio: float = 0.7
 
@@ -55,6 +62,7 @@ async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
             start_date=body.start_date,
             end_date=body.end_date,
             csv_path=body.csv_path,
+            source=body.source,
             persist_db=True,
             experiment_id=body.experiment_id,
             revision_id=body.revision_id,
@@ -64,7 +72,7 @@ async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
         VALIDATION_RUNS_TOTAL.labels(status="completed").inc()
     except Exception as exc:
         job.status = "failed"
-        job.error = str(exc)
+        job.error = format_validation_error(exc)
         VALIDATION_RUNS_TOTAL.labels(status="failed").inc()
     validation_jobs.update(job)
 
@@ -99,6 +107,7 @@ async def walk_forward_validation(body: WalkForwardRequest) -> dict:
                 timeframe=tf,
                 start_date=window.test_start.date().isoformat(),
                 end_date=window.test_end.date().isoformat(),
+                source=body.source,
                 persist_db=False,
             )
             results.append(
@@ -119,7 +128,7 @@ async def walk_forward_validation(body: WalkForwardRequest) -> dict:
                     "test_start": window.test_start.isoformat(),
                     "test_end": window.test_end.isoformat(),
                     "status": "failed",
-                    "error": str(exc),
+                    "error": format_validation_error(exc),
                 }
             )
             VALIDATION_RUNS_TOTAL.labels(status="failed").inc()

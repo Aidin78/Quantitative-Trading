@@ -3,9 +3,12 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
-from src.core.settings import load_app_yaml_config, resolve_config_dir
+from src.core.exceptions import DataProviderError
+from src.core.settings import get_settings, load_app_yaml_config, resolve_config_dir
 from src.data.csv_provider import CsvDataProvider
+from src.data.market_cache import get_or_download_csv
 from src.db.repositories.backtest import persist_validation_result
 from src.db.session import get_session_factory
 from src.engine.config import load_engine_config
@@ -43,6 +46,54 @@ def _resolve_csv(path: str | None) -> Path:
     raise FileNotFoundError("No CSV fixture found")
 
 
+def format_validation_error(exc: Exception) -> str:
+    message = str(exc)
+    lowered = message.lower()
+    if isinstance(exc, DataProviderError):
+        if "no ohlcv" in lowered or "no bars in range" in lowered:
+            return (
+                "No market data for the selected date range. "
+                "Try a different start/end date or switch to Sample CSV."
+            )
+        if "unsupported exchange" in lowered or "does not have market symbol" in lowered:
+            return f"Symbol or exchange not supported: {message}"
+        if "failed to download" in lowered or "failed to fetch" in lowered:
+            return (
+                "Could not download historical data from the exchange. "
+                "Check your internet connection and try again."
+            )
+        return message
+    if isinstance(exc, FileNotFoundError):
+        return "Sample CSV fixture not found on the server."
+    if isinstance(exc, ValueError) and "no bars in range" in lowered:
+        return (
+            "No bars in the selected date range. "
+            "Adjust start/end dates or use Sample CSV for the bundled fixture."
+        )
+    return message
+
+
+async def _resolve_data_csv(
+    *,
+    source: Literal["exchange", "csv"],
+    symbol: str,
+    timeframe: str,
+    start: datetime,
+    end: datetime,
+    csv_path: str | None,
+) -> Path:
+    if source == "csv":
+        return _resolve_csv(csv_path)
+    settings = get_settings()
+    return await get_or_download_csv(
+        exchange_id=settings.exchange_id,
+        symbol=symbol,
+        timeframe=timeframe,
+        start=start,
+        end=end,
+    )
+
+
 async def run_validation_job(
     *,
     symbol: str | None = None,
@@ -50,6 +101,7 @@ async def run_validation_job(
     start_date: str | None = None,
     end_date: str | None = None,
     csv_path: str | None = None,
+    source: Literal["exchange", "csv"] = "exchange",
     persist_db: bool = True,
     experiment_id: str | None = None,
     revision_id: str | None = None,
@@ -58,13 +110,25 @@ async def run_validation_job(
     sym = symbol or app.default_symbols[0]
     tf = timeframe or app.timeframes[0]
     start_str = start_date or app.validation.default_start
-    csv = _resolve_csv(csv_path)
-    provider = CsvDataProvider(csv, symbol=sym, timeframe=tf)
-    end_dt = (
-        datetime.fromisoformat(end_date).replace(tzinfo=UTC)
-        if end_date
-        else provider._df["timestamp"].iloc[-1].to_pydatetime()
+    start_dt = datetime.fromisoformat(start_str).replace(tzinfo=UTC)
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date).replace(tzinfo=UTC)
+    elif source == "exchange":
+        end_dt = datetime.now(UTC)
+    else:
+        end_dt = None
+
+    csv = await _resolve_data_csv(
+        source=source,
+        symbol=sym,
+        timeframe=tf,
+        start=start_dt,
+        end=end_dt or datetime.now(UTC),
+        csv_path=csv_path,
     )
+    provider = CsvDataProvider(csv, symbol=sym, timeframe=tf)
+    if end_dt is None:
+        end_dt = provider._df["timestamp"].iloc[-1].to_pydatetime()
     timestamps = provider.timestamps(
         sym,
         tf,

@@ -236,6 +236,7 @@ export type ValidationRequest = {
   timeframe?: string;
   start_date?: string;
   end_date?: string;
+  source?: "exchange" | "csv";
   experiment_id?: string;
   revision_id?: string;
 };
@@ -366,6 +367,7 @@ export type WalkForwardRequest = {
   timeframe?: string;
   start_date?: string;
   end_date?: string;
+  source?: "exchange" | "csv";
   windows?: number;
   train_ratio?: number;
 };

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from src.core.contracts.data import MarketDataProvider
@@ -56,6 +56,7 @@ class PlatformRuntime:
         self._portfolio_id = portfolio_id
         self._mode = mode
         self._execution_engine = execution_engine
+        self._signals_day: date | None = None
 
     async def run_cycle(
         self,
@@ -175,6 +176,8 @@ class PlatformRuntime:
         )
         events.append(context_event)
         causation_id = context_event.event_id
+
+        self._maybe_reset_daily_risk(event_time, cycle_id)
 
         snapshot = self._state_store.snapshot(self._portfolio_id, correlation_id=cycle_id)
 
@@ -385,6 +388,27 @@ class PlatformRuntime:
             events=tuple(events),
             execution_events=tuple(execution_events),
         )
+
+    def _maybe_reset_daily_risk(self, event_time: datetime, cycle_id: str) -> None:
+        current_day = event_time.date()
+        if self._signals_day is None:
+            self._signals_day = current_day
+            return
+        if current_day == self._signals_day:
+            return
+        self._signals_day = current_day
+        risk = self._state_store.get_risk(self._portfolio_id)
+        if risk.signals_today == 0 and risk.daily_pnl == 0.0 and risk.daily_drawdown_pct == 0.0:
+            return
+        reset_transition = StateTransitionEvent(
+            transition_id=f"trans_{uuid.uuid4().hex[:12]}",
+            portfolio_id=self._portfolio_id,
+            transition_type="risk_updated",
+            payload={"signals_today": 0, "daily_pnl": 0.0, "daily_drawdown_pct": 0.0},
+            event_time=event_time,
+            correlation_id=cycle_id,
+        )
+        self._state_store.apply_transition(reset_transition)
 
     @staticmethod
     def _resolve_event_time(df, last_row) -> datetime:  # noqa: ANN001

@@ -73,7 +73,7 @@ class BaseSignalProvider(ABC):
         side: Literal["BUY", "SELL"],
         *,
         sl_atr_mult: float = 1.5,
-        tp_atr_mult: float = 2.0,
+        tp_atr_mult: float = 3.0,
     ) -> tuple[float, float]:
         price = context.current_price
         atr = context.atr
