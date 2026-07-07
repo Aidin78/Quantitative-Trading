@@ -19,20 +19,10 @@ from src.runtime.clocks import SimulatedClock
 from src.runtime.platform_runtime import PlatformRuntime
 from src.state.store import InMemoryStateStore
 from src.validation.harness import ValidationConfig, ValidationHarness
-from tests.mocks.mock_providers import MockEmaCrossoverProvider, MockRsiDivergenceProvider
 
 
 @pytest.fixture
-def csv_path() -> Path:
-    for name in ("sample_btc_1h.csv", "ohlcv_btc_1h.csv"):
-        path = Path(__file__).resolve().parents[1] / "fixtures" / name
-        if path.exists():
-            return path
-    pytest.skip("CSV fixture missing")
-
-
-@pytest.fixture
-def validation_stack(csv_path: Path):
+def validation_stack(csv_path: Path, real_providers):
     df = CsvDataProvider(csv_path)._df
     start = df["timestamp"].iloc[0].to_pydatetime()
     end = df["timestamp"].iloc[-1].to_pydatetime()
@@ -49,7 +39,7 @@ def validation_stack(csv_path: Path):
         feature_builder=DefaultFeatureBuilder(store=feature_store),
         feature_store=feature_store,
         state_store=state_store,
-        providers=[MockEmaCrossoverProvider(), MockRsiDivergenceProvider()],
+        providers=real_providers,
         decision_engine=DecisionEngine(load_engine_config()),
         event_bus=bus,
         clock=clock,

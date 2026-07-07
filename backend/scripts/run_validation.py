@@ -27,12 +27,12 @@ from src.execution.config import load_default_fill_model
 from src.execution.simulated import SimulatedExecutionEngine
 from src.features.builder import DefaultFeatureBuilder
 from src.features.store import InMemoryFeatureStore
+from src.providers import load_providers
 from src.runtime.clocks import SimulatedClock
 from src.runtime.platform_runtime import PlatformRuntime
 from src.state.store import InMemoryStateStore
 from src.validation.harness import ValidationConfig, ValidationHarness
 from src.validation.report import format_report, write_report
-from tests.mocks.mock_providers import MockEmaCrossoverProvider, MockRsiDivergenceProvider
 
 
 def _parse_args() -> argparse.Namespace:
@@ -99,7 +99,7 @@ async def _run() -> int:
         feature_builder=DefaultFeatureBuilder(store=feature_store),
         feature_store=feature_store,
         state_store=state_store,
-        providers=[MockEmaCrossoverProvider(), MockRsiDivergenceProvider()],
+        providers=load_providers(resolve_config_dir()),
         decision_engine=DecisionEngine(load_engine_config()),
         event_bus=bus,
         clock=clock,

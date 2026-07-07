@@ -4,4 +4,5 @@ enabled: true
 weight: 1.0
 params:
   oversold: 30
+  overbought: 70
   min_confidence: 0.65

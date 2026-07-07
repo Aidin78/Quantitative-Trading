@@ -19,18 +19,12 @@ from src.replay.engine import ReplayEngine
 from src.runtime.clocks import SimulatedClock
 from src.runtime.platform_runtime import PlatformRuntime
 from src.state.store import InMemoryStateStore
-from tests.mocks.mock_providers import MockEmaCrossoverProvider, MockRsiDivergenceProvider
 
 
 @pytest.fixture
-def runtime_with_execution() -> tuple[PlatformRuntime, EventLogHandler]:
-    for name in ("sample_btc_1h.csv", "ohlcv_btc_1h.csv"):
-        csv_path = Path(__file__).resolve().parents[1] / "fixtures" / name
-        if csv_path.exists():
-            break
-    else:
-        pytest.skip("CSV fixture missing")
-
+def runtime_with_execution(
+    csv_path: Path, real_providers
+) -> tuple[PlatformRuntime, EventLogHandler]:
     event_time = datetime(2026, 1, 5, 3, 0, 0, tzinfo=UTC)
     clock = SimulatedClock(
         event_time=event_time,
@@ -46,7 +40,7 @@ def runtime_with_execution() -> tuple[PlatformRuntime, EventLogHandler]:
         feature_builder=DefaultFeatureBuilder(store=feature_store),
         feature_store=feature_store,
         state_store=InMemoryStateStore(portfolio_id="portfolio_default"),
-        providers=[MockEmaCrossoverProvider(), MockRsiDivergenceProvider()],
+        providers=real_providers,
         decision_engine=DecisionEngine(load_engine_config()),
         event_bus=bus,
         clock=clock,

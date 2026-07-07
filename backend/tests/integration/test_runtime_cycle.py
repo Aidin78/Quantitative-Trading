@@ -17,19 +17,10 @@ from src.features.store import InMemoryFeatureStore
 from src.runtime.clocks import SimulatedClock
 from src.runtime.platform_runtime import PlatformRuntime
 from src.state.store import InMemoryStateStore
-from tests.mocks.mock_providers import MockEmaCrossoverProvider, MockRsiDivergenceProvider
 
 
 @pytest.fixture
-def csv_path() -> Path:
-    path = Path(__file__).resolve().parents[1] / "fixtures" / "ohlcv_btc_1h.csv"
-    if not path.exists():
-        pytest.skip("ohlcv fixture missing")
-    return path
-
-
-@pytest.fixture
-def runtime(csv_path: Path) -> PlatformRuntime:
+def runtime(csv_path: Path, real_providers) -> PlatformRuntime:
     event_time = datetime(2026, 1, 5, 3, 0, 0, tzinfo=UTC)
     clock = SimulatedClock(
         event_time=event_time,
@@ -43,7 +34,7 @@ def runtime(csv_path: Path) -> PlatformRuntime:
         feature_builder=DefaultFeatureBuilder(store=feature_store),
         feature_store=feature_store,
         state_store=InMemoryStateStore(portfolio_id="portfolio_default"),
-        providers=[MockEmaCrossoverProvider(), MockRsiDivergenceProvider()],
+        providers=real_providers,
         decision_engine=DecisionEngine(),
         event_bus=bus,
         clock=clock,
