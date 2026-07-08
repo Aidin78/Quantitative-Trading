@@ -101,6 +101,24 @@ export const api = {
     apiFetch<ValidationJob>(`/api/v1/validation/${id}`),
   validationTrades: (id: string) =>
     apiFetch<ValidationTradesResponse>(`/api/v1/validation/${id}/trades`),
+  validationRuns: (params?: {
+    limit?: number;
+    offset?: number;
+    symbol?: string;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.limit != null) qs.set("limit", String(params.limit));
+    if (params?.offset != null) qs.set("offset", String(params.offset));
+    if (params?.symbol) qs.set("symbol", params.symbol);
+    const q = qs.toString();
+    return apiFetch<ValidationRunsResponse>(
+      `/api/v1/validation/runs${q ? `?${q}` : ""}`,
+    );
+  },
+  validationCompare: (a: string, b: string) =>
+    apiFetch<ValidationCompareResponse>(
+      `/api/v1/validation/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`,
+    ),
   replay: (
     correlationId: string,
     opts?: { mode?: "strict" | "re_execute"; revision_id?: string },
@@ -266,6 +284,78 @@ export type ValidationTradesResponse = {
   run_id: string;
   trades: ValidationTrade[];
   total: number;
+};
+
+export type MonthlyBreakdownRow = {
+  month: string;
+  trades: number;
+  win_rate: number;
+  pnl: number;
+  return_pct: number;
+  max_drawdown_pct: number;
+  start_equity: number;
+  end_equity: number;
+};
+
+export type DiagnosticsBucket = {
+  trades: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+  pnl: number;
+  gross_profit: number;
+  gross_loss: number;
+};
+
+export type ValidationDiagnostics = {
+  by_exit_reason: Record<string, DiagnosticsBucket>;
+  by_session: Record<string, DiagnosticsBucket>;
+  by_side: Record<string, DiagnosticsBucket>;
+};
+
+export type ValidationRunSummary = {
+  run_id: string;
+  symbol: string;
+  timeframe: string;
+  start?: string;
+  end?: string;
+  initial_capital?: number;
+  revision_id?: string;
+  experiment_id?: string;
+  completed_at?: string | null;
+  total_trades: number;
+  win_rate: number;
+  return_pct: number;
+  score: number;
+  total_pnl: number;
+};
+
+export type ValidationRunsResponse = {
+  items: ValidationRunSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type ValidationCompareMetric = {
+  a: number;
+  b: number;
+  delta: number;
+  winner: "a" | "b" | "tie";
+};
+
+export type ValidationCompareResponse = {
+  a: ValidationRunSummary;
+  b: ValidationRunSummary;
+  metrics: Record<string, ValidationCompareMetric>;
+  overall_winner: "a" | "b" | "tie";
+  revision_diff?: {
+    a?: Record<string, unknown> | null;
+    b?: Record<string, unknown> | null;
+    same_revision?: boolean;
+    engine_hash_match?: boolean | null;
+    providers_hash_match?: boolean | null;
+  } | null;
 };
 
 export type ValidationJob = {

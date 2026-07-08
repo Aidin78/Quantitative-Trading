@@ -1,7 +1,12 @@
 "use client";
 
 import { StatCard } from "@/components/ui/Card";
-import type { ValidationTrade } from "@/lib/api";
+import type {
+  DiagnosticsBucket,
+  MonthlyBreakdownRow,
+  ValidationDiagnostics,
+  ValidationTrade,
+} from "@/lib/api";
 
 function fmtNum(value: unknown, digits = 2): string {
   if (typeof value === "number") {
@@ -32,6 +37,29 @@ function MetricRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function DiagnosticsList({
+  title,
+  buckets,
+}: {
+  title: string;
+  buckets: Record<string, DiagnosticsBucket>;
+}) {
+  const entries = Object.entries(buckets).sort(([, a], [, b]) => b.pnl - a.pnl);
+  if (entries.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-muted">{title}</p>
+      {entries.map(([key, bucket]) => (
+        <MetricRow
+          key={key}
+          label={`${key.replace(/_/g, " ")} (${bucket.trades})`}
+          value={`${fmtMoney(bucket.pnl)} · ${fmtPct(bucket.win_rate)}`}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function ValidationMetricsPanel({
   engine,
   outcome,
@@ -48,9 +76,93 @@ export function ValidationMetricsPanel({
     | undefined;
   const providerContrib = engine?.provider_contribution as
     Record<string, number> | undefined;
+  const monthly = outcome?.monthly_breakdown as
+    MonthlyBreakdownRow[] | undefined;
+  const diagnostics = outcome?.diagnostics as ValidationDiagnostics | undefined;
+  const score = typeof outcome?.score === "number" ? outcome.score : null;
 
   return (
     <div className="space-y-6">
+      {score != null ? (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+            Strategy score
+          </p>
+          <StatCard
+            label="Composite score"
+            value={score.toFixed(1)}
+            trend={score >= 0 ? "up" : "down"}
+            suffix="/ 100"
+          />
+        </div>
+      ) : null}
+
+      {monthly && monthly.length > 0 ? (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+            Monthly breakdown
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)] text-left text-xs uppercase text-muted">
+                  <th className="pb-2 pr-3">Month</th>
+                  <th className="pb-2 pr-3">Trades</th>
+                  <th className="pb-2 pr-3">Win rate</th>
+                  <th className="pb-2 pr-3">PnL</th>
+                  <th className="pb-2 pr-3">Return</th>
+                  <th className="pb-2">Max DD</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthly.map((row) => (
+                  <tr
+                    key={row.month}
+                    className="border-b border-[var(--border)]/50"
+                  >
+                    <td className="py-2 pr-3 font-mono text-xs">{row.month}</td>
+                    <td className="py-2 pr-3">{row.trades}</td>
+                    <td className="py-2 pr-3">{fmtPct(row.win_rate)}</td>
+                    <td
+                      className={`py-2 pr-3 font-mono text-xs ${row.pnl >= 0 ? "text-[var(--success)]" : "text-danger"}`}
+                    >
+                      {fmtNum(row.pnl)}
+                    </td>
+                    <td
+                      className={`py-2 pr-3 font-mono text-xs ${row.return_pct >= 0 ? "text-[var(--success)]" : "text-danger"}`}
+                    >
+                      {row.return_pct.toFixed(2)}%
+                    </td>
+                    <td className="py-2 font-mono text-xs">
+                      {row.max_drawdown_pct.toFixed(2)}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
+      {diagnostics ? (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+            Diagnostics
+          </p>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <DiagnosticsList
+              title="By exit reason"
+              buckets={diagnostics.by_exit_reason}
+            />
+            <DiagnosticsList
+              title="By session (UTC)"
+              buckets={diagnostics.by_session}
+            />
+            <DiagnosticsList title="By side" buckets={diagnostics.by_side} />
+          </div>
+        </div>
+      ) : null}
+
       {outcome && typeof outcome.initial_capital === "number" ? (
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">

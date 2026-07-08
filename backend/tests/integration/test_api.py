@@ -204,3 +204,86 @@ async def test_providers_list(api_client) -> None:
     resp = await client.get("/api/v1/providers")
     assert resp.status_code == 200
     assert len(resp.json()["items"]) >= 2
+
+
+@pytest.mark.asyncio
+async def test_validation_runs_and_compare(api_client, auth_headers) -> None:
+    from datetime import UTC, datetime
+
+    from src.db.models import BacktestRunRow
+
+    client, factory = api_client
+    async with factory() as session:
+        session.add(
+            BacktestRunRow(
+                run_id="run_test_a",
+                symbol="BTC/USDT",
+                timeframe="1h",
+                config={
+                    "start": "2026-06-01T00:00:00+00:00",
+                    "end": "2026-06-30T00:00:00+00:00",
+                    "initial_capital": 10000.0,
+                    "revision_id": "rev_a",
+                },
+                metrics={
+                    "engine": {"approved": 10},
+                    "outcome": {
+                        "total_trades": 5,
+                        "win_rate": 0.6,
+                        "return_pct": 2.5,
+                        "score": 12.0,
+                        "sharpe_ratio": 0.8,
+                        "profit_factor": 1.4,
+                        "max_drawdown_pct": 3.0,
+                        "total_pnl": 250.0,
+                    },
+                },
+                started_at=datetime(2026, 6, 1, tzinfo=UTC),
+                completed_at=datetime(2026, 6, 30, tzinfo=UTC),
+            )
+        )
+        session.add(
+            BacktestRunRow(
+                run_id="run_test_b",
+                symbol="BTC/USDT",
+                timeframe="1h",
+                config={
+                    "start": "2026-07-01T00:00:00+00:00",
+                    "end": "2026-07-31T00:00:00+00:00",
+                    "initial_capital": 10000.0,
+                    "revision_id": "rev_b",
+                },
+                metrics={
+                    "engine": {"approved": 8},
+                    "outcome": {
+                        "total_trades": 4,
+                        "win_rate": 0.5,
+                        "return_pct": 1.0,
+                        "score": 5.0,
+                        "sharpe_ratio": 0.4,
+                        "profit_factor": 1.1,
+                        "max_drawdown_pct": 5.0,
+                        "total_pnl": 100.0,
+                    },
+                },
+                started_at=datetime(2026, 7, 1, tzinfo=UTC),
+                completed_at=datetime(2026, 7, 31, tzinfo=UTC),
+            )
+        )
+        await session.commit()
+
+    runs_resp = await client.get("/api/v1/validation/runs", headers=auth_headers)
+    assert runs_resp.status_code == 200
+    items = runs_resp.json()["items"]
+    assert any(item["run_id"] == "run_test_a" for item in items)
+    assert any(item["run_id"] == "run_test_b" for item in items)
+
+    compare_resp = await client.get(
+        "/api/v1/validation/compare?a=run_test_a&b=run_test_b",
+        headers=auth_headers,
+    )
+    assert compare_resp.status_code == 200
+    body = compare_resp.json()
+    assert body["overall_winner"] == "a"
+    assert body["metrics"]["return_pct"]["winner"] == "a"
+    assert body["metrics"]["max_drawdown_pct"]["winner"] == "a"

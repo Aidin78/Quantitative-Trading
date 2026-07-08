@@ -24,6 +24,19 @@ export default function ValidationPage() {
   const [wfWindows, setWfWindows] = useState(3);
   const [wfTrainRatio, setWfTrainRatio] = useState(0.7);
   const [exporting, setExporting] = useState(false);
+  const [compareRunA, setCompareRunA] = useState<string>("");
+  const [compareRunB, setCompareRunB] = useState<string>("");
+
+  const { data: runHistory } = useQuery({
+    queryKey: ["validation-runs", symbol],
+    queryFn: () => api.validationRuns({ limit: 20, symbol }),
+  });
+
+  const { data: compareData } = useQuery({
+    queryKey: ["validation-compare", compareRunA, compareRunB],
+    queryFn: () => api.validationCompare(compareRunA, compareRunB),
+    enabled: !!compareRunA && !!compareRunB && compareRunA !== compareRunB,
+  });
 
   const run = useMutation({
     mutationFn: () =>
@@ -243,6 +256,166 @@ export default function ValidationPage() {
           />
         </Card>
       )}
+
+      <Card title="Run History" subtitle="Past validation runs from database">
+        {runHistory?.items.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)] text-left text-xs uppercase text-muted">
+                  <th className="pb-2 pr-3">Period</th>
+                  <th className="pb-2 pr-3">Trades</th>
+                  <th className="pb-2 pr-3">Return</th>
+                  <th className="pb-2 pr-3">Score</th>
+                  <th className="pb-2">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runHistory.items.map((row) => (
+                  <tr
+                    key={row.run_id}
+                    className="border-b border-[var(--border)]/50"
+                  >
+                    <td className="py-2 pr-3 font-mono text-xs">
+                      {row.start?.slice(0, 10) ?? "—"} →{" "}
+                      {row.end?.slice(0, 10) ?? "—"}
+                    </td>
+                    <td className="py-2 pr-3">{row.total_trades}</td>
+                    <td
+                      className={`py-2 pr-3 font-mono text-xs ${row.return_pct >= 0 ? "text-[var(--success)]" : "text-danger"}`}
+                    >
+                      {row.return_pct.toFixed(2)}%
+                    </td>
+                    <td className="py-2 pr-3 font-mono text-xs">
+                      {row.score.toFixed(1)}
+                    </td>
+                    <td className="py-2">
+                      <button
+                        type="button"
+                        className="btn-secondary text-xs"
+                        onClick={() => setJobId(row.run_id)}
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState
+            message="No saved runs yet"
+            hint="Run a validation with database persistence enabled"
+          />
+        )}
+      </Card>
+
+      <Card title="Compare Runs" subtitle="Side-by-side metrics for two runs">
+        <div className="mb-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="text-xs font-medium uppercase tracking-wider text-muted">
+              Run A
+            </label>
+            <select
+              className="input-field mt-2"
+              value={compareRunA}
+              onChange={(e) => setCompareRunA(e.target.value)}
+            >
+              <option value="">Select run…</option>
+              {runHistory?.items.map((row) => (
+                <option key={`a-${row.run_id}`} value={row.run_id}>
+                  {row.start?.slice(0, 10)} → {row.end?.slice(0, 10)} (score{" "}
+                  {row.score.toFixed(1)})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium uppercase tracking-wider text-muted">
+              Run B
+            </label>
+            <select
+              className="input-field mt-2"
+              value={compareRunB}
+              onChange={(e) => setCompareRunB(e.target.value)}
+            >
+              <option value="">Select run…</option>
+              {runHistory?.items.map((row) => (
+                <option key={`b-${row.run_id}`} value={row.run_id}>
+                  {row.start?.slice(0, 10)} → {row.end?.slice(0, 10)} (score{" "}
+                  {row.score.toFixed(1)})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {compareRunA && compareRunB && compareRunA === compareRunB ? (
+          <p className="text-sm text-muted">Select two different runs.</p>
+        ) : null}
+
+        {compareData ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Badge
+                variant={
+                  compareData.overall_winner === "tie" ? "accent" : "success"
+                }
+              >
+                Overall winner: {compareData.overall_winner.toUpperCase()}
+              </Badge>
+              {compareData.revision_diff?.same_revision === false ? (
+                <span className="text-xs text-muted">
+                  Different config revisions
+                </span>
+              ) : null}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] text-left text-xs uppercase text-muted">
+                    <th className="pb-2 pr-3">Metric</th>
+                    <th className="pb-2 pr-3">Run A</th>
+                    <th className="pb-2 pr-3">Run B</th>
+                    <th className="pb-2 pr-3">Delta</th>
+                    <th className="pb-2">Winner</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(compareData.metrics).map(([key, metric]) => (
+                    <tr
+                      key={key}
+                      className="border-b border-[var(--border)]/50"
+                    >
+                      <td className="py-2 pr-3">{key.replace(/_/g, " ")}</td>
+                      <td className="py-2 pr-3 font-mono text-xs">
+                        {typeof metric.a === "number"
+                          ? metric.a.toFixed(2)
+                          : metric.a}
+                      </td>
+                      <td className="py-2 pr-3 font-mono text-xs">
+                        {typeof metric.b === "number"
+                          ? metric.b.toFixed(2)
+                          : metric.b}
+                      </td>
+                      <td
+                        className={`py-2 pr-3 font-mono text-xs ${metric.delta >= 0 ? "text-[var(--success)]" : "text-danger"}`}
+                      >
+                        {metric.delta >= 0 ? "+" : ""}
+                        {metric.delta.toFixed(2)}
+                      </td>
+                      <td className="py-2 text-xs uppercase">
+                        {metric.winner}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+      </Card>
 
       <Card title="Walk-Forward" subtitle="Rolling window validation">
         <div className="mb-4 grid gap-4 sm:grid-cols-2">
