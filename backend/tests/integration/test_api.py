@@ -287,3 +287,89 @@ async def test_validation_runs_and_compare(api_client, auth_headers) -> None:
     assert body["overall_winner"] == "a"
     assert body["metrics"]["return_pct"]["winner"] == "a"
     assert body["metrics"]["max_drawdown_pct"]["winner"] == "a"
+
+
+@pytest.mark.asyncio
+async def test_optimization_api_apply(api_client, auth_headers, monkeypatch) -> None:
+    import asyncio
+    from datetime import UTC, datetime
+
+    from src.api.services.optimization_service import optimization_sweeps
+    from src.validation.optimizer import OptimizationResult, TrialResult
+
+    async def fast_run(**kwargs):
+        trial = TrialResult(
+            trial_id="trial_test",
+            params={
+                "min_confidence": 0.65,
+                "min_risk_reward": 1.5,
+                "min_agreeing_providers": 1,
+                "sl_atr_mult": 1.5,
+                "tp_atr_mult": 3.0,
+                "max_bars_in_trade": 48,
+            },
+            train_score=10.0,
+            train_outcome={"total_trades": 1},
+            test_score=12.0,
+            test_outcome={"monthly_breakdown": [{"pnl": 1}]},
+            stability=1.0,
+        )
+        return OptimizationResult(
+            sweep_id="sweep_test",
+            symbol="BTC/USDT",
+            timeframe="1h",
+            train_start=datetime(2026, 1, 1, tzinfo=UTC),
+            train_end=datetime(2026, 1, 3, tzinfo=UTC),
+            test_start=datetime(2026, 1, 3, tzinfo=UTC),
+            test_end=datetime(2026, 1, 5, tzinfo=UTC),
+            trials=[trial],
+            best=trial,
+        )
+
+    monkeypatch.setattr("src.api.v1.optimization.run_optimization", fast_run)
+    monkeypatch.setattr(
+        "src.api.v1.optimization.write_engine_config",
+        lambda patch: {"patched": True},
+    )
+    monkeypatch.setattr(
+        "src.api.v1.optimization.write_provider_config",
+        lambda provider_id, patch: {"provider_id": provider_id},
+    )
+    monkeypatch.setattr(
+        "src.api.v1.optimization.write_validation_settings",
+        lambda patch: patch,
+    )
+
+    client, _ = api_client
+    start = await client.post(
+        "/api/v1/optimization/run",
+        headers=auth_headers,
+        json={
+            "symbol": "BTC/USDT",
+            "timeframe": "1h",
+            "start_date": "2026-01-01",
+            "end_date": "2026-01-05",
+            "source": "csv",
+            "max_trials": 1,
+            "top_k": 1,
+        },
+    )
+    assert start.status_code == 200
+    sweep_id = start.json()["id"]
+
+    for _ in range(50):
+        sweep = optimization_sweeps.get(sweep_id)
+        if sweep and sweep.status == "completed":
+            break
+        await asyncio.sleep(0.05)
+    assert sweep is not None
+    assert sweep.status == "completed"
+
+    apply_resp = await client.post(
+        f"/api/v1/optimization/{sweep_id}/apply",
+        headers=auth_headers,
+    )
+    assert apply_resp.status_code == 200
+    body = apply_resp.json()
+    assert body["revision_id"].startswith("rev_")
+    assert body["applied_params"]["min_confidence"] == 0.65

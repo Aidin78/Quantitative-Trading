@@ -72,14 +72,20 @@ class BaseSignalProvider(ABC):
         context: MarketContext,
         side: Literal["BUY", "SELL"],
         *,
-        sl_atr_mult: float = 1.5,
-        tp_atr_mult: float = 3.0,
+        sl_atr_mult: float | None = None,
+        tp_atr_mult: float | None = None,
     ) -> tuple[float, float]:
+        sl_mult = float(
+            sl_atr_mult if sl_atr_mult is not None else self.params.get("sl_atr_mult", 1.5)
+        )
+        tp_mult = float(
+            tp_atr_mult if tp_atr_mult is not None else self.params.get("tp_atr_mult", 3.0)
+        )
         price = context.current_price
         atr = context.atr
         if side == "BUY":
-            return price - sl_atr_mult * atr, price + tp_atr_mult * atr
-        return price + sl_atr_mult * atr, price - tp_atr_mult * atr
+            return price - sl_mult * atr, price + tp_mult * atr
+        return price + sl_mult * atr, price - tp_mult * atr
 
     def _rationale(
         self,

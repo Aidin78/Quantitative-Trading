@@ -119,6 +119,17 @@ export const api = {
     apiFetch<ValidationCompareResponse>(
       `/api/v1/validation/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`,
     ),
+  runOptimization: (body: OptimizationRequest) =>
+    apiFetch<{ id: string; status: string }>("/api/v1/optimization/run", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  optimization: (id: string) =>
+    apiFetch<OptimizationSweep>(`/api/v1/optimization/${id}`),
+  applyOptimization: (id: string) =>
+    apiFetch<OptimizationApplyResponse>(`/api/v1/optimization/${id}/apply`, {
+      method: "POST",
+    }),
   replay: (
     correlationId: string,
     opts?: { mode?: "strict" | "re_execute"; revision_id?: string },
@@ -356,6 +367,55 @@ export type ValidationCompareResponse = {
     engine_hash_match?: boolean | null;
     providers_hash_match?: boolean | null;
   } | null;
+};
+
+export type OptimizationRequest = {
+  symbol?: string;
+  timeframe?: string;
+  start_date?: string;
+  end_date?: string;
+  source?: "exchange" | "csv";
+  initial_capital?: number;
+  train_ratio?: number;
+  max_trials?: number;
+  top_k?: number;
+  space?: Record<string, number[]>;
+  csv_path?: string;
+};
+
+export type OptimizationTrial = {
+  trial_id: string;
+  params: Record<string, number>;
+  train_score: number;
+  test_score?: number | null;
+  stability?: number | null;
+  revision_id?: string | null;
+  train_total_trades?: number;
+  test_total_trades?: number | null;
+};
+
+export type OptimizationSweep = {
+  id: string;
+  status: string;
+  config?: Record<string, unknown>;
+  progress?: { current: number; total: number };
+  error?: string;
+  sweep_id?: string;
+  symbol?: string;
+  timeframe?: string;
+  train_start?: string;
+  train_end?: string;
+  test_start?: string;
+  test_end?: string;
+  trials?: OptimizationTrial[];
+  best?: OptimizationTrial | null;
+};
+
+export type OptimizationApplyResponse = {
+  sweep_id: string;
+  revision_id: string;
+  applied_params: Record<string, number>;
+  best?: OptimizationTrial | null;
 };
 
 export type ValidationJob = {

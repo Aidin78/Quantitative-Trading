@@ -11,13 +11,13 @@ from src.data.csv_provider import CsvDataProvider
 from src.data.market_cache import get_or_download_csv
 from src.db.repositories.backtest import persist_validation_result
 from src.db.session import get_session_factory
-from src.engine.config import load_engine_config
+from src.engine.config import EngineConfig, load_engine_config
 from src.engine.decision_engine import DecisionEngine
 from src.events.handlers.database_handler import DatabaseEventHandler
 from src.events.handlers.event_log_handler import EventLogHandler
 from src.events.handlers.websocket_handler import WebSocketEventHandler
 from src.events.in_memory_bus import InMemoryEventBus
-from src.execution.config import load_default_fill_model
+from src.execution.config import ValidationExecutionConfig, load_default_fill_model
 from src.execution.simulated import SimulatedExecutionEngine
 from src.features.builder import DefaultFeatureBuilder
 from src.features.store import InMemoryFeatureStore
@@ -31,6 +31,7 @@ from src.runtime.clocks import SimulatedClock
 from src.runtime.platform_runtime import PlatformRuntime
 from src.state.store import InMemoryStateStore
 from src.validation.harness import ValidationConfig, ValidationHarness, ValidationResult
+from src.validation.trial_config import build_providers_from_overrides
 
 
 def _resolve_csv(path: str | None) -> Path:
@@ -106,6 +107,9 @@ async def run_validation_job(
     persist_db: bool = True,
     experiment_id: str | None = None,
     revision_id: str | None = None,
+    engine_config: EngineConfig | None = None,
+    provider_overrides: dict[str, dict] | None = None,
+    execution_config: ValidationExecutionConfig | None = None,
 ) -> ValidationResult:
     app = load_app_yaml_config()
     sym = symbol or app.default_symbols[0]
@@ -148,19 +152,28 @@ async def run_validation_job(
         initial_cash=initial_capital,
     )
     fill_model = load_default_fill_model(resolve_config_dir())
-    execution_engine = SimulatedExecutionEngine(fill_model, clock)
+    execution_engine = SimulatedExecutionEngine(
+        fill_model,
+        clock,
+        config=execution_config,
+    )
     log_handler = EventLogHandler()
     handlers: list = [log_handler, WebSocketEventHandler()]
     if persist_db:
         handlers.append(DatabaseEventHandler(get_session_factory()))
     bus = InMemoryEventBus(handlers=handlers)
+    signal_providers = (
+        build_providers_from_overrides(provider_overrides)
+        if provider_overrides is not None
+        else load_providers(resolve_config_dir())
+    )
     runtime = PlatformRuntime(
         data_provider=provider,
         feature_builder=DefaultFeatureBuilder(store=feature_store),
         feature_store=feature_store,
         state_store=state_store,
-        providers=load_providers(resolve_config_dir()),
-        decision_engine=DecisionEngine(load_engine_config()),
+        providers=signal_providers,
+        decision_engine=DecisionEngine(engine_config or load_engine_config()),
         event_bus=bus,
         clock=clock,
         portfolio_id="portfolio_default",

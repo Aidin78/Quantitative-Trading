@@ -7,6 +7,7 @@ from src.api.v1 import (
     engine,
     experiments,
     live,
+    optimization,
     providers,
     replay,
     signals,
@@ -24,5 +25,6 @@ api_v1_router.include_router(engine.router)
 api_v1_router.include_router(signals.router)
 api_v1_router.include_router(replay.router)
 api_v1_router.include_router(validation.router)
+api_v1_router.include_router(optimization.router)
 api_v1_router.include_router(providers.router)
 api_v1_router.include_router(live.router)

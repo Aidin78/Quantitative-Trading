@@ -11,6 +11,7 @@ import {
   Layers,
   LineChart,
   PlayCircle,
+  Sparkles,
   Zap,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/app-info";
@@ -22,6 +23,7 @@ const links = [
   { href: "/replay", label: "Replay", icon: GitBranch },
   { href: "/signals", label: "Signals", icon: LineChart },
   { href: "/validation", label: "Validation", icon: PlayCircle },
+  { href: "/optimization", label: "Auto Optimizer", icon: Sparkles },
   { href: "/experiments", label: "Experiments", icon: FlaskConical },
   { href: "/providers", label: "Providers", icon: Layers },
 ];
