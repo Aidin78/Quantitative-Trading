@@ -1,14 +1,44 @@
 from __future__ import annotations
 
 import asyncio
+import calendar
 from datetime import UTC, datetime
 from pathlib import Path
+
+import pandas as pd
 
 from src.core.exceptions import DataProviderError
 from src.core.settings import get_settings
 from src.data.live_provider import LiveProvider
 
 CACHE_DIR = Path(__file__).resolve().parents[2] / "data" / "cache"
+
+
+def subtract_months(dt: datetime, months: int) -> datetime:
+    year = dt.year
+    month = dt.month - months
+    while month < 1:
+        month += 12
+        year -= 1
+    max_day = calendar.monthrange(year, month)[1]
+    day = min(dt.day, max_day)
+    return dt.replace(year=year, month=month, day=day)
+
+
+def resolve_range(
+    *,
+    start_date: str | None,
+    end_date: str | None,
+    months: int | None = None,
+) -> tuple[datetime, datetime]:
+    end = datetime.fromisoformat(end_date).replace(tzinfo=UTC) if end_date else datetime.now(UTC)
+    if start_date:
+        start = datetime.fromisoformat(start_date).replace(tzinfo=UTC)
+    elif months is not None:
+        start = subtract_months(end, months)
+    else:
+        start = subtract_months(end, 3)
+    return start, end
 
 
 def cache_path(
@@ -47,6 +77,92 @@ def _download_to_csv(
     return path
 
 
+def csv_summary(path: Path) -> dict:
+    df = pd.read_csv(path)
+    rows = len(df)
+    first_ts = None
+    last_ts = None
+    if rows and "timestamp" in df.columns:
+        first_ts = str(df["timestamp"].iloc[0])
+        last_ts = str(df["timestamp"].iloc[-1])
+    return {
+        "rows": rows,
+        "first_timestamp": first_ts,
+        "last_timestamp": last_ts,
+        "size_bytes": path.stat().st_size,
+    }
+
+
+def list_cache_entries() -> list[dict]:
+    if not CACHE_DIR.exists():
+        return []
+    entries: list[dict] = []
+    for path in sorted(
+        CACHE_DIR.glob("*.csv"),
+        key=lambda item: item.stat().st_mtime,
+        reverse=True,
+    ):
+        summary = csv_summary(path)
+        entries.append(
+            {
+                "filename": path.name,
+                "path": str(path),
+                "updated_at": datetime.fromtimestamp(path.stat().st_mtime, tz=UTC).isoformat(),
+                **summary,
+            }
+        )
+    return entries
+
+
+def resolve_cache_file(filename: str) -> Path:
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise DataProviderError("Invalid cache filename")
+    path = (CACHE_DIR / filename).resolve()
+    cache_root = CACHE_DIR.resolve()
+    if not str(path).startswith(str(cache_root)):
+        raise DataProviderError("Invalid cache filename")
+    if not path.exists():
+        raise DataProviderError("Cache file not found")
+    return path
+
+
+async def download_csv(
+    *,
+    exchange_id: str,
+    symbol: str,
+    timeframe: str,
+    start: datetime,
+    end: datetime,
+    force: bool = False,
+) -> tuple[Path, bool]:
+    path = cache_path(
+        exchange_id=exchange_id,
+        symbol=symbol,
+        timeframe=timeframe,
+        start=start,
+        end=end,
+    )
+    if path.exists() and path.stat().st_size > 0 and not force:
+        return path, False
+    try:
+        downloaded = await asyncio.to_thread(
+            _download_to_csv,
+            exchange_id=exchange_id,
+            symbol=symbol,
+            timeframe=timeframe,
+            start=start,
+            end=end,
+            path=path,
+        )
+        return downloaded, True
+    except DataProviderError:
+        raise
+    except Exception as exc:
+        raise DataProviderError(
+            f"Failed to download market data from {exchange_id}: {exc}"
+        ) from exc
+
+
 async def get_or_download_csv(
     *,
     exchange_id: str,
@@ -64,19 +180,12 @@ async def get_or_download_csv(
     )
     if path.exists() and path.stat().st_size > 0:
         return path
-    try:
-        return await asyncio.to_thread(
-            _download_to_csv,
-            exchange_id=exchange_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            start=start,
-            end=end,
-            path=path,
-        )
-    except DataProviderError:
-        raise
-    except Exception as exc:
-        raise DataProviderError(
-            f"Failed to download market data from {exchange_id}: {exc}"
-        ) from exc
+    path, _ = await download_csv(
+        exchange_id=exchange_id,
+        symbol=symbol,
+        timeframe=timeframe,
+        start=start,
+        end=end,
+        force=False,
+    )
+    return path

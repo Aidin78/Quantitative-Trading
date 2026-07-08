@@ -184,6 +184,18 @@ export const api = {
       `/api/v1/validation/${id}/export?format=csv`,
       `validation_${id}.csv`,
     ),
+  marketDataCache: () =>
+    apiFetch<{ items: MarketDataCacheEntry[] }>("/api/v1/market-data/cache"),
+  downloadMarketData: (body: MarketDataDownloadRequest) =>
+    apiFetch<MarketDataDownloadResponse>("/api/v1/market-data/download", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  exportMarketDataCache: (filename: string) =>
+    downloadExport(
+      `/api/v1/market-data/cache/${encodeURIComponent(filename)}/file`,
+      filename,
+    ),
 };
 
 export type DecisionFilters = {
@@ -589,4 +601,38 @@ export type LiveStartRequest = {
   timeframe?: string;
   revision_id?: string;
   experiment_id?: string;
+};
+
+export type MarketDataDownloadRequest = {
+  symbol?: string;
+  timeframe?: string;
+  start_date?: string;
+  end_date?: string;
+  months?: number;
+  force?: boolean;
+};
+
+export type MarketDataDownloadResponse = {
+  filename: string;
+  path: string;
+  exchange_id: string;
+  symbol: string;
+  timeframe: string;
+  start: string;
+  end: string;
+  refreshed: boolean;
+  rows: number;
+  first_timestamp: string | null;
+  last_timestamp: string | null;
+  size_bytes: number;
+};
+
+export type MarketDataCacheEntry = {
+  filename: string;
+  path: string;
+  updated_at: string;
+  rows: number;
+  first_timestamp: string | null;
+  last_timestamp: string | null;
+  size_bytes: number;
 };

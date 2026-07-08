@@ -99,6 +99,65 @@ async def test_market_cache_downloads_on_miss(
     assert expected.exists()
 
 
+@pytest.mark.asyncio
+async def test_download_csv_force_redownloads(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(market_cache, "CACHE_DIR", tmp_path)
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 1, 2, tzinfo=UTC)
+    expected = market_cache.cache_path(
+        exchange_id="binance",
+        symbol="BTC/USDT",
+        timeframe="1h",
+        start=start,
+        end=end,
+    )
+    expected.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        {
+            "timestamp": [start],
+            "open": [1.0],
+            "high": [2.0],
+            "low": [0.5],
+            "close": [1.5],
+            "volume": [10.0],
+        }
+    ).to_csv(expected, index=False)
+
+    calls = {"count": 0}
+
+    def _download(**kwargs: object) -> Path:
+        calls["count"] += 1
+        pd.DataFrame(
+            {
+                "timestamp": [start, end],
+                "open": [1.0, 1.1],
+                "high": [2.0, 2.1],
+                "low": [0.5, 0.6],
+                "close": [1.5, 1.6],
+                "volume": [10.0, 11.0],
+            }
+        ).to_csv(expected, index=False)
+        return expected
+
+    monkeypatch.setattr(market_cache, "_download_to_csv", _download)
+
+    path, refreshed = await market_cache.download_csv(
+        exchange_id="binance",
+        symbol="BTC/USDT",
+        timeframe="1h",
+        start=start,
+        end=end,
+        force=True,
+    )
+    assert path == expected
+    assert refreshed is True
+    assert calls["count"] == 1
+    assert market_cache.csv_summary(path)["rows"] == 2
+
+
 def test_format_validation_error_messages() -> None:
     from src.api.services.validation_runner import format_validation_error
 
