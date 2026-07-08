@@ -15,14 +15,15 @@ function fmtParams(params: Record<string, number>) {
     .join(" · ");
 }
 
+const SAMPLE_CSV_START = "2026-01-01";
+const SAMPLE_CSV_END = "2026-01-05";
+
 export default function OptimizationPage() {
   const queryClient = useQueryClient();
   const [sweepId, setSweepId] = useState<string | null>(null);
   const [symbol, setSymbol] = useState("BTC/USDT");
-  const [startDate, setStartDate] = useState(
-    () => dateRangeForPreset("30d").start,
-  );
-  const [endDate, setEndDate] = useState(() => dateRangeForPreset("30d").end);
+  const [startDate, setStartDate] = useState(SAMPLE_CSV_START);
+  const [endDate, setEndDate] = useState(SAMPLE_CSV_END);
   const [source, setSource] = useState<"exchange" | "csv">("csv");
   const [initialCapital, setInitialCapital] = useState(10000);
   const [trainRatio, setTrainRatio] = useState(0.7);
@@ -62,6 +63,9 @@ export default function OptimizationPage() {
         ? false
         : 2000,
   });
+
+  const isSweepActive =
+    sweep?.status === "pending" || sweep?.status === "running";
 
   const apply = useMutation({
     mutationFn: () => api.applyOptimization(sweepId!),
@@ -110,13 +114,27 @@ export default function OptimizationPage() {
               <select
                 className="input-field mt-2"
                 value={source}
-                onChange={(e) =>
-                  setSource(e.target.value as "exchange" | "csv")
-                }
+                onChange={(e) => {
+                  const next = e.target.value as "exchange" | "csv";
+                  setSource(next);
+                  if (next === "csv") {
+                    setStartDate(SAMPLE_CSV_START);
+                    setEndDate(SAMPLE_CSV_END);
+                  } else {
+                    const range = dateRangeForPreset("30d");
+                    setStartDate(range.start);
+                    setEndDate(range.end);
+                  }
+                }}
               >
                 <option value="csv">Sample CSV (fast)</option>
                 <option value="exchange">Exchange (Binance)</option>
               </select>
+              <p className="mt-2 text-xs text-muted">
+                {source === "csv"
+                  ? `Sample CSV covers ${SAMPLE_CSV_START} → ${SAMPLE_CSV_END}.`
+                  : "Uses cached Binance OHLCV. Download data on Market Data first for faster runs."}
+              </p>
             </div>
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-muted">
@@ -200,15 +218,15 @@ export default function OptimizationPage() {
             <button
               type="button"
               onClick={() => run.mutate()}
-              disabled={run.isPending}
+              disabled={run.isPending || isSweepActive}
               className="btn-primary w-full"
             >
-              {run.isPending ? (
+              {run.isPending || isSweepActive ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              Run Optimization
+              {isSweepActive ? "Optimization running…" : "Run Optimization"}
             </button>
           </div>
         </Card>
@@ -224,21 +242,47 @@ export default function OptimizationPage() {
             />
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <Badge variant={statusVariant} dot>
                   {sweep.status}
                 </Badge>
+                {sweep.phase && isSweepActive ? (
+                  <Badge
+                    variant={sweep.phase === "test" ? "success" : "accent"}
+                  >
+                    {sweep.phase === "test" ? "Test phase" : "Train phase"}
+                  </Badge>
+                ) : null}
                 {(sweep.status === "pending" || sweep.status === "running") && (
                   <Loader2 className="h-4 w-4 animate-spin text-accent" />
                 )}
+                {sweep.elapsed_seconds != null ? (
+                  <span className="ml-auto text-xs text-muted">
+                    {sweep.elapsed_seconds < 60
+                      ? `${Math.round(sweep.elapsed_seconds)}s`
+                      : `${Math.floor(sweep.elapsed_seconds / 60)}m ${Math.round(
+                          sweep.elapsed_seconds % 60,
+                        )}s`}
+                  </span>
+                ) : null}
               </div>
-              {sweep.progress && sweep.status === "running" ? (
+
+              {isSweepActive ? (
+                <p className="rounded-lg border border-[var(--border)] bg-[var(--background-elevated)]/60 p-3 text-sm text-foreground">
+                  {sweep.message ||
+                    (sweep.status === "pending"
+                      ? "Queued — starting sweep…"
+                      : "Working…")}
+                </p>
+              ) : null}
+
+              {sweep.progress && isSweepActive ? (
                 <div>
                   <div className="mb-1 flex justify-between text-xs text-muted">
-                    <span>Progress</span>
+                    <span>Overall progress</span>
                     <span>
-                      {sweep.progress.current} / {sweep.progress.total} (
-                      {progressPct}%)
+                      {sweep.progress.current} / {sweep.progress.total}{" "}
+                      backtests ({progressPct}%)
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-[var(--border)]">
@@ -247,8 +291,28 @@ export default function OptimizationPage() {
                       style={{ width: `${progressPct}%` }}
                     />
                   </div>
+                  {sweep.trials?.length ? (
+                    <p className="mt-2 text-xs text-muted">
+                      {sweep.trials.length} candidate
+                      {sweep.trials.length === 1 ? "" : "s"} evaluated so far —
+                      results appear below as they complete.
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
+
+              {sweep.status === "completed" ? (
+                <p className="rounded-lg border border-[var(--success)]/20 bg-[var(--success-dim)] p-3 text-sm text-[var(--success)]">
+                  Sweep complete in{" "}
+                  {sweep.elapsed_seconds != null
+                    ? sweep.elapsed_seconds < 60
+                      ? `${Math.round(sweep.elapsed_seconds)}s`
+                      : `${Math.floor(sweep.elapsed_seconds / 60)}m`
+                    : "—"}
+                  . Review the best config below.
+                </p>
+              ) : null}
+
               {sweep.error && (
                 <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger">
                   {sweep.error}

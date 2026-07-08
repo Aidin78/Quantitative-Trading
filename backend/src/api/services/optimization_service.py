@@ -17,7 +17,11 @@ class OptimizationSweep:
     error: str | None = None
     progress_current: int = 0
     progress_total: int = 0
+    phase: str = ""
+    message: str = ""
+    live_trials: list[TrialResult] = field(default_factory=list)
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class OptimizationSweepStore:
@@ -33,6 +37,7 @@ class OptimizationSweepStore:
         return self._sweeps.get(sweep_id)
 
     def update(self, sweep: OptimizationSweep) -> None:
+        sweep.updated_at = datetime.now(UTC)
         self._sweeps[sweep.id] = sweep
 
 
@@ -74,10 +79,14 @@ def result_to_dict(result: OptimizationResult) -> dict[str, Any]:
 
 
 def sweep_response(sweep: OptimizationSweep) -> dict[str, Any]:
+    elapsed = (sweep.updated_at - sweep.created_at).total_seconds()
     payload: dict[str, Any] = {
         "id": sweep.id,
         "status": sweep.status,
         "config": sweep.config,
+        "phase": sweep.phase,
+        "message": sweep.message,
+        "elapsed_seconds": round(elapsed, 1),
         "progress": {
             "current": sweep.progress_current,
             "total": sweep.progress_total,
@@ -87,4 +96,6 @@ def sweep_response(sweep: OptimizationSweep) -> dict[str, Any]:
         payload["error"] = sweep.error
     if sweep.result:
         payload.update(result_to_dict(sweep.result))
+    elif sweep.live_trials:
+        payload["trials"] = [trial_to_dict(t) for t in sweep.live_trials]
     return payload

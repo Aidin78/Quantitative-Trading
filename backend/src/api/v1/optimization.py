@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from typing import Any, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,8 +20,9 @@ from src.api.services.optimization_service import (
     result_to_dict,
     sweep_response,
 )
+from src.api.services.validation_runner import format_validation_error
 from src.governance.revision_store import compute_config_revision, save_revision
-from src.validation.optimizer import OptimizationSpace, run_optimization
+from src.validation.optimizer import OptimizationSpace, ProgressEvent, run_optimization
 
 router = APIRouter(
     prefix="/optimization", tags=["optimization"], dependencies=[Depends(get_current_user)]
@@ -62,9 +64,31 @@ async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
 
     space = OptimizationSpace.from_dict(body.space)
 
-    async def on_progress(current: int, total: int, _trial) -> None:
-        sweep.progress_current = current
-        sweep.progress_total = total
+    async def on_progress(event: ProgressEvent) -> None:
+        sweep.progress_current = event.current
+        sweep.progress_total = event.total
+        sweep.phase = event.phase
+        if event.phase == "train":
+            if event.stage == "start":
+                sweep.message = (
+                    f"Training candidate {event.current + 1} of "
+                    f"{event.train_count} on in-sample data…"
+                )
+            else:
+                sweep.message = (
+                    f"Finished training candidate {event.current} of " f"{event.train_count}."
+                )
+                if event.trial is not None:
+                    sweep.live_trials.append(event.trial)
+        else:
+            done_test = max(0, event.current - event.train_count)
+            if event.stage == "start":
+                sweep.message = (
+                    f"Validating top candidate {done_test + 1} of "
+                    f"{event.test_count} on held-out test data…"
+                )
+            else:
+                sweep.message = f"Validated {done_test} of {event.test_count} finalists."
         optimization_sweeps.update(sweep)
 
     try:
@@ -87,18 +111,17 @@ async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
         sweep.status = "completed"
     except Exception as exc:
         sweep.status = "failed"
-        sweep.error = str(exc)
+        sweep.error = format_validation_error(exc)
     optimization_sweeps.update(sweep)
 
 
 @router.post("/run")
 async def start_optimization(
     body: OptimizationRunRequest,
-    background_tasks: BackgroundTasks,
 ) -> dict:
     sweep_id = new_sweep_id()
     optimization_sweeps.create(sweep_id, body.model_dump())
-    background_tasks.add_task(_execute_sweep, sweep_id, body)
+    asyncio.create_task(_execute_sweep(sweep_id, body))
     return {"id": sweep_id, "status": "pending"}
 
 

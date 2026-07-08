@@ -151,7 +151,29 @@ async def _run_trial(
     return float(outcome.get("score", 0)), outcome, revision.revision_id
 
 
-ProgressCallback = Callable[[int, int, TrialResult | None], Awaitable[None] | None]
+@dataclass
+class ProgressEvent:
+    current: int
+    total: int
+    phase: Literal["train", "test"]
+    stage: Literal["start", "done"]
+    trial: TrialResult | None = None
+    train_count: int = 0
+    test_count: int = 0
+
+
+ProgressCallback = Callable[[ProgressEvent], Awaitable[None] | None]
+
+
+async def _emit(
+    on_progress: ProgressCallback | None,
+    event: ProgressEvent,
+) -> None:
+    if on_progress is None:
+        return
+    maybe = on_progress(event)
+    if maybe is not None:
+        await maybe
 
 
 async def run_optimization(
@@ -174,11 +196,24 @@ async def run_optimization(
         start, end, train_ratio=train_ratio
     )
     trial_params = generate_trials(opt_space, max_trials=max_trials)
-    total_steps = len(trial_params) + min(top_k, len(trial_params))
+    n_train = len(trial_params)
+    n_test = min(top_k, n_train)
+    total_steps = n_train + n_test
     step = 0
     train_results: list[TrialResult] = []
 
     for params in trial_params:
+        await _emit(
+            on_progress,
+            ProgressEvent(
+                current=step,
+                total=total_steps,
+                phase="train",
+                stage="start",
+                train_count=n_train,
+                test_count=n_test,
+            ),
+        )
         train_score, train_outcome, revision_id = await _run_trial(
             params=params,
             symbol=symbol,
@@ -198,15 +233,35 @@ async def run_optimization(
         )
         train_results.append(trial)
         step += 1
-        if on_progress is not None:
-            maybe = on_progress(step, total_steps, trial)
-            if maybe is not None:
-                await maybe
+        await _emit(
+            on_progress,
+            ProgressEvent(
+                current=step,
+                total=total_steps,
+                phase="train",
+                stage="done",
+                trial=trial,
+                train_count=n_train,
+                test_count=n_test,
+            ),
+        )
 
     ranked = sorted(train_results, key=lambda t: t.train_score, reverse=True)
     finalists = ranked[: min(top_k, len(ranked))]
 
     for trial in finalists:
+        await _emit(
+            on_progress,
+            ProgressEvent(
+                current=step,
+                total=total_steps,
+                phase="test",
+                stage="start",
+                trial=trial,
+                train_count=n_train,
+                test_count=n_test,
+            ),
+        )
         test_score, test_outcome, _ = await _run_trial(
             params=trial.params,
             symbol=symbol,
@@ -221,10 +276,18 @@ async def run_optimization(
         trial.test_outcome = test_outcome
         trial.stability = compute_stability(test_outcome)
         step += 1
-        if on_progress is not None:
-            maybe = on_progress(step, total_steps, trial)
-            if maybe is not None:
-                await maybe
+        await _emit(
+            on_progress,
+            ProgressEvent(
+                current=step,
+                total=total_steps,
+                phase="test",
+                stage="done",
+                trial=trial,
+                train_count=n_train,
+                test_count=n_test,
+            ),
+        )
 
     best = (
         max(

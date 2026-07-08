@@ -410,6 +410,9 @@ export type OptimizationSweep = {
   id: string;
   status: string;
   config?: Record<string, unknown>;
+  phase?: string;
+  message?: string;
+  elapsed_seconds?: number;
   progress?: { current: number; total: number };
   error?: string;
   sweep_id?: string;

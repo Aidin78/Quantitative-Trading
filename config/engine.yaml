@@ -4,11 +4,14 @@ engine:
     method: majority
   filter:
     min_atr_pct: 0.3
-    allowed_sessions: [EUROPE, US, OVERLAP]
+    allowed_sessions:
+    - EUROPE
+    - US
+    - OVERLAP
   risk:
     max_daily_drawdown_pct: 5.0
     max_signals_per_day: 10
-    min_confidence: 0.65
-    min_risk_reward: 1.5
+    min_confidence: 0.6
+    min_risk_reward: 1.2
     max_open_positions: 3
     max_exposure_pct: 50.0

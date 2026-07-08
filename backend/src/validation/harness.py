@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
@@ -88,6 +89,8 @@ class ValidationHarness:
                 experiment_id=self._experiment_id,
             )
             cycles.append(result)
+            if i % 10 == 0:
+                await asyncio.sleep(0)
 
         await self._liquidate_open_positions(bar_times[-1])
 
