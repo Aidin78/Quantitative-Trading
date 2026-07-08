@@ -291,7 +291,17 @@ async def export_validation(
     else:
         row = await db.get(BacktestRunRow, job_id)
         if row is None:
-            raise HTTPException(status_code=404, detail="Validation job not found")
+            stmt = select(BacktestRunRow).where(BacktestRunRow.run_id == job_id)
+            row = (await db.execute(stmt)).scalar_one_or_none()
+        if row is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "Validation run not found. In-memory jobs are cleared when the "
+                    "backend restarts — re-run the validation or open a saved run "
+                    "from Run History."
+                ),
+            )
         data = {
             "id": row.run_id,
             "config": row.config,

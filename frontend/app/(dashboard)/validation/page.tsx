@@ -22,6 +22,7 @@ export default function ValidationPage() {
   const [wfWindows, setWfWindows] = useState(3);
   const [wfTrainRatio, setWfTrainRatio] = useState(0.7);
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [compareRunA, setCompareRunA] = useState<string>("");
   const [compareRunB, setCompareRunB] = useState<string>("");
 
@@ -89,8 +90,18 @@ export default function ValidationPage() {
   async function handleExport() {
     if (!jobId) return;
     setExporting(true);
+    setExportError(null);
     try {
       await api.exportValidation(jobId);
+    } catch (err) {
+      let msg = err instanceof Error ? err.message : "Export failed";
+      try {
+        const parsed = JSON.parse(msg);
+        if (parsed?.detail) msg = parsed.detail;
+      } catch {
+        // message was not JSON; keep as-is
+      }
+      setExportError(msg);
     } finally {
       setExporting(false);
     }
@@ -222,6 +233,11 @@ export default function ValidationPage() {
               {job.error && (
                 <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger">
                   {job.error}
+                </p>
+              )}
+              {exportError && (
+                <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger">
+                  {exportError}
                 </p>
               )}
             </div>
