@@ -6,19 +6,17 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ValidationMetricsPanel } from "@/components/validation/ValidationMetricsPanel";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
+import { DateRangeFields } from "@/components/ui/DateRangeFields";
 import { api } from "@/lib/api";
+import { dateRangeForPreset } from "@/lib/dateRange";
 
 export default function ValidationPage() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [symbol, setSymbol] = useState("BTC/USDT");
-  const [startDate, setStartDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return d.toISOString().slice(0, 10);
-  });
-  const [endDate, setEndDate] = useState(() =>
-    new Date().toISOString().slice(0, 10),
+  const [startDate, setStartDate] = useState(
+    () => dateRangeForPreset("30d").start,
   );
+  const [endDate, setEndDate] = useState(() => dateRangeForPreset("30d").end);
   const [source, setSource] = useState<"exchange" | "csv">("exchange");
   const [initialCapital, setInitialCapital] = useState(10000);
   const [wfWindows, setWfWindows] = useState(3);
@@ -143,17 +141,12 @@ export default function ValidationPage() {
                 onChange={(e) => setSymbol(e.target.value)}
               />
             </div>
-            <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                Start Date
-              </label>
-              <input
-                type="date"
-                className="input-field mt-2"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
+            <DateRangeFields
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+            />
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-muted">
                 Initial Capital
@@ -165,17 +158,6 @@ export default function ValidationPage() {
                 className="input-field mt-2"
                 value={initialCapital}
                 onChange={(e) => setInitialCapital(Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                End Date
-              </label>
-              <input
-                type="date"
-                className="input-field mt-2"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
             {(run.error || walkForward.error) && (

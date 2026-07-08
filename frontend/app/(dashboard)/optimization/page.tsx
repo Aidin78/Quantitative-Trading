@@ -5,7 +5,9 @@ import { Loader2, PlayCircle, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
+import { DateRangeFields } from "@/components/ui/DateRangeFields";
 import { api } from "@/lib/api";
+import { dateRangeForPreset } from "@/lib/dateRange";
 
 function fmtParams(params: Record<string, number>) {
   return Object.entries(params)
@@ -17,8 +19,10 @@ export default function OptimizationPage() {
   const queryClient = useQueryClient();
   const [sweepId, setSweepId] = useState<string | null>(null);
   const [symbol, setSymbol] = useState("BTC/USDT");
-  const [startDate, setStartDate] = useState("2026-01-01");
-  const [endDate, setEndDate] = useState("2026-01-05");
+  const [startDate, setStartDate] = useState(
+    () => dateRangeForPreset("30d").start,
+  );
+  const [endDate, setEndDate] = useState(() => dateRangeForPreset("30d").end);
   const [source, setSource] = useState<"exchange" | "csv">("csv");
   const [initialCapital, setInitialCapital] = useState(10000);
   const [trainRatio, setTrainRatio] = useState(0.7);
@@ -124,30 +128,13 @@ export default function OptimizationPage() {
                 onChange={(e) => setSymbol(e.target.value)}
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  className="input-field mt-2"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  className="input-field mt-2"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-            </div>
+            <DateRangeFields
+              layout="grid"
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+            />
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-medium uppercase tracking-wider text-muted">

@@ -11,7 +11,7 @@ from src.db.repositories.decision import _extract_rejection_reason
 
 
 def _parse_period(period: str) -> int:
-    mapping = {"7d": 7, "30d": 30, "90d": 90, "365d": 365, "1y": 365}
+    mapping = {"today": 1, "1d": 1, "7d": 7, "30d": 30, "90d": 90, "365d": 365, "1y": 365}
     return mapping.get(period, 30)
 
 
