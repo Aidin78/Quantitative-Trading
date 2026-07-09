@@ -80,6 +80,21 @@ TRIAL_PARAM_KEYS = [
     "ms_require_trend",
 ]
 
+PROVIDER_ENABLED_KEYS = (
+    "ema_enabled",
+    "rsi_enabled",
+    "macd_enabled",
+    "adx_enabled",
+    "bb_enabled",
+    "st_enabled",
+    "vol_enabled",
+    "ms_enabled",
+)
+
+
+def has_any_provider_enabled(params: dict[str, Any]) -> bool:
+    return any(int(params.get(key, 0)) for key in PROVIDER_ENABLED_KEYS)
+
 
 @dataclass(frozen=True)
 class OptimizationSpace:
@@ -153,6 +168,85 @@ class OptimizationSpace:
             else:
                 fields[key] = getattr(defaults, key)
         return cls(**fields)
+
+    @classmethod
+    def provider_discovery(cls) -> OptimizationSpace:
+        """Search space: each provider on/off, other params fixed."""
+        return cls.from_dict(PROVIDER_DISCOVERY_SPACE)
+
+
+PROVIDER_DISCOVERY_SPACE: dict[str, list[Any]] = {
+    "min_confidence": [0.65],
+    "min_risk_reward": [1.2],
+    "min_agreeing_providers": [1, 2, 3],
+    "sl_atr_mult": [1.5],
+    "tp_atr_mult": [3.0],
+    "max_bars_in_trade": [24],
+    "oversold": [30],
+    "overbought": [70],
+    "risk_pct_per_trade": [1.0],
+    "min_atr_pct": [0.3],
+    "session_preset": ["all"],
+    "max_signals_per_day": [10],
+    "ema_fast": [12],
+    "ema_slow": [26],
+    "rsi_period": [14],
+    "ema_weight": [1.0],
+    "rsi_weight": [1.0],
+    "ema_enabled": [0, 1],
+    "rsi_enabled": [0, 1],
+    "macd_fast": [12],
+    "macd_slow": [26],
+    "macd_signal_period": [9],
+    "macd_weight": [1.0],
+    "macd_enabled": [0, 1],
+    "require_signal_align": [1],
+    "min_histogram_slope": [0.0],
+    "adx_period": [14],
+    "adx_weight": [1.0],
+    "adx_enabled": [0, 1],
+    "min_adx": [25],
+    "min_di_spread": [5],
+    "adx_require_trend": [0],
+    "bb_period": [20],
+    "bb_std": [2.0],
+    "bb_weight": [1.0],
+    "bb_enabled": [0, 1],
+    "bb_avoid_high_vol": [1],
+    "bb_max_adx": [0],
+    "st_period": [10],
+    "st_multiplier": [3.0],
+    "st_weight": [1.0],
+    "st_enabled": [0, 1],
+    "st_require_trend": [0],
+    "vol_period": [20],
+    "vol_weight": [1.0],
+    "vol_enabled": [0, 1],
+    "min_cmf": [0.05],
+    "min_volume_ratio": [1.2],
+    "vol_require_price_align": [1],
+    "ms_pivot_bars": [5],
+    "ms_weight": [1.0],
+    "ms_enabled": [0, 1],
+    "ms_require_bos": [1],
+    "ms_require_trend": [0],
+}
+
+
+_PROVIDER_CHIP_LABELS = {
+    "ema_enabled": "EMA",
+    "rsi_enabled": "RSI",
+    "macd_enabled": "MACD",
+    "adx_enabled": "ADX",
+    "bb_enabled": "BB",
+    "st_enabled": "ST",
+    "vol_enabled": "VOL",
+    "ms_enabled": "MS",
+}
+
+
+def enabled_provider_labels(params: dict[str, Any]) -> list[str]:
+    return [label for key, label in _PROVIDER_CHIP_LABELS.items() if int(params.get(key, 0)) == 1]
 
 
 @dataclass
@@ -236,6 +330,9 @@ def generate_trials(
     all_combos = [
         dict(zip(TRIAL_PARAM_KEYS, combo, strict=True)) for combo in itertools.product(*values)
     ]
+    all_combos = [combo for combo in all_combos if has_any_provider_enabled(combo)]
+    if not all_combos:
+        raise ValueError("Optimization space has no valid provider combinations")
     if len(all_combos) <= max_trials:
         return all_combos
 
@@ -297,9 +394,14 @@ def generate_trials_optuna(
     study = optuna.create_study(direction="maximize", sampler=sampler)
     picked: list[dict[str, Any]] = []
     seen: set[tuple[tuple[str, Any], ...]] = set()
-    for _ in range(max_trials):
+    max_attempts = max(max_trials * 20, max_trials)
+    attempts = 0
+    while len(picked) < max_trials and attempts < max_attempts:
+        attempts += 1
         trial = study.ask()
         params = _suggest_params_from_optuna_trial(trial, space)
+        if not has_any_provider_enabled(params):
+            continue
         key = tuple(sorted(params.items()))
         if key in seen:
             continue

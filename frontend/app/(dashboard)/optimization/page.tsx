@@ -14,70 +14,18 @@ import { useActiveValidationJob } from "@/contexts/ValidationJobContext";
 import { api } from "@/lib/api";
 import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 import { dateRangeForPreset } from "@/lib/dateRange";
+import {
+  enabledProviderChips,
+  fmtParamsWithoutEnabled,
+  spaceForMode,
+  type SweepMode,
+} from "@/lib/optimizationSpaces";
 
 function fmtParams(params: Record<string, number | string>) {
-  return Object.entries(params)
-    .map(([k, v]) => `${k.replace(/_/g, " ")}=${v}`)
-    .join(" · ");
+  return fmtParamsWithoutEnabled(params);
 }
 
 const DEFAULT_RANGE = dateRangeForPreset("180d");
-const DEFAULT_SPACE = {
-  min_confidence: [0.6, 0.7, 0.78],
-  min_risk_reward: [1.0, 1.5, 2.0],
-  min_agreeing_providers: [1],
-  sl_atr_mult: [1.0, 1.5, 2.0],
-  tp_atr_mult: [2.0, 3.0, 4.0],
-  max_bars_in_trade: [12, 24, 48],
-  oversold: [25, 30, 35],
-  overbought: [65, 70, 75],
-  risk_pct_per_trade: [0.5, 1.0, 1.5],
-  min_atr_pct: [0.1, 0.3, 0.5],
-  session_preset: ["all", "eu_us"],
-  max_signals_per_day: [5, 10, 20],
-  ema_fast: [10, 12, 14],
-  ema_slow: [24, 26, 30],
-  rsi_period: [12, 14, 16],
-  ema_weight: [1.0],
-  rsi_weight: [1.0],
-  ema_enabled: [1],
-  rsi_enabled: [1],
-  macd_fast: [10, 12, 14],
-  macd_slow: [24, 26, 30],
-  macd_signal_period: [7, 9, 11],
-  macd_weight: [1.0],
-  macd_enabled: [1],
-  require_signal_align: [1, 0],
-  min_histogram_slope: [0.0],
-  adx_period: [12, 14, 16],
-  adx_weight: [1.0],
-  adx_enabled: [0],
-  min_adx: [20, 25, 30],
-  min_di_spread: [3, 5, 8],
-  adx_require_trend: [0],
-  bb_period: [18, 20, 22],
-  bb_std: [1.5, 2.0, 2.5],
-  bb_weight: [1.0],
-  bb_enabled: [0],
-  bb_avoid_high_vol: [1],
-  bb_max_adx: [0, 25],
-  st_period: [7, 10, 14],
-  st_multiplier: [2.0, 3.0, 4.0],
-  st_weight: [1.0],
-  st_enabled: [0],
-  st_require_trend: [0],
-  vol_period: [14, 20, 26],
-  vol_weight: [1.0],
-  vol_enabled: [0],
-  min_cmf: [0.03, 0.05, 0.08],
-  min_volume_ratio: [1.0, 1.2, 1.5],
-  vol_require_price_align: [0, 1],
-  ms_pivot_bars: [3, 5, 7],
-  ms_weight: [1.0],
-  ms_enabled: [0],
-  ms_require_bos: [0, 1],
-  ms_require_trend: [0],
-};
 
 export default function OptimizationPage() {
   const queryClient = useQueryClient();
@@ -104,6 +52,7 @@ export default function OptimizationPage() {
   );
   const [searchMethod, setSearchMethod] = useState<"grid" | "optuna">("optuna");
   const [holdoutRatio, setHoldoutRatio] = useState(0.2);
+  const [sweepMode, setSweepMode] = useState<SweepMode>("baseline");
 
   useEffect(() => {
     const fromUrl = searchParams.get("sweep");
@@ -136,8 +85,8 @@ export default function OptimizationPage() {
         walk_forward_windows: walkForwardWindows,
         walk_forward_mode: walkForwardMode,
         search_method: searchMethod,
-        local_refine: true,
-        space: DEFAULT_SPACE,
+        local_refine: sweepMode === "baseline",
+        space: spaceForMode(sweepMode),
       }),
     onSuccess: (res) => persistSweepId(res.id),
   });
@@ -213,30 +162,107 @@ export default function OptimizationPage() {
       />
 
       <Card
-        title="Baseline workflow"
-        subtitle="Recommended path for EMA + RSI + MACD"
+        title="Optimization mode"
+        subtitle="Choose what the sweep searches"
         className="mb-6"
       >
-        <ol className="list-decimal space-y-2 pl-5 text-sm text-muted">
-          <li>
-            Market Data — ingest{" "}
-            <strong className="text-foreground">6–12 months</strong> of OHLCV
-            for your symbol.
-          </li>
-          <li>
-            Providers — click{" "}
-            <strong className="text-foreground">Apply baseline</strong> to
-            enable and reset EMA, RSI, and MACD.
-          </li>
-          <li>
-            Run Optimization with the defaults below (180d, Optuna, 60 trials).
-          </li>
-          <li>
-            Holdout gate — click{" "}
-            <strong className="text-foreground">Apply</strong> only if holdout
-            passed; otherwise tune or disable one provider.
-          </li>
-        </ol>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSweepMode("baseline");
+              setMaxTrials(60);
+              setMinTrades(50);
+            }}
+            className={`rounded-lg border p-4 text-left transition-colors ${
+              sweepMode === "baseline"
+                ? "border-accent bg-[var(--accent-dim)]"
+                : "border-[var(--border)] hover:border-accent/40"
+            }`}
+          >
+            <p className="font-medium text-foreground">Baseline tuning</p>
+            <p className="mt-1 text-sm text-muted">
+              EMA + RSI + MACD always on. Tune thresholds, periods, and risk
+              params.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSweepMode("discovery");
+              setMaxTrials(80);
+              setMinTrades(30);
+              setSearchMethod("optuna");
+            }}
+            className={`rounded-lg border p-4 text-left transition-colors ${
+              sweepMode === "discovery"
+                ? "border-accent bg-[var(--accent-dim)]"
+                : "border-[var(--border)] hover:border-accent/40"
+            }`}
+          >
+            <p className="font-medium text-foreground">Provider discovery</p>
+            <p className="mt-1 text-sm text-muted">
+              Any of 8 providers on/off + min agreeing providers. Best for
+              finding the winning combo.
+            </p>
+          </button>
+        </div>
+      </Card>
+
+      <Card
+        title={
+          sweepMode === "baseline" ? "Baseline workflow" : "Discovery workflow"
+        }
+        subtitle={
+          sweepMode === "baseline"
+            ? "Recommended path for EMA + RSI + MACD"
+            : "Find the best provider combination"
+        }
+        className="mb-6"
+      >
+        {sweepMode === "baseline" ? (
+          <ol className="list-decimal space-y-2 pl-5 text-sm text-muted">
+            <li>
+              Market Data — ingest{" "}
+              <strong className="text-foreground">6–12 months</strong> of OHLCV
+              for your symbol.
+            </li>
+            <li>
+              Providers — click{" "}
+              <strong className="text-foreground">Apply baseline</strong> to
+              enable and reset EMA, RSI, and MACD.
+            </li>
+            <li>
+              Run Optimization with the defaults below (180d, Optuna, 60
+              trials).
+            </li>
+            <li>
+              Holdout gate — click{" "}
+              <strong className="text-foreground">Apply</strong> only if holdout
+              passed; otherwise tune or disable one provider.
+            </li>
+          </ol>
+        ) : (
+          <ol className="list-decimal space-y-2 pl-5 text-sm text-muted">
+            <li>
+              Market Data — at least{" "}
+              <strong className="text-foreground">180d</strong> OHLCV for your
+              symbol.
+            </li>
+            <li>
+              Select{" "}
+              <strong className="text-foreground">Provider discovery</strong>{" "}
+              above and run 80 Optuna trials (defaults adjust automatically).
+            </li>
+            <li>
+              Review trials — active providers show as chips (EMA, RSI, ADX, …).
+              Pick highest composite score on test data.
+            </li>
+            <li>
+              Apply best config, then validate on holdout before going live.
+            </li>
+          </ol>
+        )}
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -612,6 +638,23 @@ export default function OptimizationPage() {
             <p className="rounded-lg border border-[var(--border)] bg-[var(--background-elevated)]/50 p-3 font-mono text-xs">
               {fmtParams(displayTrial.params)}
             </p>
+            {enabledProviderChips(displayTrial.params).length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold uppercase text-muted">
+                  Active providers
+                </span>
+                {enabledProviderChips(displayTrial.params).map((chip) => (
+                  <Badge key={chip} variant="accent">
+                    {chip}
+                  </Badge>
+                ))}
+                {displayTrial.params.min_agreeing_providers != null ? (
+                  <Badge variant="default">
+                    agree ≥ {String(displayTrial.params.min_agreeing_providers)}
+                  </Badge>
+                ) : null}
+              </div>
+            ) : null}
             {sweep.holdout_metrics &&
             sweep.holdout_start &&
             sweep.holdout_end ? (

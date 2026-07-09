@@ -9,6 +9,7 @@ from src.validation.optimizer import (
     compute_stability,
     generate_trials,
     generate_trials_optuna,
+    has_any_provider_enabled,
     refine_trials_around,
     run_optimization,
     select_best,
@@ -277,6 +278,102 @@ def test_generate_trials_optuna_respects_max() -> None:
     trials = generate_trials_optuna(space, max_trials=4, seed=42)
     assert len(trials) == 4
     assert all("min_confidence" in t for t in trials)
+
+
+def _discovery_space() -> OptimizationSpace:
+    """Minimal grid: only provider flags vary (avoids huge cartesian product)."""
+    return OptimizationSpace(
+        min_confidence=(0.65,),
+        min_risk_reward=(1.2,),
+        min_agreeing_providers=(1, 2, 3),
+        sl_atr_mult=(1.5,),
+        tp_atr_mult=(3.0,),
+        max_bars_in_trade=(24,),
+        oversold=(30.0,),
+        overbought=(70.0,),
+        risk_pct_per_trade=(1.0,),
+        min_atr_pct=(0.3,),
+        session_preset=("all",),
+        max_signals_per_day=(10,),
+        ema_fast=(12,),
+        ema_slow=(26,),
+        rsi_period=(14,),
+        ema_weight=(1.0,),
+        rsi_weight=(1.0,),
+        ema_enabled=(0, 1),
+        rsi_enabled=(0, 1),
+        macd_fast=(12,),
+        macd_slow=(26,),
+        macd_signal_period=(9,),
+        macd_weight=(1.0,),
+        macd_enabled=(0, 1),
+        require_signal_align=(1,),
+        min_histogram_slope=(0.0,),
+        adx_period=(14,),
+        adx_weight=(1.0,),
+        adx_enabled=(0, 1),
+        min_adx=(25.0,),
+        min_di_spread=(5.0,),
+        adx_require_trend=(0,),
+        bb_period=(20,),
+        bb_std=(2.0,),
+        bb_weight=(1.0,),
+        bb_enabled=(0, 1),
+        bb_avoid_high_vol=(1,),
+        bb_max_adx=(0.0,),
+        st_period=(10,),
+        st_multiplier=(3.0,),
+        st_weight=(1.0,),
+        st_enabled=(0, 1),
+        st_require_trend=(0,),
+        vol_period=(20,),
+        vol_weight=(1.0,),
+        vol_enabled=(0, 1),
+        min_cmf=(0.05,),
+        min_volume_ratio=(1.2,),
+        vol_require_price_align=(1,),
+        ms_pivot_bars=(5,),
+        ms_weight=(1.0,),
+        ms_enabled=(0, 1),
+        ms_require_bos=(1,),
+        ms_require_trend=(0,),
+    )
+
+
+def test_has_any_provider_enabled() -> None:
+    all_off = {key: 0 for key in ("ema_enabled", "rsi_enabled", "macd_enabled")}
+    assert has_any_provider_enabled(all_off) is False
+    all_off["ema_enabled"] = 1
+    assert has_any_provider_enabled(all_off) is True
+
+
+def test_generate_trials_rejects_all_disabled_combos() -> None:
+    space = _discovery_space()
+    trials = generate_trials(space, max_trials=10, seed=1)
+    assert len(trials) == 10
+    assert all(has_any_provider_enabled(trial) for trial in trials)
+
+
+def test_generate_trials_raises_when_only_disabled_combos() -> None:
+    space = OptimizationSpace(
+        ema_enabled=(0,),
+        rsi_enabled=(0,),
+        macd_enabled=(0,),
+        adx_enabled=(0,),
+        bb_enabled=(0,),
+        st_enabled=(0,),
+        vol_enabled=(0,),
+        ms_enabled=(0,),
+    )
+    with pytest.raises(ValueError, match="no valid provider"):
+        generate_trials(space, max_trials=5)
+
+
+def test_generate_trials_optuna_skips_all_disabled() -> None:
+    space = _discovery_space()
+    trials = generate_trials_optuna(space, max_trials=8, seed=7)
+    assert len(trials) == 8
+    assert all(has_any_provider_enabled(trial) for trial in trials)
 
 
 def test_holdout_evaluated_after_best_selected() -> None:

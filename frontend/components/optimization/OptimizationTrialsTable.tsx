@@ -6,11 +6,13 @@ import { FieldLabel } from "@/components/ui/FieldLabel";
 import { Badge } from "@/components/ui/Card";
 import type { OptimizationTrial } from "@/lib/api";
 import { FORM_TOOLTIPS } from "@/lib/formTooltips";
+import {
+  enabledProviderChips,
+  fmtParamsWithoutEnabled,
+} from "@/lib/optimizationSpaces";
 
 function fmtParams(params: Record<string, number | string>) {
-  return Object.entries(params)
-    .map(([k, v]) => `${k.replace(/_/g, " ")}=${v}`)
-    .join(" · ");
+  return fmtParamsWithoutEnabled(params);
 }
 
 type Props = {
@@ -100,11 +102,28 @@ export function OptimizationTrialsTable({ trials, topTrialIds, topK }: Props) {
                     />
                   </td>
                   <td className="py-2 pr-3 font-mono text-xs">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span>{fmtParams(trial.params)}</span>
-                      {isFinalist ? (
-                        <Badge variant="accent">Top {topK}</Badge>
+                    <div className="flex flex-col gap-2">
+                      {enabledProviderChips(trial.params).length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {enabledProviderChips(trial.params).map((chip) => (
+                            <Badge key={chip} variant="accent">
+                              {chip}
+                            </Badge>
+                          ))}
+                          {trial.params.min_agreeing_providers != null ? (
+                            <Badge variant="default">
+                              agree ≥
+                              {String(trial.params.min_agreeing_providers)}
+                            </Badge>
+                          ) : null}
+                        </div>
                       ) : null}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{fmtParams(trial.params)}</span>
+                        {isFinalist ? (
+                          <Badge variant="accent">Top {topK}</Badge>
+                        ) : null}
+                      </div>
                     </div>
                   </td>
                   <td className="py-2 pr-3 font-medium">
