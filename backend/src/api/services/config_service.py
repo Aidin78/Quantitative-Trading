@@ -138,6 +138,7 @@ def write_features_config(
     bb_std: float = 2.0,
     st_period: int = 10,
     st_multiplier: float = 3.0,
+    vol_period: int = 20,
 ) -> dict:
     from src.features.config import load_features_config
 
@@ -147,6 +148,7 @@ def write_features_config(
     adx_names = {"adx_14", "plus_di_14", "minus_di_14"}
     bb_names = {"bb_upper", "bb_lower", "bb_middle"}
     st_names = {"supertrend", "supertrend_direction"}
+    vol_names = {"cmf_20", "volume_ratio_20"}
     with path.open(encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     for indicator in raw.get("indicators", []):
@@ -171,6 +173,8 @@ def write_features_config(
             params = indicator.setdefault("params", {})
             params["period"] = st_period
             params["multiplier"] = st_multiplier
+        elif indicator.get("name") in vol_names:
+            indicator.setdefault("params", {})["period"] = vol_period
     with path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(raw, f, sort_keys=False)
     load_features_config.cache_clear()
@@ -186,4 +190,5 @@ def write_features_config(
         "bb_std": bb_std,
         "st_period": st_period,
         "st_multiplier": st_multiplier,
+        "vol_period": vol_period,
     }

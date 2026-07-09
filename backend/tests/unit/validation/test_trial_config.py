@@ -140,3 +140,30 @@ def test_build_features_config_from_trial_changes_st_params() -> None:
     assert line.params["multiplier"] == 4.0
     assert direction.params["period"] == 14
     assert direction.params["multiplier"] == 4.0
+
+
+def test_build_provider_overrides_includes_volume_order_flow() -> None:
+    overrides = build_provider_overrides(
+        {
+            "vol_enabled": 1,
+            "vol_weight": 0.75,
+            "vol_period": 26,
+            "min_cmf": 0.08,
+            "min_volume_ratio": 1.5,
+            "vol_require_price_align": 0,
+        }
+    )
+    assert overrides["volume_order_flow"]["enabled"] is True
+    assert overrides["volume_order_flow"]["weight"] == 0.75
+    assert overrides["volume_order_flow"]["period"] == 26
+    assert overrides["volume_order_flow"]["min_cmf"] == 0.08
+    assert overrides["volume_order_flow"]["min_volume_ratio"] == 1.5
+    assert overrides["volume_order_flow"]["require_price_align"] is False
+
+
+def test_build_features_config_from_trial_changes_vol_period() -> None:
+    config, _ = build_features_config_from_trial({"vol_period": 26})
+    cmf = next(ind for ind in config.indicators if ind.name == "cmf_20")
+    ratio = next(ind for ind in config.indicators if ind.name == "volume_ratio_20")
+    assert cmf.params["period"] == 26
+    assert ratio.params["period"] == 26

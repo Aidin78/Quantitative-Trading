@@ -12,6 +12,7 @@ from src.providers.ema_crossover import EmaCrossoverProvider
 from src.providers.macd_momentum import MacdMomentumProvider
 from src.providers.rsi_divergence import RsiDivergenceProvider
 from src.providers.supertrend_trend import SuperTrendTrendProvider
+from src.providers.volume_order_flow import VolumeOrderFlowProvider
 
 _PROVIDER_CLASSES: dict[str, type[BaseSignalProvider]] = {
     "ema_crossover": EmaCrossoverProvider,
@@ -20,6 +21,7 @@ _PROVIDER_CLASSES: dict[str, type[BaseSignalProvider]] = {
     "adx_trend_strength": AdxTrendStrengthProvider,
     "bollinger_reversion": BollingerReversionProvider,
     "supertrend_trend": SuperTrendTrendProvider,
+    "volume_order_flow": VolumeOrderFlowProvider,
 }
 
 

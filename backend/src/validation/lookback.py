@@ -18,6 +18,12 @@ def compute_min_lookback_bars(config_dir=None) -> int:  # noqa: ANN001
             needed = int(params.get("period", 20))
         elif indicator.type == "supertrend":
             needed = 2 * int(params.get("period", 10))
+        elif indicator.type == "volume_flow":
+            component = str(params.get("component", "cmf"))
+            if component == "close_delta":
+                needed = 2
+            else:
+                needed = int(params.get("period", 20))
         else:
             needed = int(params.get("period", 14))
         max_period = max(max_period, needed)

@@ -309,6 +309,66 @@ PROVIDER_METADATA: dict[str, ProviderMetadata] = {
         ),
         required_features=("supertrend", "supertrend_direction"),
     ),
+    "volume_order_flow": ProviderMetadata(
+        summary="Volume / order flow proxy via Chaikin Money Flow and relative volume (OHLCV).",
+        rules=(
+            "BUY when CMF >= min_cmf and volume_ratio >= min_volume_ratio (accumulation).",
+            "SELL when CMF <= -min_cmf and volume_ratio >= min_volume_ratio (distribution).",
+            "Weak CMF or low relative volume → HOLD.",
+            "If require_price_align: BUY needs rising close; SELL needs falling close.",
+            "Confidence scales with CMF strength and volume surge.",
+            "Below min_confidence → HOLD.",
+        ),
+        default_config={
+            "enabled": False,
+            "weight": 1.0,
+            "params": {
+                "min_confidence": 0.5,
+                "sl_atr_mult": 1.5,
+                "tp_atr_mult": 4.0,
+                "period": 20,
+                "min_cmf": 0.05,
+                "min_volume_ratio": 1.2,
+                "require_price_align": True,
+            },
+        },
+        param_fields=_SHARED_STOPS
+        + (
+            ParamField(
+                key="period",
+                label="Lookback period",
+                type="int",
+                description="Shared period for CMF and volume ratio.",
+                min=2.0,
+                max=100.0,
+                step=1.0,
+            ),
+            ParamField(
+                key="min_cmf",
+                label="Min CMF",
+                type="float",
+                description="Minimum absolute Chaikin Money Flow for a directional signal.",
+                min=0.0,
+                max=1.0,
+                step=0.01,
+            ),
+            ParamField(
+                key="min_volume_ratio",
+                label="Min volume ratio",
+                type="float",
+                description="Current volume vs SMA(volume) required for entry.",
+                min=0.5,
+                step=0.1,
+            ),
+            ParamField(
+                key="require_price_align",
+                label="Require price alignment",
+                type="bool",
+                description="BUY only on rising close; SELL only on falling close.",
+            ),
+        ),
+        required_features=("cmf_20", "volume_ratio_20", "close_delta"),
+    ),
 }
 
 

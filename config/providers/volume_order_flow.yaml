@@ -1,0 +1,12 @@
+provider_id: volume_order_flow
+version: v1
+enabled: false
+weight: 1.0
+params:
+  min_confidence: 0.5
+  sl_atr_mult: 1.5
+  tp_atr_mult: 4.0
+  period: 20
+  min_cmf: 0.05
+  min_volume_ratio: 1.2
+  require_price_align: true

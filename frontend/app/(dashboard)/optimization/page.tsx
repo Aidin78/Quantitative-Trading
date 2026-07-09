@@ -66,6 +66,12 @@ const DEFAULT_SPACE = {
   st_weight: [1.0],
   st_enabled: [0],
   st_require_trend: [0],
+  vol_period: [14, 20, 26],
+  vol_weight: [1.0],
+  vol_enabled: [0],
+  min_cmf: [0.03, 0.05, 0.08],
+  min_volume_ratio: [1.0, 1.2, 1.5],
+  vol_require_price_align: [0, 1],
 };
 
 export default function OptimizationPage() {

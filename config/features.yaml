@@ -48,6 +48,15 @@ indicators:
   - name: supertrend_direction
     type: supertrend
     params: { period: 10, multiplier: 3.0, component: direction }
+  - name: cmf_20
+    type: volume_flow
+    params: { period: 20, component: cmf }
+  - name: volume_ratio_20
+    type: volume_flow
+    params: { period: 20, component: volume_ratio }
+  - name: close_delta
+    type: volume_flow
+    params: { component: close_delta }
 flags:
   - name: ema_cross_bullish
     expr: "ema_12 > ema_26"

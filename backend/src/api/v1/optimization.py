@@ -84,6 +84,7 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         "adx_trend_strength",
         "bollinger_reversion",
         "supertrend_trend",
+        "volume_order_flow",
     )
     for provider_id in provider_ids:
         if provider_id == "ema_crossover":
@@ -101,12 +102,21 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         elif provider_id == "bollinger_reversion":
             enabled_key = "bb_enabled"
             weight_key = "bb_weight"
-        else:
+        elif provider_id == "supertrend_trend":
             enabled_key = "st_enabled"
             weight_key = "st_weight"
+        else:
+            enabled_key = "vol_enabled"
+            weight_key = "vol_weight"
         enabled_default = (
             0
-            if provider_id in {"adx_trend_strength", "bollinger_reversion", "supertrend_trend"}
+            if provider_id
+            in {
+                "adx_trend_strength",
+                "bollinger_reversion",
+                "supertrend_trend",
+                "volume_order_flow",
+            }
             else 1
         )
         provider_patch: dict[str, Any] = {
@@ -147,6 +157,15 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
             provider_patch["params"]["max_adx"] = float(params.get("bb_max_adx", 0.0))
         if provider_id == "supertrend_trend":
             provider_patch["params"]["require_trend"] = bool(int(params.get("st_require_trend", 0)))
+        if provider_id == "volume_order_flow":
+            provider_patch["params"]["period"] = int(params.get("vol_period", 20))
+            provider_patch["params"]["min_cmf"] = float(params.get("min_cmf", 0.05))
+            provider_patch["params"]["min_volume_ratio"] = float(
+                params.get("min_volume_ratio", 1.2)
+            )
+            provider_patch["params"]["require_price_align"] = bool(
+                int(params.get("vol_require_price_align", 1))
+            )
         write_provider_config(provider_id, provider_patch)
 
     write_validation_settings(
@@ -167,6 +186,7 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         bb_std=float(params.get("bb_std", 2.0)),
         st_period=int(params.get("st_period", 10)),
         st_multiplier=float(params.get("st_multiplier", 3.0)),
+        vol_period=int(params.get("vol_period", 20)),
     )
 
 
