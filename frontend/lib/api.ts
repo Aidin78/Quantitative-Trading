@@ -119,6 +119,19 @@ export const api = {
     apiFetch<ValidationCompareResponse>(
       `/api/v1/validation/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`,
     ),
+  deleteValidationRun: (runId: string) =>
+    apiFetch<{ deleted: string }>(
+      `/api/v1/validation/runs/${encodeURIComponent(runId)}`,
+      { method: "DELETE" },
+    ),
+  deleteValidationRuns: (run_ids: string[]) =>
+    apiFetch<ValidationRunsBulkDeleteResult>(
+      "/api/v1/validation/runs/bulk-delete",
+      {
+        method: "POST",
+        body: JSON.stringify({ run_ids }),
+      },
+    ),
   runOptimization: (body: OptimizationRequest) =>
     apiFetch<{ id: string; status: string }>("/api/v1/optimization/run", {
       method: "POST",
@@ -371,6 +384,12 @@ export type ValidationRunsResponse = {
   total: number;
   limit: number;
   offset: number;
+};
+
+export type ValidationRunsBulkDeleteResult = {
+  deleted: string[];
+  not_found: string[];
+  deleted_count: number;
 };
 
 export type ValidationCompareMetric = {

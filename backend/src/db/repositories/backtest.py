@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from sqlalchemy import delete as sql_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.contracts.event import EventEnvelope
@@ -114,3 +115,32 @@ async def persist_validation_result(
             )
 
     await session.commit()
+
+
+async def delete_validation_run(session: AsyncSession, run_id: str) -> bool:
+    row = await session.get(BacktestRunRow, run_id)
+    if row is None:
+        return False
+    await session.execute(sql_delete(SimulatedTradeRow).where(SimulatedTradeRow.run_id == run_id))
+    await session.delete(row)
+    await session.flush()
+    return True
+
+
+async def delete_validation_runs(
+    session: AsyncSession,
+    run_ids: list[str],
+) -> tuple[list[str], list[str]]:
+    """Delete validation runs by id. Returns (deleted, not_found)."""
+    deleted: list[str] = []
+    not_found: list[str] = []
+    seen: set[str] = set()
+    for run_id in run_ids:
+        if run_id in seen:
+            continue
+        seen.add(run_id)
+        if await delete_validation_run(session, run_id):
+            deleted.append(run_id)
+        else:
+            not_found.append(run_id)
+    return deleted, not_found

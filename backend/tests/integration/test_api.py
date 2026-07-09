@@ -290,6 +290,73 @@ async def test_validation_runs_and_compare(api_client, auth_headers) -> None:
 
 
 @pytest.mark.asyncio
+async def test_validation_runs_delete_and_bulk_delete(api_client, auth_headers) -> None:
+    from datetime import UTC, datetime
+
+    from src.db.models import BacktestRunRow, SimulatedTradeRow
+
+    client, factory = api_client
+    async with factory() as session:
+        session.add(
+            BacktestRunRow(
+                run_id="run_delete_a",
+                symbol="BTC/USDT",
+                timeframe="1h",
+                config={"start": "2026-06-01", "end": "2026-06-30"},
+                metrics={"engine": {}, "outcome": {"total_trades": 1, "score": 1.0}},
+                started_at=datetime(2026, 6, 1, tzinfo=UTC),
+                completed_at=datetime(2026, 6, 30, tzinfo=UTC),
+            )
+        )
+        session.add(
+            BacktestRunRow(
+                run_id="run_delete_b",
+                symbol="BTC/USDT",
+                timeframe="1h",
+                config={"start": "2026-07-01", "end": "2026-07-31"},
+                metrics={"engine": {}, "outcome": {"total_trades": 2, "score": 2.0}},
+                started_at=datetime(2026, 7, 1, tzinfo=UTC),
+                completed_at=datetime(2026, 7, 31, tzinfo=UTC),
+            )
+        )
+        session.add(
+            SimulatedTradeRow(
+                trade_id="trade_delete_a",
+                run_id="run_delete_a",
+                position_id="pos_a",
+                correlation_id="cycle_a",
+                symbol="BTC/USDT",
+                pnl=10.0,
+                exit_reason="take_profit",
+                payload={},
+            )
+        )
+        await session.commit()
+
+    delete_one = await client.delete(
+        "/api/v1/validation/runs/run_delete_a",
+        headers=auth_headers,
+    )
+    assert delete_one.status_code == 200
+    assert delete_one.json()["deleted"] == "run_delete_a"
+
+    bulk = await client.post(
+        "/api/v1/validation/runs/bulk-delete",
+        headers=auth_headers,
+        json={"run_ids": ["run_delete_b", "run_missing"]},
+    )
+    assert bulk.status_code == 200
+    body = bulk.json()
+    assert body["deleted"] == ["run_delete_b"]
+    assert body["not_found"] == ["run_missing"]
+
+    async with factory() as session:
+        assert await session.get(BacktestRunRow, "run_delete_a") is None
+        assert await session.get(BacktestRunRow, "run_delete_b") is None
+        assert await session.get(SimulatedTradeRow, "trade_delete_a") is None
+
+
+@pytest.mark.asyncio
 async def test_optimization_api_apply(api_client, auth_headers, monkeypatch) -> None:
     import asyncio
     from datetime import UTC, datetime

@@ -21,6 +21,7 @@ from src.api.services.validation_runner import (
 from src.api.services.validation_service import job_response, validation_jobs
 from src.core.settings import load_app_yaml_config
 from src.db.models import BacktestRunRow, ConfigRevisionRow, SimulatedTradeRow
+from src.db.repositories.backtest import delete_validation_run, delete_validation_runs
 from src.observability.metrics import VALIDATION_RUNS_TOTAL
 from src.validation.harness import ValidationProgressEvent
 from src.validation.trades import build_trade_ledger
@@ -52,6 +53,10 @@ class WalkForwardRequest(BaseModel):
     initial_capital: float = 10000.0
     windows: int = 3
     train_ratio: float = 0.7
+
+
+class ValidationRunsBulkDeleteRequest(BaseModel):
+    run_ids: list[str]
 
 
 async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
@@ -220,6 +225,34 @@ async def list_validation_runs(
         "limit": limit,
         "offset": offset,
     }
+
+
+@router.post("/runs/bulk-delete")
+async def bulk_delete_validation_runs(
+    body: ValidationRunsBulkDeleteRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    if not body.run_ids:
+        raise HTTPException(status_code=400, detail="run_ids must not be empty")
+    deleted, not_found = await delete_validation_runs(db, body.run_ids)
+    await db.commit()
+    return {
+        "deleted": deleted,
+        "not_found": not_found,
+        "deleted_count": len(deleted),
+    }
+
+
+@router.delete("/runs/{run_id}")
+async def delete_validation_run_route(
+    run_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    removed = await delete_validation_run(db, run_id)
+    if not removed:
+        raise HTTPException(status_code=404, detail="Validation run not found")
+    await db.commit()
+    return {"deleted": run_id}
 
 
 @router.get("/compare")
