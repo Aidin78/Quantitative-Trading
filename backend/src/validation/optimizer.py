@@ -56,6 +56,12 @@ TRIAL_PARAM_KEYS = [
     "min_adx",
     "min_di_spread",
     "adx_require_trend",
+    "bb_period",
+    "bb_std",
+    "bb_weight",
+    "bb_enabled",
+    "bb_avoid_high_vol",
+    "bb_max_adx",
 ]
 
 
@@ -93,6 +99,12 @@ class OptimizationSpace:
     min_adx: tuple[float, ...] = (25.0,)
     min_di_spread: tuple[float, ...] = (5.0,)
     adx_require_trend: tuple[int, ...] = (0,)
+    bb_period: tuple[int, ...] = (20,)
+    bb_std: tuple[float, ...] = (2.0,)
+    bb_weight: tuple[float, ...] = (1.0,)
+    bb_enabled: tuple[int, ...] = (0,)
+    bb_avoid_high_vol: tuple[int, ...] = (1,)
+    bb_max_adx: tuple[float, ...] = (0.0,)
 
     def as_dict(self) -> dict[str, tuple[Any, ...]]:
         return {key: getattr(self, key) for key in TRIAL_PARAM_KEYS}

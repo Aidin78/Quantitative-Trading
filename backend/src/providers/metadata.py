@@ -236,6 +236,48 @@ PROVIDER_METADATA: dict[str, ProviderMetadata] = {
         ),
         required_features=("adx_14", "plus_di_14", "minus_di_14"),
     ),
+    "bollinger_reversion": ProviderMetadata(
+        summary="Mean reversion when price touches Bollinger upper or lower bands.",
+        rules=(
+            "BUY when close <= bb_lower (oversold at lower band).",
+            "SELL when close >= bb_upper (overbought at upper band).",
+            "Price inside bands → HOLD.",
+            "If avoid_high_vol: suppress entries when volatility is HIGH.",
+            "If max_adx > 0: suppress entries when ADX exceeds threshold (strong trend).",
+            "Confidence scales with penetration beyond the band relative to band width.",
+            "Below min_confidence → HOLD.",
+        ),
+        default_config={
+            "enabled": False,
+            "weight": 1.0,
+            "params": {
+                "min_confidence": 0.6,
+                "sl_atr_mult": 1.5,
+                "tp_atr_mult": 4.0,
+                "avoid_high_vol": True,
+                "max_adx": 0.0,
+            },
+        },
+        param_fields=_SHARED_STOPS
+        + (
+            ParamField(
+                key="avoid_high_vol",
+                label="Avoid high volatility",
+                type="bool",
+                description="Suppress entries when market volatility is HIGH.",
+            ),
+            ParamField(
+                key="max_adx",
+                label="Max ADX for reversion",
+                type="float",
+                description="Skip signals when ADX exceeds this (0 = disabled).",
+                min=0.0,
+                max=100.0,
+                step=1.0,
+            ),
+        ),
+        required_features=("bb_upper", "bb_lower", "bb_middle"),
+    ),
 }
 
 

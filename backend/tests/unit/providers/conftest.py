@@ -29,6 +29,7 @@ def context() -> MarketContext:
 
 def make_feature_set(
     *,
+    close: float = 67000.0,
     flags: dict[str, bool] | None = None,
     indicators: dict[str, float] | None = None,
 ) -> FeatureSet:
@@ -41,7 +42,7 @@ def make_feature_set(
         processing_time=now,
         feature_version="v1",
         config_hash="abc123",
-        close=67000.0,
+        close=close,
         indicators=indicators or {},
         flags=flags or {},
     )

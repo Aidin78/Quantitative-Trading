@@ -30,6 +30,9 @@ indicators:
   - name: bb_lower
     type: bollinger
     params: { period: 20, std: 2, band: lower }
+  - name: bb_middle
+    type: bollinger
+    params: { period: 20, std: 2, band: middle }
   - name: adx_14
     type: adx
     params: { period: 14, component: adx }

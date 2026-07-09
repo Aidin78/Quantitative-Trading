@@ -55,6 +55,12 @@ const DEFAULT_SPACE = {
   min_adx: [20, 25, 30],
   min_di_spread: [3, 5, 8],
   adx_require_trend: [0],
+  bb_period: [18, 20, 22],
+  bb_std: [1.5, 2.0, 2.5],
+  bb_weight: [1.0],
+  bb_enabled: [0],
+  bb_avoid_high_vol: [1],
+  bb_max_adx: [0, 25],
 };
 
 export default function OptimizationPage() {

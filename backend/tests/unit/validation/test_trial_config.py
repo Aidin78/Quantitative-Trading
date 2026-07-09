@@ -91,3 +91,29 @@ def test_build_features_config_from_trial_changes_adx_period() -> None:
     assert adx.params["period"] == 16
     assert plus_di.params["period"] == 16
     assert minus_di.params["period"] == 16
+
+
+def test_build_provider_overrides_includes_bollinger() -> None:
+    overrides = build_provider_overrides(
+        {
+            "bb_enabled": 1,
+            "bb_weight": 0.9,
+            "bb_avoid_high_vol": 0,
+            "bb_max_adx": 25.0,
+        }
+    )
+    assert overrides["bollinger_reversion"]["enabled"] is True
+    assert overrides["bollinger_reversion"]["weight"] == 0.9
+    assert overrides["bollinger_reversion"]["avoid_high_vol"] is False
+    assert overrides["bollinger_reversion"]["max_adx"] == 25.0
+
+
+def test_build_features_config_from_trial_changes_bb_params() -> None:
+    config, _ = build_features_config_from_trial({"bb_period": 22, "bb_std": 2.5})
+    upper = next(ind for ind in config.indicators if ind.name == "bb_upper")
+    lower = next(ind for ind in config.indicators if ind.name == "bb_lower")
+    middle = next(ind for ind in config.indicators if ind.name == "bb_middle")
+    assert upper.params["period"] == 22
+    assert upper.params["std"] == 2.5
+    assert lower.params["period"] == 22
+    assert middle.params["std"] == 2.5

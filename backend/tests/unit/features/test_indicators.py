@@ -35,12 +35,16 @@ def test_rsi_ema_atr_macd_bollinger_compute(ohlcv: pd.DataFrame) -> None:
     lower = get_indicator_class("bollinger")().compute(
         ohlcv, {"period": 20, "std": 2, "band": "lower"}
     )
+    middle = get_indicator_class("bollinger")().compute(
+        ohlcv, {"period": 20, "std": 2, "band": "middle"}
+    )
     assert 0 <= rsi <= 100
     assert ema > 0
     assert atr > 0
     assert macd_histogram == pytest.approx(macd - macd_signal, rel=1e-6, abs=1e-6)
     assert isinstance(macd_slope, float)
     assert upper > lower
+    assert lower < middle < upper
 
 
 def test_adx_components_compute(ohlcv: pd.DataFrame) -> None:

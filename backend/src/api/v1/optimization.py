@@ -82,6 +82,7 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         "rsi_divergence",
         "macd_momentum",
         "adx_trend_strength",
+        "bollinger_reversion",
     )
     for provider_id in provider_ids:
         if provider_id == "ema_crossover":
@@ -93,11 +94,15 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         elif provider_id == "macd_momentum":
             enabled_key = "macd_enabled"
             weight_key = "macd_weight"
-        else:
+        elif provider_id == "adx_trend_strength":
             enabled_key = "adx_enabled"
             weight_key = "adx_weight"
+        else:
+            enabled_key = "bb_enabled"
+            weight_key = "bb_weight"
+        enabled_default = 0 if provider_id in {"adx_trend_strength", "bollinger_reversion"} else 1
         provider_patch: dict[str, Any] = {
-            "enabled": bool(int(params.get(enabled_key, 1))),
+            "enabled": bool(int(params.get(enabled_key, enabled_default))),
             "weight": float(params.get(weight_key, 1.0)),
             "params": {
                 "min_confidence": float(params["min_confidence"]),
@@ -127,6 +132,11 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
             provider_patch["params"]["require_trend"] = bool(
                 int(params.get("adx_require_trend", 0))
             )
+        if provider_id == "bollinger_reversion":
+            provider_patch["params"]["avoid_high_vol"] = bool(
+                int(params.get("bb_avoid_high_vol", 1))
+            )
+            provider_patch["params"]["max_adx"] = float(params.get("bb_max_adx", 0.0))
         write_provider_config(provider_id, provider_patch)
 
     write_validation_settings(
@@ -143,6 +153,8 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         macd_slow=int(params.get("macd_slow", 26)),
         macd_signal_period=int(params.get("macd_signal_period", 9)),
         adx_period=int(params.get("adx_period", 14)),
+        bb_period=int(params.get("bb_period", 20)),
+        bb_std=float(params.get("bb_std", 2.0)),
     )
 
 

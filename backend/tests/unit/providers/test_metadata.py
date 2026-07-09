@@ -5,7 +5,13 @@ from src.providers.metadata import get_provider_metadata
 
 
 def test_provider_metadata_has_defaults_for_all_builtins() -> None:
-    for provider_id in ("ema_crossover", "rsi_divergence", "macd_momentum", "adx_trend_strength"):
+    for provider_id in (
+        "ema_crossover",
+        "rsi_divergence",
+        "macd_momentum",
+        "adx_trend_strength",
+        "bollinger_reversion",
+    ):
         meta = get_provider_metadata(provider_id)
         assert meta is not None
         assert meta.rules

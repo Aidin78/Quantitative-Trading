@@ -134,6 +134,8 @@ def write_features_config(
     macd_slow: int = 26,
     macd_signal_period: int = 9,
     adx_period: int = 14,
+    bb_period: int = 20,
+    bb_std: float = 2.0,
 ) -> dict:
     from src.features.config import load_features_config
 
@@ -141,6 +143,7 @@ def write_features_config(
     path = config_dir / "features.yaml"
     macd_names = {"macd", "macd_signal", "macd_histogram", "macd_histogram_slope"}
     adx_names = {"adx_14", "plus_di_14", "minus_di_14"}
+    bb_names = {"bb_upper", "bb_lower", "bb_middle"}
     with path.open(encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     for indicator in raw.get("indicators", []):
@@ -157,6 +160,10 @@ def write_features_config(
             params["signal"] = macd_signal_period
         elif indicator.get("name") in adx_names:
             indicator.setdefault("params", {})["period"] = adx_period
+        elif indicator.get("name") in bb_names:
+            params = indicator.setdefault("params", {})
+            params["period"] = bb_period
+            params["std"] = bb_std
     with path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(raw, f, sort_keys=False)
     load_features_config.cache_clear()
@@ -168,4 +175,6 @@ def write_features_config(
         "macd_slow": macd_slow,
         "macd_signal_period": macd_signal_period,
         "adx_period": adx_period,
+        "bb_period": bb_period,
+        "bb_std": bb_std,
     }

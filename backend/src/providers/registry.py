@@ -6,6 +6,7 @@ from src.core.contracts.provider import SignalProvider
 from src.engine.config import resolve_config_dir
 from src.providers.adx_trend_strength import AdxTrendStrengthProvider
 from src.providers.base import BaseSignalProvider, ProviderConfig
+from src.providers.bollinger_reversion import BollingerReversionProvider
 from src.providers.config import load_provider_yaml
 from src.providers.ema_crossover import EmaCrossoverProvider
 from src.providers.macd_momentum import MacdMomentumProvider
@@ -16,6 +17,7 @@ _PROVIDER_CLASSES: dict[str, type[BaseSignalProvider]] = {
     "rsi_divergence": RsiDivergenceProvider,
     "macd_momentum": MacdMomentumProvider,
     "adx_trend_strength": AdxTrendStrengthProvider,
+    "bollinger_reversion": BollingerReversionProvider,
 }
 
 
