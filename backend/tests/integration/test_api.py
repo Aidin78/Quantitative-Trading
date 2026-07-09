@@ -232,6 +232,26 @@ async def test_provider_reset(api_client) -> None:
 
 
 @pytest.mark.asyncio
+async def test_provider_baseline_enables_all_core_providers(api_client) -> None:
+    client, _ = api_client
+    await client.patch(
+        "/api/v1/providers/ema_crossover",
+        json={"enabled": False},
+    )
+    await client.patch(
+        "/api/v1/providers/rsi_divergence",
+        json={"enabled": False},
+    )
+
+    resp = await client.post("/api/v1/providers/baseline")
+    assert resp.status_code == 200
+    items = {item["provider_id"]: item for item in resp.json()["items"]}
+    for provider_id in ("ema_crossover", "rsi_divergence", "macd_momentum"):
+        assert provider_id in items
+        assert items[provider_id]["enabled"] is True
+
+
+@pytest.mark.asyncio
 async def test_validation_runs_and_compare(api_client, auth_headers) -> None:
     from datetime import UTC, datetime
 

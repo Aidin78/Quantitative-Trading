@@ -20,7 +20,7 @@ function fmtParams(params: Record<string, number | string>) {
     .join(" · ");
 }
 
-const DEFAULT_RANGE = dateRangeForPreset("90d");
+const DEFAULT_RANGE = dateRangeForPreset("180d");
 const DEFAULT_SPACE = {
   min_confidence: [0.6, 0.7, 0.78],
   min_risk_reward: [1.0, 1.5, 2.0],
@@ -65,14 +65,14 @@ export default function OptimizationPage() {
   const [endDate, setEndDate] = useState(DEFAULT_RANGE.end);
   const [initialCapital, setInitialCapital] = useState(10000);
   const [trainRatio, setTrainRatio] = useState(0.7);
-  const [maxTrials, setMaxTrials] = useState(36);
+  const [maxTrials, setMaxTrials] = useState(60);
   const [topK, setTopK] = useState(5);
   const [minTrades, setMinTrades] = useState(50);
   const [walkForwardWindows, setWalkForwardWindows] = useState(1);
   const [walkForwardMode, setWalkForwardMode] = useState<"fixed" | "anchored">(
     "anchored",
   );
-  const [searchMethod, setSearchMethod] = useState<"grid" | "optuna">("grid");
+  const [searchMethod, setSearchMethod] = useState<"grid" | "optuna">("optuna");
   const [holdoutRatio, setHoldoutRatio] = useState(0.2);
 
   useEffect(() => {
@@ -180,6 +180,33 @@ export default function OptimizationPage() {
         title="Auto Optimizer"
         description="Walk-forward grid search with composite scoring, holdout reserve, and local refinement."
       />
+
+      <Card
+        title="Baseline workflow"
+        subtitle="Recommended path for EMA + RSI + MACD"
+        className="mb-6"
+      >
+        <ol className="list-decimal space-y-2 pl-5 text-sm text-muted">
+          <li>
+            Market Data — ingest{" "}
+            <strong className="text-foreground">6–12 months</strong> of OHLCV
+            for your symbol.
+          </li>
+          <li>
+            Providers — click{" "}
+            <strong className="text-foreground">Apply baseline</strong> to
+            enable and reset EMA, RSI, and MACD.
+          </li>
+          <li>
+            Run Optimization with the defaults below (180d, Optuna, 60 trials).
+          </li>
+          <li>
+            Holdout gate — click{" "}
+            <strong className="text-foreground">Apply</strong> only if holdout
+            passed; otherwise tune or disable one provider.
+          </li>
+        </ol>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card

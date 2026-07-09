@@ -5,7 +5,9 @@ from pydantic import BaseModel, Field
 
 from src.api.deps import get_current_user
 from src.api.services.config_service import (
+    apply_baseline_provider_setup,
     list_provider_configs,
+    reset_all_provider_configs,
     reset_provider_config,
     write_provider_config,
 )
@@ -47,6 +49,25 @@ def _enrich_provider(item: dict) -> dict:
 async def get_providers() -> dict:
     items = [_enrich_provider(item) for item in list_provider_configs()]
     return {"items": items}
+
+
+@router.post("/reset-all")
+async def reset_all_providers() -> dict:
+    try:
+        items = reset_all_provider_configs()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"items": [_enrich_provider(item) for item in items]}
+
+
+@router.post("/baseline")
+async def apply_baseline() -> dict:
+    """Reset EMA + RSI + MACD to factory params and enable all three."""
+    try:
+        items = apply_baseline_provider_setup()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"items": [_enrich_provider(item) for item in items]}
 
 
 @router.get("/{provider_id}")

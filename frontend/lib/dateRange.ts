@@ -1,4 +1,4 @@
-export type DateRangePreset = "today" | "7d" | "30d" | "90d";
+export type DateRangePreset = "today" | "7d" | "30d" | "90d" | "180d";
 
 export const DATE_RANGE_PRESETS: Array<{ id: DateRangePreset; label: string }> =
   [
@@ -6,6 +6,7 @@ export const DATE_RANGE_PRESETS: Array<{ id: DateRangePreset; label: string }> =
     { id: "7d", label: "7 days" },
     { id: "30d", label: "30 days" },
     { id: "90d", label: "90 days" },
+    { id: "180d", label: "180 days" },
   ];
 
 export function toDateInputValue(date: Date = new Date()): string {
@@ -29,6 +30,7 @@ export function dateRangeForPreset(
   if (preset === "today") {
     return { start: end, end };
   }
-  const days = preset === "7d" ? 7 : preset === "30d" ? 30 : 90;
+  const days =
+    preset === "7d" ? 7 : preset === "30d" ? 30 : preset === "180d" ? 180 : 90;
   return { start: toDateInputValue(addDays(reference, -days)), end };
 }

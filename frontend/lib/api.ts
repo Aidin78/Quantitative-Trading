@@ -97,6 +97,14 @@ export const api = {
     apiFetch<ProviderConfig>(`/api/v1/providers/${id}/reset`, {
       method: "POST",
     }),
+  resetAllProviders: () =>
+    apiFetch<{ items: ProviderConfig[] }>("/api/v1/providers/reset-all", {
+      method: "POST",
+    }),
+  applyProviderBaseline: () =>
+    apiFetch<{ items: ProviderConfig[] }>("/api/v1/providers/baseline", {
+      method: "POST",
+    }),
   runValidation: (body: ValidationRequest) =>
     apiFetch<{ id: string; status: string }>("/api/v1/validation/run", {
       method: "POST",

@@ -72,6 +72,37 @@ def reset_provider_config(provider_id: str) -> dict:
     )
 
 
+def reset_all_provider_configs() -> list[dict]:
+    from src.providers.metadata import get_provider_metadata
+
+    results: list[dict] = []
+    for cfg in discover_provider_configs():
+        if get_provider_metadata(cfg.provider_id) is None:
+            continue
+        results.append(reset_provider_config(cfg.provider_id))
+    return results
+
+
+def apply_baseline_provider_setup() -> list[dict]:
+    """Reset core providers to factory params and enable all three."""
+    from src.providers.metadata import PROVIDER_METADATA
+
+    results: list[dict] = []
+    for provider_id, meta in PROVIDER_METADATA.items():
+        defaults = meta.default_config
+        results.append(
+            write_provider_config(
+                provider_id,
+                {
+                    "enabled": True,
+                    "weight": defaults["weight"],
+                    "params": dict(defaults["params"]),
+                },
+            )
+        )
+    return results
+
+
 def write_validation_settings(patch: dict) -> dict:
     config_dir = resolve_config_dir()
     path = config_dir / "settings.yaml"
