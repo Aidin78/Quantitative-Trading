@@ -49,6 +49,39 @@ def new_sweep_id() -> str:
     return f"sweep_{uuid.uuid4().hex[:12]}"
 
 
+def _finite_metric(outcome: dict[str, Any], key: str) -> float | None:
+    value = outcome.get(key)
+    if value is None:
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(parsed):
+        return None
+    return parsed
+
+
+def _return_pct(outcome: dict[str, Any]) -> float | None:
+    direct = _finite_metric(outcome, "return_pct")
+    if direct is not None:
+        return direct
+    initial = outcome.get("initial_capital")
+    pnl = outcome.get("total_pnl")
+    if initial is not None and pnl is not None:
+        try:
+            initial_f = float(initial)
+            if initial_f > 0:
+                derived = float(pnl) / initial_f * 100.0
+                if math.isfinite(derived):
+                    return derived
+        except (TypeError, ValueError):
+            pass
+    if "total_trades" in outcome:
+        return 0.0
+    return None
+
+
 def trial_to_dict(trial: TrialResult) -> dict[str, Any]:
     composite = trial.composite_score
     composite_export = composite if composite is not None and math.isfinite(composite) else None
@@ -67,9 +100,11 @@ def trial_to_dict(trial: TrialResult) -> dict[str, Any]:
         "pareto_rank": trial.pareto_rank,
         "revision_id": trial.revision_id,
         "train_total_trades": train_outcome.get("total_trades"),
-        "train_return_pct": train_outcome.get("return_pct"),
-        "test_total_trades": test_outcome.get("total_trades") if trial.test_outcome else None,
-        "test_return_pct": test_outcome.get("return_pct") if trial.test_outcome else None,
+        "train_return_pct": _return_pct(train_outcome),
+        "test_total_trades": test_outcome.get("total_trades")
+        if trial.test_outcome is not None
+        else None,
+        "test_return_pct": _return_pct(test_outcome) if trial.test_outcome is not None else None,
     }
 
 

@@ -56,4 +56,18 @@ export const FORM_TOOLTIPS = {
     "Substring match on why a decision was rejected, e.g. low_confidence or min_agreeing_providers.",
   filterProvider:
     "Show decisions where a specific signal provider contributed, e.g. ema_crossover or rsi_divergence.",
+  optTrialParams:
+    "Hyperparameter combination evaluated in this trial (engine, providers, and feature settings).",
+  optTrialTrain:
+    "Optimization score on in-sample (train) data. All trials are ranked by this before Top-K re-test.",
+  optTrialTest:
+    "Score on held-out test data. Only the best Top-K train candidates receive a test backtest.",
+  optTrialReturn:
+    "Portfolio return % over the evaluated period. Test return is shown for finalists; others show train return only.",
+  optTrialTrades:
+    "Number of closed simulated trades in the period. Test trades apply only to finalists.",
+  optTrialComposite:
+    "Final selection score: 60% test score + 25% stability + 15% return − fold variance penalty. Shown only for test finalists.",
+  optTrialStability:
+    "Share of months with positive PnL on test data. Higher values suggest more consistent performance.",
 } as const;

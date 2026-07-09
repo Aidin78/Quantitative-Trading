@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PlayCircle, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { OptimizationTrialsTable } from "@/components/optimization/OptimizationTrialsTable";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { DateRangeFields } from "@/components/ui/DateRangeFields";
 import { FieldLabel } from "@/components/ui/FieldLabel";
@@ -419,9 +420,9 @@ export default function OptimizationPage() {
               </p>
             ) : null}
             <p className="rounded-lg border border-[var(--border)] bg-[var(--background-elevated)]/50 p-3 text-xs text-muted">
-              Return/Trades without a test score use train-period values.
-              Composite shows &quot;ineligible&quot; when test trades are below
-              min trades.
+              Return shows test-period PnL for Top-K finalists (highlighted
+              rows). Other trials show train-period return. A dash means the
+              sweep is still running or metrics were not computed yet.
             </p>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-lg border border-[var(--border)] p-3">
@@ -444,7 +445,8 @@ export default function OptimizationPage() {
               <div className="rounded-lg border border-[var(--border)] p-3">
                 <p className="text-xs text-muted">Test return</p>
                 <p className="text-lg font-semibold">
-                  {displayTrial.test_return_pct != null
+                  {displayTrial.test_score != null &&
+                  displayTrial.test_return_pct != null
                     ? `${displayTrial.test_return_pct.toFixed(2)}%`
                     : displayTrial.train_return_pct != null
                       ? `${displayTrial.train_return_pct.toFixed(2)}% (train)`
@@ -521,81 +523,13 @@ export default function OptimizationPage() {
       {sweep?.trials?.length ? (
         <Card
           title="Trials"
-          subtitle="Top-K rows include test metrics; others show train-only values"
+          subtitle="Train scores for all candidates — click a row for test details"
         >
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-left text-xs uppercase text-muted">
-                  <th className="pb-2 pr-3">Params</th>
-                  <th className="pb-2 pr-3">Train</th>
-                  <th className="pb-2 pr-3">Test</th>
-                  <th className="pb-2 pr-3">Return</th>
-                  <th className="pb-2 pr-3">Trades</th>
-                  <th className="pb-2 pr-3">Composite</th>
-                  <th className="pb-2">Stability</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sweep.trials
-                  .slice()
-                  .sort(
-                    (a, b) =>
-                      (b.composite_score ?? b.test_score ?? b.train_score) -
-                      (a.composite_score ?? a.test_score ?? a.train_score),
-                  )
-                  .map((trial) => {
-                    const hasTest = trial.test_score != null;
-                    const returnLabel =
-                      trial.test_return_pct != null
-                        ? `${trial.test_return_pct.toFixed(1)}%`
-                        : trial.train_return_pct != null
-                          ? `${trial.train_return_pct.toFixed(1)}% (train)`
-                          : "—";
-                    const compositeLabel =
-                      trial.composite_score != null
-                        ? trial.composite_score.toFixed(1)
-                        : hasTest
-                          ? "ineligible"
-                          : "—";
-                    return (
-                      <tr
-                        key={trial.trial_id}
-                        className={`border-b border-[var(--border)]/50 ${
-                          topTrialIds.has(trial.trial_id)
-                            ? "bg-[var(--accent-dim)]/30"
-                            : ""
-                        }`}
-                      >
-                        <td className="py-2 pr-3 font-mono text-xs">
-                          {fmtParams(trial.params)}
-                        </td>
-                        <td className="py-2 pr-3">
-                          {trial.train_score.toFixed(1)}
-                        </td>
-                        <td className="py-2 pr-3">
-                          {hasTest ? trial.test_score!.toFixed(1) : "—"}
-                        </td>
-                        <td className="py-2 pr-3 text-xs">{returnLabel}</td>
-                        <td className="py-2 pr-3">
-                          {hasTest
-                            ? (trial.test_total_trades ?? "—")
-                            : (trial.train_total_trades ?? "—")}
-                        </td>
-                        <td className="py-2 pr-3 text-xs text-muted">
-                          {compositeLabel}
-                        </td>
-                        <td className="py-2">
-                          {trial.stability != null
-                            ? `${(trial.stability * 100).toFixed(0)}%`
-                            : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
+          <OptimizationTrialsTable
+            trials={sweep.trials}
+            topTrialIds={topTrialIds}
+            topK={topK}
+          />
         </Card>
       ) : null}
     </div>
