@@ -108,6 +108,9 @@ class OptimizationResult:
     test_end: datetime
     trials: list[TrialResult] = field(default_factory=list)
     best: TrialResult | None = None
+    best_valid: bool = False
+    selection_message: str | None = None
+    fallback_trial: TrialResult | None = None
     space: OptimizationSpace = field(default_factory=OptimizationSpace)
     holdout_start: datetime | None = None
     holdout_end: datetime | None = None
@@ -306,10 +309,42 @@ def select_best(
     ]
     if eligible:
         return max(eligible, key=lambda trial: trial.composite_score or float("-inf"))
-    return max(
-        finalists,
-        key=lambda trial: trial.test_score if trial.test_score is not None else float("-inf"),
+    return None
+
+
+def _trial_test_trades(trial: TrialResult) -> int:
+    if trial.test_outcome is None:
+        return 0
+    return int(trial.test_outcome.get("total_trades", 0))
+
+
+def build_selection_message(
+    *,
+    finalists: list[TrialResult],
+    min_trades: int,
+    min_return_pct: float,
+) -> str:
+    if not finalists:
+        return "No finalists were evaluated on test data."
+    max_trades = max(_trial_test_trades(trial) for trial in finalists)
+    agreeing_two = sum(
+        1 for trial in finalists if int(trial.params.get("min_agreeing_providers", 1)) >= 2
     )
+    hints: list[str] = [
+        f"No trial reached {min_trades} test trades (max seen: {max_trades}).",
+    ]
+    if min_return_pct > 0:
+        hints.append(f"Minimum return filter: {min_return_pct}%.")
+    if agreeing_two:
+        hints.append(
+            f"{agreeing_two} finalist(s) require 2 agreeing providers — "
+            "EMA and RSI must agree on the same side, which often yields zero trades."
+        )
+    hints.append(
+        "Try: min_agreeing_providers=1, session_preset=all, longer date range, "
+        "or WF windows=1 for shorter histories."
+    )
+    return " ".join(hints)
 
 
 async def _run_trial(
@@ -648,6 +683,16 @@ async def run_optimization(
         )
 
     best = select_best(finalists, min_trades=min_trades, min_return_pct=min_return_pct)
+    best_valid = best is not None
+    fallback_trial: TrialResult | None = None
+    selection_message: str | None = None
+    if not best_valid and finalists:
+        selection_message = build_selection_message(
+            finalists=finalists,
+            min_trades=min_trades,
+            min_return_pct=min_return_pct,
+        )
+        fallback_trial = max(finalists, key=_trial_test_trades)
 
     return OptimizationResult(
         sweep_id=f"sweep_{uuid.uuid4().hex[:12]}",
@@ -659,6 +704,9 @@ async def run_optimization(
         test_end=test_end,
         trials=train_results,
         best=best,
+        best_valid=best_valid,
+        selection_message=selection_message,
+        fallback_trial=fallback_trial,
         space=opt_space,
         holdout_start=holdout_start,
         holdout_end=holdout_end,

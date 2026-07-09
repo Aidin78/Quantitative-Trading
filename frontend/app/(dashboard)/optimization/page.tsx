@@ -19,7 +19,7 @@ const DEFAULT_RANGE = dateRangeForPreset("90d");
 const DEFAULT_SPACE = {
   min_confidence: [0.6, 0.7, 0.78],
   min_risk_reward: [1.0, 1.5, 2.0],
-  min_agreeing_providers: [1, 2],
+  min_agreeing_providers: [1],
   sl_atr_mult: [1.0, 1.5, 2.0],
   tp_atr_mult: [2.0, 3.0, 4.0],
   max_bars_in_trade: [12, 24, 48],
@@ -27,7 +27,7 @@ const DEFAULT_SPACE = {
   overbought: [65, 70, 75],
   risk_pct_per_trade: [0.5, 1.0, 1.5],
   min_atr_pct: [0.1, 0.3, 0.5],
-  session_preset: ["eu_us", "all"],
+  session_preset: ["all", "eu_us"],
   max_signals_per_day: [5, 10, 20],
   ema_fast: [10, 12, 14],
   ema_slow: [24, 26, 30],
@@ -49,7 +49,7 @@ export default function OptimizationPage() {
   const [maxTrials, setMaxTrials] = useState(36);
   const [topK, setTopK] = useState(5);
   const [minTrades, setMinTrades] = useState(20);
-  const [walkForwardWindows, setWalkForwardWindows] = useState(3);
+  const [walkForwardWindows, setWalkForwardWindows] = useState(1);
   const [holdoutRatio, setHoldoutRatio] = useState(0.2);
 
   const run = useMutation({
@@ -118,8 +118,14 @@ export default function OptimizationPage() {
   );
 
   const bestBelowMinTrades =
-    sweep?.best?.test_total_trades != null &&
-    sweep.best.test_total_trades < minTrades;
+    sweep?.best_valid === false ||
+    (sweep?.best?.test_total_trades != null &&
+      sweep.best.test_total_trades < minTrades);
+
+  const displayTrial =
+    sweep?.best_valid && sweep.best
+      ? sweep.best
+      : (sweep?.fallback_trial ?? sweep?.best ?? null);
 
   return (
     <div className="page-container">
@@ -381,51 +387,68 @@ export default function OptimizationPage() {
         </Card>
       </div>
 
-      {sweep?.best ? (
+      {sweep?.status === "completed" && displayTrial ? (
         <Card
-          title="Best Config"
-          subtitle="Selected by composite score on test data"
+          title={sweep.best_valid ? "Best Config" : "No Valid Best Config"}
+          subtitle={
+            sweep.best_valid
+              ? "Selected by composite score on test data"
+              : "No trial met minimum trade guardrails"
+          }
         >
           <div className="space-y-4">
-            {bestBelowMinTrades ? (
+            {!sweep.best_valid && sweep.selection_message ? (
               <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger">
-                Warning: best config has only {sweep.best.test_total_trades}{" "}
+                {sweep.selection_message}
+              </p>
+            ) : null}
+            {sweep.best_valid && bestBelowMinTrades ? (
+              <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger">
+                Warning: best config has only {sweep.best?.test_total_trades}{" "}
                 test trades (minimum requested: {minTrades}).
+              </p>
+            ) : null}
+            {!sweep.best_valid ? (
+              <p className="text-sm text-muted">
+                Closest candidate by test trades (not recommended to apply):
               </p>
             ) : null}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-lg border border-[var(--border)] p-3">
                 <p className="text-xs text-muted">Composite</p>
                 <p className="text-lg font-semibold">
-                  {sweep.best.composite_score?.toFixed(1) ?? "—"}
+                  {displayTrial.composite_score != null &&
+                  displayTrial.composite_score > -1e9
+                    ? displayTrial.composite_score.toFixed(1)
+                    : "—"}
                 </p>
               </div>
               <div className="rounded-lg border border-[var(--border)] p-3">
                 <p className="text-xs text-muted">Test score</p>
                 <p className="text-lg font-semibold">
-                  {sweep.best.test_score?.toFixed(1) ?? "—"}
+                  {displayTrial.test_score?.toFixed(1) ?? "—"}
                 </p>
               </div>
               <div className="rounded-lg border border-[var(--border)] p-3">
                 <p className="text-xs text-muted">Test return</p>
                 <p className="text-lg font-semibold">
-                  {sweep.best.test_return_pct != null
-                    ? `${sweep.best.test_return_pct.toFixed(2)}%`
+                  {displayTrial.test_return_pct != null
+                    ? `${displayTrial.test_return_pct.toFixed(2)}%`
                     : "—"}
                 </p>
               </div>
               <div className="rounded-lg border border-[var(--border)] p-3">
                 <p className="text-xs text-muted">Stability</p>
                 <p className="text-lg font-semibold">
-                  {sweep.best.stability != null
-                    ? `${(sweep.best.stability * 100).toFixed(0)}%`
+                  {displayTrial.stability != null
+                    ? `${(displayTrial.stability * 100).toFixed(0)}%`
                     : "—"}
                 </p>
               </div>
               <div className="rounded-lg border border-[var(--border)] p-3">
                 <p className="text-xs text-muted">Test trades</p>
                 <p className="text-lg font-semibold">
-                  {sweep.best.test_total_trades ?? "—"}
+                  {displayTrial.test_total_trades ?? "—"}
                 </p>
               </div>
             </div>
@@ -435,9 +458,9 @@ export default function OptimizationPage() {
               excluded.
             </p>
             <p className="rounded-lg border border-[var(--border)] bg-[var(--background-elevated)]/50 p-3 font-mono text-xs">
-              {fmtParams(sweep.best.params)}
+              {fmtParams(displayTrial.params)}
             </p>
-            {sweep.holdout_start && sweep.holdout_end ? (
+            {sweep.best_valid && sweep.holdout_start && sweep.holdout_end ? (
               <p className="text-sm text-muted">
                 After Apply, run Validation on holdout period{" "}
                 <strong className="text-foreground">
@@ -450,7 +473,11 @@ export default function OptimizationPage() {
             <button
               type="button"
               onClick={() => apply.mutate()}
-              disabled={apply.isPending || sweep.status !== "completed"}
+              disabled={
+                apply.isPending ||
+                sweep.status !== "completed" ||
+                !sweep.best_valid
+              }
               className="btn-primary"
             >
               {apply.isPending ? (
@@ -458,7 +485,9 @@ export default function OptimizationPage() {
               ) : (
                 <PlayCircle className="h-4 w-4" />
               )}
-              Apply best config
+              {sweep.best_valid
+                ? "Apply best config"
+                : "Apply disabled — no valid best"}
             </button>
             {apply.data?.revision_id ? (
               <p className="text-sm text-[var(--success)]">

@@ -439,6 +439,9 @@ export type OptimizationSweep = {
   optimization_end?: string | null;
   trials?: OptimizationTrial[];
   best?: OptimizationTrial | null;
+  best_valid?: boolean;
+  selection_message?: string | null;
+  fallback_trial?: OptimizationTrial | null;
 };
 
 export type OptimizationApplyResponse = {

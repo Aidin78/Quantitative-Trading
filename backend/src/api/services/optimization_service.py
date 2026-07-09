@@ -88,6 +88,9 @@ def result_to_dict(result: OptimizationResult) -> dict[str, Any]:
         "space": result.space.as_dict(),
         "trials": [trial_to_dict(t) for t in result.trials],
         "best": trial_to_dict(result.best) if result.best else None,
+        "best_valid": result.best_valid,
+        "selection_message": result.selection_message,
+        "fallback_trial": trial_to_dict(result.fallback_trial) if result.fallback_trial else None,
     }
 
 

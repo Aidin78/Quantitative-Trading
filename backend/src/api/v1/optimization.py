@@ -151,8 +151,14 @@ async def get_optimization(sweep_id: str) -> dict:
 @router.post("/{sweep_id}/apply")
 async def apply_optimization_best(sweep_id: str, db: AsyncSession = Depends(get_db)) -> dict:
     sweep = optimization_sweeps.get(sweep_id)
-    if sweep is None or sweep.result is None or sweep.result.best is None:
-        raise HTTPException(status_code=404, detail="No completed optimization with a best trial")
+    if sweep is None or sweep.result is None:
+        raise HTTPException(status_code=404, detail="No completed optimization sweep found")
+    if not sweep.result.best_valid or sweep.result.best is None:
+        raise HTTPException(
+            status_code=400,
+            detail=sweep.result.selection_message
+            or "No valid best configuration met the minimum trade guardrails",
+        )
 
     params = sweep.result.best.params
     session_preset = str(params.get("session_preset", "eu_us"))

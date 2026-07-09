@@ -120,6 +120,39 @@ def test_composite_score_rejects_low_trades() -> None:
     assert composite_score(trial, min_trades=20) == float("-inf")
 
 
+def test_select_best_returns_none_when_all_fail_guardrails() -> None:
+    trial = TrialResult(
+        trial_id="weak",
+        params={"min_agreeing_providers": 2},
+        train_score=10,
+        train_outcome={},
+        test_score=-20,
+        test_outcome={"total_trades": 0, "return_pct": 0},
+        stability=0,
+    )
+    assert select_best([trial], min_trades=20, min_return_pct=0.0) is None
+
+
+def test_build_selection_message_mentions_agreeing_providers() -> None:
+    from src.validation.optimizer import build_selection_message
+
+    trial = TrialResult(
+        trial_id="t1",
+        params={"min_agreeing_providers": 2},
+        train_score=0,
+        train_outcome={},
+        test_score=-20,
+        test_outcome={"total_trades": 0, "return_pct": 0},
+    )
+    message = build_selection_message(
+        finalists=[trial],
+        min_trades=20,
+        min_return_pct=0.0,
+    )
+    assert "2 agreeing providers" in message
+    assert "max seen: 0" in message
+
+
 def test_select_best_uses_composite_score() -> None:
     good = TrialResult(
         trial_id="good",
