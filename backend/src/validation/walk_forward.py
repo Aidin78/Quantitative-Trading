@@ -48,6 +48,41 @@ def build_walk_forward_windows(
     return result
 
 
+def build_anchored_walk_forward_windows(
+    start: datetime,
+    end: datetime,
+    *,
+    windows: int = 3,
+    train_ratio: float = 0.7,
+) -> list[WalkForwardWindow]:
+    """Rolling windows with expanding train anchor from ``start``."""
+    if windows < 1:
+        raise ValueError("windows must be >= 1")
+    if not 0 < train_ratio < 1:
+        raise ValueError("train_ratio must be between 0 and 1")
+    total = end - start
+    if total <= timedelta(0):
+        raise ValueError("end must be after start")
+
+    window_size = total / windows
+    result: list[WalkForwardWindow] = []
+    for i in range(windows):
+        w_start = start + window_size * i
+        w_end = start + window_size * (i + 1)
+        train_end = w_start + timedelta(seconds=(w_end - w_start).total_seconds() * train_ratio)
+        anchored_train_start = start
+        result.append(
+            WalkForwardWindow(
+                index=i,
+                train_start=anchored_train_start,
+                train_end=train_end,
+                test_start=train_end,
+                test_end=w_end,
+            )
+        )
+    return result
+
+
 def window_to_validation_config(
     window: WalkForwardWindow,
     *,

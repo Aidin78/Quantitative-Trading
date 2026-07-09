@@ -430,7 +430,19 @@ export type OptimizationRequest = {
   min_return_pct?: number;
   holdout_ratio?: number;
   walk_forward_windows?: number;
+  walk_forward_mode?: "fixed" | "anchored";
   local_refine?: boolean;
+  search_method?: "grid" | "optuna";
+  min_trades_holdout?: number;
+};
+
+export type OptimizationHoldoutMetrics = {
+  return_pct?: number;
+  total_trades?: number;
+  score?: number;
+  sharpe_ratio?: number;
+  sortino_ratio?: number;
+  max_drawdown_pct?: number;
 };
 
 export type OptimizationTrial = {
@@ -474,6 +486,9 @@ export type OptimizationSweep = {
   best_valid?: boolean;
   selection_message?: string | null;
   fallback_trial?: OptimizationTrial | null;
+  holdout_score?: number | null;
+  holdout_valid?: boolean;
+  holdout_metrics?: OptimizationHoldoutMetrics | null;
 };
 
 export type OptimizationApplyResponse = {

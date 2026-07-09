@@ -17,7 +17,11 @@ from src.validation.trial_config import (
     build_provider_overrides,
     synthetic_revision_from_trial,
 )
-from src.validation.walk_forward import WalkForwardWindow, build_walk_forward_windows
+from src.validation.walk_forward import (
+    WalkForwardWindow,
+    build_anchored_walk_forward_windows,
+    build_walk_forward_windows,
+)
 
 TRIAL_PARAM_KEYS = [
     "min_confidence",
@@ -115,6 +119,9 @@ class OptimizationResult:
     holdout_start: datetime | None = None
     holdout_end: datetime | None = None
     optimization_end: datetime | None = None
+    holdout_score: float | None = None
+    holdout_outcome: dict[str, Any] | None = None
+    holdout_valid: bool = False
 
 
 def split_train_test(
@@ -185,6 +192,49 @@ def generate_trials(
         seen.add(key)
         picked.append(choice)
         remaining.remove(choice)
+    return picked
+
+
+def _suggest_params_from_optuna_trial(
+    trial: Any,
+    space: OptimizationSpace,
+) -> dict[str, Any]:
+    space_map = space.as_dict()
+    params: dict[str, Any] = {}
+    for key in TRIAL_PARAM_KEYS:
+        values = list(space_map[key])
+        if len(values) == 1:
+            params[key] = values[0]
+        else:
+            params[key] = trial.suggest_categorical(key, values)
+    return params
+
+
+def generate_trials_optuna(
+    space: OptimizationSpace,
+    *,
+    max_trials: int = 40,
+    seed: int | None = None,
+) -> list[dict[str, Any]]:
+    import optuna
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    sampler: optuna.samplers.BaseSampler
+    if seed is not None:
+        sampler = optuna.samplers.TPESampler(seed=seed)
+    else:
+        sampler = optuna.samplers.TPESampler()
+    study = optuna.create_study(direction="maximize", sampler=sampler)
+    picked: list[dict[str, Any]] = []
+    seen: set[tuple[tuple[str, Any], ...]] = set()
+    for _ in range(max_trials):
+        trial = study.ask()
+        params = _suggest_params_from_optuna_trial(trial, space)
+        key = tuple(sorted(params.items()))
+        if key in seen:
+            continue
+        seen.add(key)
+        picked.append(params)
     return picked
 
 
@@ -308,7 +358,9 @@ def select_best(
         if trial.composite_score is not None and trial.composite_score > float("-inf")
     ]
     if eligible:
-        return max(eligible, key=lambda trial: trial.composite_score or float("-inf"))
+        pareto_eligible = [trial for trial in eligible if trial.pareto_rank == 0]
+        pool = pareto_eligible if pareto_eligible else eligible
+        return max(pool, key=lambda trial: trial.composite_score or float("-inf"))
     return None
 
 
@@ -462,20 +514,30 @@ async def run_optimization(
     min_return_pct: float = 0.0,
     holdout_ratio: float = 0.2,
     walk_forward_windows: int = 1,
+    walk_forward_mode: Literal["fixed", "anchored"] = "anchored",
     local_refine: bool = True,
+    search_method: Literal["grid", "optuna"] = "grid",
+    min_trades_holdout: int | None = None,
     on_progress: ProgressCallback | None = None,
 ) -> OptimizationResult:
     opt_space = space or OptimizationSpace()
     (opt_start, opt_end), holdout = split_holdout(start, end, holdout_ratio=holdout_ratio)
     holdout_start, holdout_end = holdout if holdout else (None, None)
+    holdout_min_trades = (
+        min_trades_holdout if min_trades_holdout is not None else max(1, min_trades // 2)
+    )
 
-    wf_windows = (
-        build_walk_forward_windows(
+    if walk_forward_windows > 1:
+        build_windows = (
+            build_anchored_walk_forward_windows
+            if walk_forward_mode == "anchored"
+            else build_walk_forward_windows
+        )
+        wf_windows = build_windows(
             opt_start, opt_end, windows=walk_forward_windows, train_ratio=train_ratio
         )
-        if walk_forward_windows > 1
-        else []
-    )
+    else:
+        wf_windows = []
     if wf_windows:
         train_start, train_end = wf_windows[0].train_start, wf_windows[0].train_end
         test_start, test_end = wf_windows[-1].test_start, wf_windows[-1].test_end
@@ -484,7 +546,11 @@ async def run_optimization(
             opt_start, opt_end, train_ratio=train_ratio
         )
 
-    trial_params = generate_trials(opt_space, max_trials=max_trials, seed=seed)
+    trial_params = (
+        generate_trials_optuna(opt_space, max_trials=max_trials, seed=seed)
+        if search_method == "optuna"
+        else generate_trials(opt_space, max_trials=max_trials, seed=seed)
+    )
     n_train = len(trial_params)
     n_test = min(top_k, n_train)
     total_steps = n_train + n_test
@@ -514,7 +580,7 @@ async def run_optimization(
                 source=source,
                 initial_capital=initial_capital,
                 csv_path=csv_path,
-                segment="test",
+                segment="train",
             )
             revision_id = synthetic_revision_from_trial(params).revision_id
         else:
@@ -586,7 +652,7 @@ async def run_optimization(
                     source=source,
                     initial_capital=initial_capital,
                     csv_path=csv_path,
-                    segment="test",
+                    segment="train",
                 )
                 revision_id = synthetic_revision_from_trial(params).revision_id
             else:
@@ -699,6 +765,33 @@ async def run_optimization(
         )
         fallback_trial = max(finalists, key=_trial_test_trades)
 
+    holdout_score: float | None = None
+    holdout_outcome: dict[str, Any] | None = None
+    holdout_valid = False
+    if best is not None and holdout_start is not None and holdout_end is not None:
+        holdout_score, holdout_outcome, _ = await _run_trial(
+            params=best.params,
+            symbol=symbol,
+            timeframe=timeframe,
+            start=holdout_start,
+            end=holdout_end,
+            source=source,
+            initial_capital=initial_capital,
+            csv_path=csv_path,
+        )
+        h_trades = int(holdout_outcome.get("total_trades", 0))
+        h_return = float(holdout_outcome.get("return_pct", 0))
+        holdout_valid = h_trades >= holdout_min_trades and h_return >= min_return_pct
+        if best_valid and not holdout_valid:
+            best_valid = False
+            holdout_msg = (
+                f"Holdout check failed: {h_trades} trades, {h_return:.2f}% return "
+                f"(need >={holdout_min_trades} trades and >={min_return_pct}% return)."
+            )
+            selection_message = (
+                f"{selection_message} {holdout_msg}".strip() if selection_message else holdout_msg
+            )
+
     return OptimizationResult(
         sweep_id=f"sweep_{uuid.uuid4().hex[:12]}",
         symbol=symbol,
@@ -716,4 +809,7 @@ async def run_optimization(
         holdout_start=holdout_start,
         holdout_end=holdout_end,
         optimization_end=opt_end,
+        holdout_score=holdout_score,
+        holdout_outcome=holdout_outcome,
+        holdout_valid=holdout_valid,
     )

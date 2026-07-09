@@ -21,7 +21,11 @@ export const FORM_TOOLTIPS = {
   walkForwardWindows:
     "Split the date range into rolling folds. Each fold trains and tests separately; scores are averaged for robustness.",
   holdoutRatio:
-    "Reserve the final slice of the date range for manual validation only. The optimizer never sees this data.",
+    "Reserve the final slice of the date range for out-of-sample validation. The optimizer auto-evaluates the best config on this period after selection.",
+  searchMethod:
+    "Grid samples the parameter space randomly; Optuna uses TPE adaptive search to explore promising regions faster.",
+  walkForwardMode:
+    "Anchored walk-forward keeps train windows fixed at the start date and expands them. Fixed uses rolling windows of equal length.",
   rangeMode:
     "Download by rolling months from today, or pick explicit start/end dates for the CSV cache file.",
   period:

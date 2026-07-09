@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Loader2, PlayCircle, Trash2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ValidationMetricsPanel } from "@/components/validation/ValidationMetricsPanel";
@@ -21,6 +22,7 @@ const PHASE_LABELS: Record<string, string> = {
 
 export default function ValidationPage() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [jobId, setJobId] = useState<string | null>(null);
   const [symbol, setSymbol] = useState("BTC/USDT");
   const [startDate, setStartDate] = useState(
@@ -36,6 +38,17 @@ export default function ValidationPage() {
   const [compareRunB, setCompareRunB] = useState<string>("");
   const [selectedRuns, setSelectedRuns] = useState<Set<string>>(new Set());
   const [historyError, setHistoryError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const job = searchParams.get("job");
+    if (job) setJobId(job);
+    const sym = searchParams.get("symbol");
+    if (sym) setSymbol(sym);
+    const start = searchParams.get("start");
+    if (start) setStartDate(start);
+    const end = searchParams.get("end");
+    if (end) setEndDate(end);
+  }, [searchParams]);
 
   const { data: runHistory } = useQuery({
     queryKey: ["validation-runs", symbol],

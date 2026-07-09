@@ -1,7 +1,7 @@
 engine:
   aggregation:
     min_agreeing_providers: 1
-    method: majority
+    method: weighted_majority
   filter:
     min_atr_pct: 0.3
     allowed_sessions:

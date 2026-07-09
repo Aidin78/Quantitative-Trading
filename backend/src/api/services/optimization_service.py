@@ -128,6 +128,20 @@ def result_to_dict(result: OptimizationResult) -> dict[str, Any]:
         "best_valid": result.best_valid,
         "selection_message": result.selection_message,
         "fallback_trial": trial_to_dict(result.fallback_trial) if result.fallback_trial else None,
+        "holdout_score": result.holdout_score,
+        "holdout_valid": result.holdout_valid,
+        "holdout_metrics": (
+            {
+                "return_pct": result.holdout_outcome.get("return_pct"),
+                "total_trades": result.holdout_outcome.get("total_trades"),
+                "score": result.holdout_outcome.get("score"),
+                "sharpe_ratio": result.holdout_outcome.get("sharpe_ratio"),
+                "sortino_ratio": result.holdout_outcome.get("sortino_ratio"),
+                "max_drawdown_pct": result.holdout_outcome.get("max_drawdown_pct"),
+            }
+            if result.holdout_outcome
+            else None
+        ),
     }
 
 

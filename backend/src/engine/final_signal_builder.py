@@ -21,7 +21,12 @@ class FinalSignalBuilder:
     ) -> FinalSignal:
         winners = [s for s in signals if s.provider_id in aggregated.weights]
         entry = context.current_price
-        stop_loss, take_profit = self._merge_levels(aggregated.side, winners, entry)
+        stop_loss, take_profit = self._merge_levels(
+            aggregated.side,
+            winners,
+            entry,
+            aggregated.weights,
+        )
         risk_reward = self._risk_reward(aggregated.side, entry, stop_loss, take_profit)
 
         return FinalSignal(
@@ -46,16 +51,33 @@ class FinalSignalBuilder:
         side: str,
         winners: list[StrategySignal],
         entry: float,
+        weights: dict[str, float],
     ) -> tuple[float, float]:
-        stops = [s.stop_loss for s in winners if s.stop_loss is not None]
-        targets = [s.take_profit for s in winners if s.take_profit is not None]
+        stops = [s for s in winners if s.stop_loss is not None]
+        targets = [s for s in winners if s.take_profit is not None]
+
+        def weighted_avg(values: list[tuple[float, float]]) -> float | None:
+            if not values:
+                return None
+            total_w = sum(weight for _, weight in values)
+            if total_w <= 0:
+                return sum(level for level, _ in values) / len(values)
+            return sum(level * weight for level, weight in values) / total_w
 
         if side == "BUY":
-            stop_loss = max(stops) if stops else entry * 0.99
-            take_profit = min(targets) if targets else entry * 1.02
+            stop_levels = [(float(s.stop_loss), weights.get(s.provider_id, 1.0)) for s in stops]
+            target_levels = [
+                (float(s.take_profit), weights.get(s.provider_id, 1.0)) for s in targets
+            ]
+            stop_loss = weighted_avg(stop_levels) if stop_levels else entry * 0.99
+            take_profit = weighted_avg(target_levels) if target_levels else entry * 1.02
         else:
-            stop_loss = min(stops) if stops else entry * 1.01
-            take_profit = max(targets) if targets else entry * 0.98
+            stop_levels = [(float(s.stop_loss), weights.get(s.provider_id, 1.0)) for s in stops]
+            target_levels = [
+                (float(s.take_profit), weights.get(s.provider_id, 1.0)) for s in targets
+            ]
+            stop_loss = weighted_avg(stop_levels) if stop_levels else entry * 1.01
+            take_profit = weighted_avg(target_levels) if target_levels else entry * 0.98
 
         return stop_loss, take_profit
 

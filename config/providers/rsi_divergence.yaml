@@ -6,3 +6,6 @@ params:
   min_confidence: 0.6
   sl_atr_mult: 1.5
   tp_atr_mult: 4.0
+  oversold: 30
+  overbought: 70
+  avoid_high_vol: true

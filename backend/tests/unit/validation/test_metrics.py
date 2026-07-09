@@ -123,3 +123,66 @@ def test_outcome_metrics_from_closed_positions() -> None:
     assert om["return_pct"] == pytest.approx(0.5)
     assert om["equity_curve"][0] == 10_000.0
     assert om["positions_closed"] == 2
+
+
+def test_outcome_metrics_daily_sharpe_sortino() -> None:
+    from datetime import timedelta
+
+    from src.events.envelopes import ExecutionEventType, build_envelope
+
+    base = utc_now()
+    events = [
+        build_envelope(
+            event_family=EventFamily.EXECUTION,
+            event_type=ExecutionEventType.POSITION_CLOSED,
+            event_time=base,
+            processing_time=base,
+            correlation_id="c1",
+            symbol="BTC/USDT",
+            timeframe="1h",
+            mode="validation",
+            payload={
+                "pnl": 100.0,
+                "position_id": "p1",
+                "exit_reason": "take_profit",
+                "fill_id": "f1",
+            },
+        ),
+        build_envelope(
+            event_family=EventFamily.EXECUTION,
+            event_type=ExecutionEventType.POSITION_CLOSED,
+            event_time=base + timedelta(days=1),
+            processing_time=base + timedelta(days=1),
+            correlation_id="c2",
+            symbol="BTC/USDT",
+            timeframe="1h",
+            mode="validation",
+            payload={
+                "pnl": -30.0,
+                "position_id": "p2",
+                "exit_reason": "stop_loss",
+                "fill_id": "f2",
+            },
+        ),
+        build_envelope(
+            event_family=EventFamily.EXECUTION,
+            event_type=ExecutionEventType.POSITION_CLOSED,
+            event_time=base + timedelta(days=2),
+            processing_time=base + timedelta(days=2),
+            correlation_id="c3",
+            symbol="BTC/USDT",
+            timeframe="1h",
+            mode="validation",
+            payload={
+                "pnl": 50.0,
+                "position_id": "p3",
+                "exit_reason": "take_profit",
+                "fill_id": "f3",
+            },
+        ),
+    ]
+    om = compute_outcome_metrics(events, initial_capital=10_000.0)
+    assert om["daily_return_count"] == 3
+    assert om["sharpe_ratio"] != 0.0
+    assert om["sortino_ratio"] != 0.0
+    assert "trade_sharpe_ratio" in om

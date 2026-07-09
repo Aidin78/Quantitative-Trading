@@ -66,6 +66,7 @@ def build_provider_overrides(trial: dict[str, Any]) -> dict[str, dict[str, Any]]
         "tp_atr_mult": tp_atr_mult,
         "weight": float(trial.get("ema_weight", 1.0)),
         "enabled": bool(int(trial.get("ema_enabled", 1))),
+        "require_trend": bool(int(trial.get("require_trend", 1))),
     }
     rsi_shared = {
         "min_confidence": min_confidence,
@@ -75,6 +76,7 @@ def build_provider_overrides(trial: dict[str, Any]) -> dict[str, dict[str, Any]]
         "overbought": float(trial.get("overbought", 70.0)),
         "weight": float(trial.get("rsi_weight", 1.0)),
         "enabled": bool(int(trial.get("rsi_enabled", 1))),
+        "avoid_high_vol": bool(int(trial.get("avoid_high_vol", 1))),
     }
     return {
         "ema_crossover": ema_shared,

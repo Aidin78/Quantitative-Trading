@@ -44,11 +44,14 @@ class OptimizationRunRequest(BaseModel):
     space: dict[str, list[Any]] | None = None
     csv_path: str | None = None
     seed: int | None = None
-    min_trades: int = Field(default=20, ge=0)
+    min_trades: int = Field(default=50, ge=0)
     min_return_pct: float = Field(default=0.0)
+    min_trades_holdout: int | None = Field(default=None, ge=0)
     holdout_ratio: float = Field(default=0.2, ge=0.0, lt=0.5)
     walk_forward_windows: int = Field(default=1, ge=1, le=6)
+    walk_forward_mode: Literal["fixed", "anchored"] = "anchored"
     local_refine: bool = True
+    search_method: Literal["grid", "optuna"] = "grid"
 
 
 class OptimizationApplyRequest(BaseModel):
@@ -89,6 +92,9 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         if provider_id == "rsi_divergence":
             provider_patch["params"]["oversold"] = float(params.get("oversold", 30.0))
             provider_patch["params"]["overbought"] = float(params.get("overbought", 70.0))
+            provider_patch["params"]["avoid_high_vol"] = bool(int(params.get("avoid_high_vol", 1)))
+        if provider_id == "ema_crossover":
+            provider_patch["params"]["require_trend"] = bool(int(params.get("require_trend", 1)))
         write_provider_config(provider_id, provider_patch)
 
     write_validation_settings(
@@ -154,6 +160,11 @@ async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
         optimization_sweeps.update(sweep)
 
     try:
+        min_trades_holdout = body.min_trades_holdout
+        if min_trades_holdout is None:
+            min_trades_holdout = app.optimization.min_trades_holdout
+        min_trades = body.min_trades or app.optimization.min_trades_test
+
         result = await run_optimization(
             symbol=sym,
             timeframe=tf,
@@ -167,11 +178,14 @@ async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
             space=space,
             csv_path=body.csv_path,
             seed=body.seed,
-            min_trades=body.min_trades,
+            min_trades=min_trades,
             min_return_pct=body.min_return_pct,
             holdout_ratio=body.holdout_ratio,
             walk_forward_windows=body.walk_forward_windows,
+            walk_forward_mode=body.walk_forward_mode,
             local_refine=body.local_refine,
+            search_method=body.search_method,
+            min_trades_holdout=min_trades_holdout,
             on_progress=on_progress,
         )
         result.sweep_id = sweep_id

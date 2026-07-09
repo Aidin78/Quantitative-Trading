@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, PlayCircle, Sparkles } from "lucide-react";
+import { Loader2, PlayCircle, ShieldCheck, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { OptimizationTrialsTable } from "@/components/optimization/OptimizationTrialsTable";
@@ -43,6 +44,7 @@ const DEFAULT_SPACE = {
 
 export default function OptimizationPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [sweepId, setSweepId] = useState<string | null>(null);
   const [symbol, setSymbol] = useState("BTC/USDT");
   const [startDate, setStartDate] = useState(DEFAULT_RANGE.start);
@@ -51,8 +53,12 @@ export default function OptimizationPage() {
   const [trainRatio, setTrainRatio] = useState(0.7);
   const [maxTrials, setMaxTrials] = useState(36);
   const [topK, setTopK] = useState(5);
-  const [minTrades, setMinTrades] = useState(20);
+  const [minTrades, setMinTrades] = useState(50);
   const [walkForwardWindows, setWalkForwardWindows] = useState(1);
+  const [walkForwardMode, setWalkForwardMode] = useState<"fixed" | "anchored">(
+    "anchored",
+  );
+  const [searchMethod, setSearchMethod] = useState<"grid" | "optuna">("grid");
   const [holdoutRatio, setHoldoutRatio] = useState(0.2);
 
   const run = useMutation({
@@ -70,6 +76,8 @@ export default function OptimizationPage() {
         min_trades: minTrades,
         holdout_ratio: holdoutRatio,
         walk_forward_windows: walkForwardWindows,
+        walk_forward_mode: walkForwardMode,
+        search_method: searchMethod,
         local_refine: true,
         space: DEFAULT_SPACE,
       }),
@@ -130,6 +138,26 @@ export default function OptimizationPage() {
     sweep?.best_valid && sweep.best
       ? sweep.best
       : (sweep?.fallback_trial ?? sweep?.best ?? null);
+
+  const validateHoldout = useMutation({
+    mutationFn: async () => {
+      if (!sweep?.holdout_start || !sweep.holdout_end || !displayTrial) {
+        throw new Error("Holdout period or trial not available");
+      }
+      return api.runValidation({
+        symbol: sweep.symbol ?? symbol,
+        timeframe: sweep.timeframe ?? "1h",
+        start_date: sweep.holdout_start.slice(0, 10),
+        end_date: sweep.holdout_end.slice(0, 10),
+        source: "exchange",
+        initial_capital: initialCapital,
+        revision_id: displayTrial.revision_id ?? undefined,
+      });
+    },
+    onSuccess: (res) => {
+      router.push(`/validation?job=${res.id}`);
+    },
+  });
 
   return (
     <div className="page-container">
@@ -261,9 +289,44 @@ export default function OptimizationPage() {
                 />
               </div>
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <FieldLabel
+                  label="Search Method"
+                  tooltip={FORM_TOOLTIPS.searchMethod}
+                />
+                <select
+                  className="input-field mt-2"
+                  value={searchMethod}
+                  onChange={(e) =>
+                    setSearchMethod(e.target.value as "grid" | "optuna")
+                  }
+                >
+                  <option value="grid">Grid (random sample)</option>
+                  <option value="optuna">Optuna (TPE)</option>
+                </select>
+              </div>
+              <div>
+                <FieldLabel
+                  label="WF Mode"
+                  tooltip={FORM_TOOLTIPS.walkForwardMode}
+                />
+                <select
+                  className="input-field mt-2"
+                  value={walkForwardMode}
+                  onChange={(e) =>
+                    setWalkForwardMode(e.target.value as "fixed" | "anchored")
+                  }
+                  disabled={walkForwardWindows <= 1}
+                >
+                  <option value="anchored">Anchored</option>
+                  <option value="fixed">Fixed rolling</option>
+                </select>
+              </div>
+            </div>
             <p className="text-xs text-muted">
-              Last {Math.round(holdoutRatio * 100)}% of the date range is
-              reserved as holdout. Validate manually on that period after Apply.
+              Last {Math.round(holdoutRatio * 100)}% is reserved as holdout and
+              auto-evaluated on the best config after selection.
             </p>
             {run.error && (
               <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger">
@@ -476,33 +539,103 @@ export default function OptimizationPage() {
             <p className="rounded-lg border border-[var(--border)] bg-[var(--background-elevated)]/50 p-3 font-mono text-xs">
               {fmtParams(displayTrial.params)}
             </p>
-            {sweep.best_valid && sweep.holdout_start && sweep.holdout_end ? (
-              <p className="text-sm text-muted">
-                After Apply, run Validation on holdout period{" "}
-                <strong className="text-foreground">
-                  {sweep.holdout_start.slice(0, 10)} →{" "}
-                  {sweep.holdout_end.slice(0, 10)}
-                </strong>{" "}
-                to confirm out-of-sample performance.
+            {sweep.holdout_metrics &&
+            sweep.holdout_start &&
+            sweep.holdout_end ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium text-foreground">
+                    Holdout ({sweep.holdout_start.slice(0, 10)} →{" "}
+                    {sweep.holdout_end.slice(0, 10)})
+                  </p>
+                  <Badge
+                    variant={sweep.holdout_valid ? "success" : "danger"}
+                    dot
+                  >
+                    {sweep.holdout_valid ? "Passed" : "Failed"}
+                  </Badge>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                  <div className="rounded-lg border border-[var(--border)] p-3">
+                    <p className="text-xs text-muted">Holdout score</p>
+                    <p className="text-lg font-semibold">
+                      {sweep.holdout_score?.toFixed(1) ?? "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border)] p-3">
+                    <p className="text-xs text-muted">Holdout return</p>
+                    <p className="text-lg font-semibold">
+                      {sweep.holdout_metrics.return_pct != null
+                        ? `${sweep.holdout_metrics.return_pct.toFixed(2)}%`
+                        : "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border)] p-3">
+                    <p className="text-xs text-muted">Holdout trades</p>
+                    <p className="text-lg font-semibold">
+                      {sweep.holdout_metrics.total_trades ?? "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border)] p-3">
+                    <p className="text-xs text-muted">Max drawdown</p>
+                    <p className="text-lg font-semibold">
+                      {sweep.holdout_metrics.max_drawdown_pct != null
+                        ? `${sweep.holdout_metrics.max_drawdown_pct.toFixed(1)}%`
+                        : "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border)] p-3">
+                    <p className="text-xs text-muted">Sharpe (daily)</p>
+                    <p className="text-lg font-semibold">
+                      {sweep.holdout_metrics.sharpe_ratio?.toFixed(2) ?? "—"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap gap-3">
+              {sweep.holdout_start && sweep.holdout_end ? (
+                <button
+                  type="button"
+                  onClick={() => validateHoldout.mutate()}
+                  disabled={validateHoldout.isPending || !displayTrial}
+                  className="btn-secondary"
+                >
+                  {validateHoldout.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="h-4 w-4" />
+                  )}
+                  Validate Holdout
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => apply.mutate(!sweep.best_valid)}
+                disabled={
+                  apply.isPending ||
+                  sweep.status !== "completed" ||
+                  !displayTrial
+                }
+                className="btn-primary"
+              >
+                {apply.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PlayCircle className="h-4 w-4" />
+                )}
+                {sweep.best_valid
+                  ? "Apply best config"
+                  : "Apply candidate config"}
+              </button>
+            </div>
+            {validateHoldout.error ? (
+              <p className="text-sm text-danger">
+                {validateHoldout.error instanceof Error
+                  ? validateHoldout.error.message
+                  : "Holdout validation failed to start"}
               </p>
             ) : null}
-            <button
-              type="button"
-              onClick={() => apply.mutate(!sweep.best_valid)}
-              disabled={
-                apply.isPending || sweep.status !== "completed" || !displayTrial
-              }
-              className="btn-primary"
-            >
-              {apply.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <PlayCircle className="h-4 w-4" />
-              )}
-              {sweep.best_valid
-                ? "Apply best config"
-                : "Apply candidate config"}
-            </button>
             {apply.data?.revision_id ? (
               <p className="text-sm text-[var(--success)]">
                 Applied ({apply.data.applied_from ?? "best"}) — revision{" "}

@@ -40,6 +40,60 @@ def _bucket_stats(pnls: list[float]) -> dict:
     }
 
 
+def _annualized_sharpe(daily_returns: list[float]) -> float:
+    if len(daily_returns) < 2:
+        return 0.0
+    mean_r = sum(daily_returns) / len(daily_returns)
+    var = sum((r - mean_r) ** 2 for r in daily_returns) / (len(daily_returns) - 1)
+    std = var**0.5
+    if std <= 0:
+        return 0.0
+    return mean_r / std * (252**0.5)
+
+
+def _annualized_sortino(daily_returns: list[float]) -> float:
+    if len(daily_returns) < 2:
+        return 0.0
+    mean_r = sum(daily_returns) / len(daily_returns)
+    downside = [min(0.0, r) for r in daily_returns]
+    downside_var = sum(d**2 for d in downside) / len(daily_returns)
+    downside_std = downside_var**0.5
+    if downside_std <= 0:
+        return 0.0
+    return mean_r / downside_std * (252**0.5)
+
+
+def compute_daily_equity_returns(
+    events: list[EventEnvelope],
+    *,
+    initial_capital: float = 10000.0,
+) -> tuple[list[float], list[str]]:
+    """Build daily equity series from closed trades and return daily % changes."""
+    closed = sorted(
+        [e for e in events if e.event_type == ExecutionEventType.POSITION_CLOSED],
+        key=lambda e: e.event_time,
+    )
+    if not closed:
+        return [], []
+
+    by_day: dict[str, float] = defaultdict(float)
+    for event in closed:
+        day_key = event.event_time.date().isoformat()
+        by_day[day_key] += float(event.payload.get("pnl", 0))
+
+    equity = initial_capital
+    daily_returns: list[float] = []
+    for day in sorted(by_day.keys()):
+        pnl = by_day[day]
+        prev = equity
+        equity += pnl
+        if prev != 0:
+            daily_returns.append((equity - prev) / abs(prev))
+        elif equity != 0:
+            daily_returns.append(1.0)
+    return daily_returns, sorted(by_day.keys())
+
+
 def compute_monthly_breakdown(
     events: list[EventEnvelope],
     *,
@@ -248,13 +302,18 @@ def compute_outcome_metrics(
         elif equity_curve[i] != 0:
             returns.append(1.0)
 
-    sharpe = 0.0
+    daily_returns, _daily_dates = compute_daily_equity_returns(
+        events, initial_capital=initial_capital
+    )
+    sharpe = _annualized_sharpe(daily_returns) if daily_returns else 0.0
+    sortino = _annualized_sortino(daily_returns) if daily_returns else 0.0
+    trade_sharpe = 0.0
     if len(returns) > 1:
         mean_r = sum(returns) / len(returns)
         var = sum((r - mean_r) ** 2 for r in returns) / (len(returns) - 1)
         std = var**0.5
         if std > 0:
-            sharpe = mean_r / std * (252**0.5)
+            trade_sharpe = mean_r / std * (252**0.5)
 
     final_equity = ending_equity if ending_equity is not None else equity_curve[-1]
     return_pct = (
@@ -268,6 +327,9 @@ def compute_outcome_metrics(
         "max_drawdown": max_dd,
         "max_drawdown_pct": max_dd_pct,
         "sharpe_ratio": sharpe,
+        "sortino_ratio": sortino,
+        "trade_sharpe_ratio": trade_sharpe,
+        "daily_return_count": len(daily_returns),
         "gross_profit": gross_profit,
         "gross_loss": gross_loss,
         "total_pnl": sum(pnls),

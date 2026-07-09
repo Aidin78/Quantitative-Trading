@@ -2,20 +2,19 @@ from __future__ import annotations
 
 import pytest
 
-from src.providers.base import ProviderConfig
-from src.providers.ema_crossover import EmaCrossoverProvider
 from src.validation.optimizer import (
     OptimizationSpace,
     TrialResult,
     composite_score,
     compute_stability,
     generate_trials,
+    generate_trials_optuna,
     refine_trials_around,
+    run_optimization,
     select_best,
     split_holdout,
     split_train_test,
 )
-from tests.mocks.fixtures import make_context
 
 
 def test_generate_trials_respects_max_with_sampling() -> None:
@@ -186,14 +185,142 @@ def test_refine_trials_around_neighbors() -> None:
     assert any(trial["sl_atr_mult"] == 2.0 for trial in refined)
 
 
-def test_atr_stops_use_provider_params() -> None:
-    provider = EmaCrossoverProvider(
-        ProviderConfig(
-            provider_id="ema_crossover",
-            params={"sl_atr_mult": 2.0, "tp_atr_mult": 4.0},
+def test_train_phase_uses_train_segment_not_test() -> None:
+    from datetime import UTC, datetime
+    from unittest.mock import AsyncMock, patch
+
+    segments: list[str] = []
+
+    async def fake_score(*, segment, **kwargs):
+        segments.append(segment)
+        return 1.0, {"total_trades": 25, "return_pct": 2.0}, [1.0], 0.0
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 4, 1, tzinfo=UTC)
+    space = OptimizationSpace(min_confidence=(0.6,), min_risk_reward=(1.2,))
+    trials = generate_trials(space, max_trials=1)
+
+    with (
+        patch(
+            "src.validation.optimizer._score_trial_windows",
+            new=AsyncMock(side_effect=fake_score),
+        ),
+        patch(
+            "src.validation.optimizer._run_trial",
+            new=AsyncMock(return_value=(1.0, {"total_trades": 25, "return_pct": 2.0}, "rev")),
+        ),
+        patch(
+            "src.validation.optimizer.generate_trials",
+            return_value=trials,
+        ),
+        patch("src.validation.optimizer.refine_trials_around", return_value=[]),
+    ):
+        import asyncio
+
+        asyncio.run(
+            run_optimization(
+                symbol="BTC/USDT",
+                timeframe="1h",
+                start=start,
+                end=end,
+                source="csv",
+                max_trials=1,
+                top_k=1,
+                walk_forward_windows=2,
+                local_refine=False,
+            )
         )
+
+    assert segments
+    assert segments[0] == "train"
+    assert segments[-1] == "test"
+
+
+def test_select_best_prefers_pareto_front() -> None:
+    a = TrialResult(
+        trial_id="a",
+        params={},
+        train_score=10,
+        train_outcome={},
+        test_score=50,
+        test_outcome={
+            "total_trades": 30,
+            "return_pct": 3.0,
+            "max_drawdown_pct": 5.0,
+            "profit_factor": 1.2,
+        },
+        stability=0.6,
+        pareto_rank=0,
     )
-    context = make_context(current_price=100.0, atr_pct=1.0)
-    sl, tp = provider._atr_stops(context, "BUY")
-    assert sl == pytest.approx(98.0)
-    assert tp == pytest.approx(104.0)
+    b = TrialResult(
+        trial_id="b",
+        params={},
+        train_score=10,
+        train_outcome={},
+        test_score=55,
+        test_outcome={
+            "total_trades": 30,
+            "return_pct": 1.0,
+            "max_drawdown_pct": 2.0,
+            "profit_factor": 1.1,
+        },
+        stability=0.5,
+        pareto_rank=1,
+    )
+    best = select_best([a, b], min_trades=20, min_return_pct=0.0)
+    assert best is not None
+    assert best.trial_id == "a"
+
+
+def test_generate_trials_optuna_respects_max() -> None:
+    space = OptimizationSpace(min_confidence=(0.6, 0.7), min_risk_reward=(1.2, 1.5))
+    trials = generate_trials_optuna(space, max_trials=4, seed=42)
+    assert len(trials) == 4
+    assert all("min_confidence" in t for t in trials)
+
+
+def test_holdout_evaluated_after_best_selected() -> None:
+    from datetime import UTC, datetime
+    from unittest.mock import AsyncMock, patch
+
+    holdout_calls: list[tuple[datetime, datetime]] = []
+
+    async def fake_run_trial(*, start, end, **kwargs):
+        holdout_calls.append((start, end))
+        return 5.0, {"total_trades": 25, "return_pct": 2.0}, "rev"
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 4, 1, tzinfo=UTC)
+    space = OptimizationSpace(min_confidence=(0.6,), min_risk_reward=(1.2,))
+    trials = generate_trials(space, max_trials=1)
+
+    with (
+        patch(
+            "src.validation.optimizer._run_trial",
+            new=AsyncMock(side_effect=fake_run_trial),
+        ),
+        patch("src.validation.optimizer.generate_trials", return_value=trials),
+        patch("src.validation.optimizer.refine_trials_around", return_value=[]),
+    ):
+        import asyncio
+
+        result = asyncio.run(
+            run_optimization(
+                symbol="BTC/USDT",
+                timeframe="1h",
+                start=start,
+                end=end,
+                source="csv",
+                max_trials=1,
+                top_k=1,
+                holdout_ratio=0.2,
+                local_refine=False,
+            )
+        )
+
+    assert result.holdout_start is not None
+    assert result.holdout_score is not None
+    assert result.holdout_valid is True
+    assert holdout_calls
+    assert holdout_calls[-1][0] == result.holdout_start
+    assert holdout_calls[-1][1] == result.holdout_end

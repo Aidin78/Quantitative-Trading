@@ -12,6 +12,9 @@ validation:
   min_trades: 100
   max_bars_in_trade: 48
   risk_pct_per_trade: 1.0
+optimization:
+  min_trades_test: 50
+  min_trades_holdout: 20
 fill_models:
   default: close_price_v1
   models:

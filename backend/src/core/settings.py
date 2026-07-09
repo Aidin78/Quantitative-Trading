@@ -20,6 +20,11 @@ class ValidationDefaults(BaseModel, frozen=True):
     min_trades: int = Field(ge=1)
 
 
+class OptimizationDefaults(BaseModel, frozen=True):
+    min_trades_test: int = Field(default=50, ge=0)
+    min_trades_holdout: int = Field(default=20, ge=0)
+
+
 class FillModelDefaults(BaseModel, frozen=True):
     default: str
 
@@ -29,6 +34,7 @@ class AppYamlConfig(BaseModel, frozen=True):
     default_symbols: tuple[str, ...]
     timeframes: tuple[str, ...]
     validation: ValidationDefaults
+    optimization: OptimizationDefaults = OptimizationDefaults()
     fill_models: FillModelDefaults
 
 
@@ -103,5 +109,6 @@ def load_app_yaml_config(config_dir: Path | None = None) -> AppYamlConfig:
         default_symbols=tuple(raw["default_symbols"]),
         timeframes=tuple(raw["timeframes"]),
         validation=ValidationDefaults(**raw["validation"]),
+        optimization=OptimizationDefaults(**raw.get("optimization", {})),
         fill_models=FillModelDefaults(**raw["fill_models"]),
     )

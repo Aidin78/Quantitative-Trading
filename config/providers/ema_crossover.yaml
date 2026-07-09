@@ -6,3 +6,4 @@ params:
   min_confidence: 0.6
   sl_atr_mult: 1.5
   tp_atr_mult: 4.0
+  require_trend: true
