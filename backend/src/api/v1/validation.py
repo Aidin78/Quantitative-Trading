@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
 from datetime import UTC, datetime
 from typing import Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -17,10 +18,11 @@ from src.api.services.validation_runner import (
     new_validation_job_id,
     run_validation_job,
 )
-from src.api.services.validation_service import validation_jobs
+from src.api.services.validation_service import job_response, validation_jobs
 from src.core.settings import load_app_yaml_config
 from src.db.models import BacktestRunRow, ConfigRevisionRow, SimulatedTradeRow
 from src.observability.metrics import VALIDATION_RUNS_TOTAL
+from src.validation.harness import ValidationProgressEvent
 from src.validation.trades import build_trade_ledger
 from src.validation.walk_forward import build_walk_forward_windows
 
@@ -57,7 +59,16 @@ async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
     if job is None:
         return
     job.status = "running"
+    job.message = "Starting validation job…"
     validation_jobs.update(job)
+
+    async def on_progress(event: ValidationProgressEvent) -> None:
+        job.phase = event.phase
+        job.message = event.message
+        job.progress_current = event.current
+        job.progress_total = event.total
+        validation_jobs.update(job)
+
     try:
         result = await run_validation_job(
             symbol=body.symbol,
@@ -70,22 +81,25 @@ async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
             persist_db=True,
             experiment_id=body.experiment_id,
             revision_id=body.revision_id,
+            on_progress=on_progress,
         )
         job.result = result
         job.status = "completed"
+        job.message = "Validation completed."
         VALIDATION_RUNS_TOTAL.labels(status="completed").inc()
     except Exception as exc:
         job.status = "failed"
         job.error = format_validation_error(exc)
+        job.message = job.error
         VALIDATION_RUNS_TOTAL.labels(status="failed").inc()
     validation_jobs.update(job)
 
 
 @router.post("/run")
-async def start_validation(body: ValidationRunRequest, background_tasks: BackgroundTasks) -> dict:
+async def start_validation(body: ValidationRunRequest) -> dict:
     job_id = new_validation_job_id()
     validation_jobs.create(job_id, body.model_dump())
-    background_tasks.add_task(_execute_job, job_id, body)
+    asyncio.create_task(_execute_job(job_id, body))
     return {"id": job_id, "status": "pending"}
 
 
@@ -373,20 +387,7 @@ async def get_validation_trades(job_id: str, db: AsyncSession = Depends(get_db))
 async def get_validation(job_id: str, db: AsyncSession = Depends(get_db)) -> dict:
     job = validation_jobs.get(job_id)
     if job is not None:
-        if job.status in ("pending", "running"):
-            return {"id": job_id, "status": job.status, "config": job.config}
-        if job.status == "failed":
-            return {"id": job_id, "status": "failed", "error": job.error}
-        if job.result:
-            return {
-                "id": job_id,
-                "status": "completed",
-                "engine_metrics": job.result.engine_metrics,
-                "outcome_metrics": job.result.outcome_metrics,
-                "run_id": job.result.run_id,
-                "revision_id": job.result.revision_id,
-                "experiment_id": job.result.experiment_id,
-            }
+        return job_response(job)
 
     row = await db.get(BacktestRunRow, job_id)
     if row is None:

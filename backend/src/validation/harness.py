@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import Literal
 
 from src.core.contracts.event import EventEnvelope
 from src.data.csv_provider import CsvDataProvider
@@ -35,6 +37,28 @@ class ValidationResult:
     experiment_run_id: str | None = None
 
 
+@dataclass
+class ValidationProgressEvent:
+    phase: Literal["data", "backtest", "metrics", "persist"]
+    message: str
+    current: int = 0
+    total: int = 0
+
+
+ValidationProgressCallback = Callable[[ValidationProgressEvent], Awaitable[None] | None]
+
+
+async def _emit(
+    on_progress: ValidationProgressCallback | None,
+    event: ValidationProgressEvent,
+) -> None:
+    if on_progress is None:
+        return
+    maybe = on_progress(event)
+    if maybe is not None:
+        await maybe
+
+
 class ValidationHarness:
     def __init__(
         self,
@@ -55,7 +79,11 @@ class ValidationHarness:
         self._revision_id = revision_id
         self._experiment_id = experiment_id
 
-    async def run(self) -> ValidationResult:
+    async def run(
+        self,
+        *,
+        on_progress: ValidationProgressCallback | None = None,
+    ) -> ValidationResult:
         import uuid
 
         from src.validation.metrics import compute_engine_metrics, compute_outcome_metrics
@@ -77,6 +105,16 @@ class ValidationHarness:
                 f"got {len(bar_times)}"
             )
         bar_times = bar_times[skip:]
+        total_bars = len(bar_times)
+        await _emit(
+            on_progress,
+            ValidationProgressEvent(
+                phase="backtest",
+                message=f"Starting backtest over {total_bars} bars…",
+                current=0,
+                total=total_bars,
+            ),
+        )
         cycles: list[CycleResult] = []
         for i, bar_time in enumerate(bar_times):
             self._clock.set_event_time(bar_time)
@@ -89,10 +127,41 @@ class ValidationHarness:
                 experiment_id=self._experiment_id,
             )
             cycles.append(result)
-            if i % 10 == 0:
+            if i % 10 == 0 or i == total_bars - 1:
+                await _emit(
+                    on_progress,
+                    ValidationProgressEvent(
+                        phase="backtest",
+                        message=(
+                            f"Simulating bar {i + 1} of {total_bars} "
+                            f"({bar_time.date().isoformat()})…"
+                        ),
+                        current=i + 1,
+                        total=total_bars,
+                    ),
+                )
                 await asyncio.sleep(0)
 
+        await _emit(
+            on_progress,
+            ValidationProgressEvent(
+                phase="backtest",
+                message="Closing open positions at end of run…",
+                current=total_bars,
+                total=total_bars,
+            ),
+        )
         await self._liquidate_open_positions(bar_times[-1])
+
+        await _emit(
+            on_progress,
+            ValidationProgressEvent(
+                phase="metrics",
+                message="Computing engine and outcome metrics…",
+                current=total_bars,
+                total=total_bars,
+            ),
+        )
 
         events = self._event_log.events
         portfolio_id = self._runtime._portfolio_id  # noqa: SLF001

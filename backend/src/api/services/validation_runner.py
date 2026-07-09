@@ -30,8 +30,25 @@ from src.providers import load_providers
 from src.runtime.clocks import SimulatedClock
 from src.runtime.platform_runtime import PlatformRuntime
 from src.state.store import InMemoryStateStore
-from src.validation.harness import ValidationConfig, ValidationHarness, ValidationResult
+from src.validation.harness import (
+    ValidationConfig,
+    ValidationHarness,
+    ValidationProgressCallback,
+    ValidationProgressEvent,
+    ValidationResult,
+)
 from src.validation.trial_config import build_providers_from_overrides
+
+
+async def _emit_progress(
+    on_progress: ValidationProgressCallback | None,
+    event: ValidationProgressEvent,
+) -> None:
+    if on_progress is None:
+        return
+    maybe = on_progress(event)
+    if maybe is not None:
+        await maybe
 
 
 def _resolve_csv(path: str | None) -> Path:
@@ -110,6 +127,7 @@ async def run_validation_job(
     engine_config: EngineConfig | None = None,
     provider_overrides: dict[str, dict] | None = None,
     execution_config: ValidationExecutionConfig | None = None,
+    on_progress: ValidationProgressCallback | None = None,
 ) -> ValidationResult:
     app = load_app_yaml_config()
     sym = symbol or app.default_symbols[0]
@@ -123,6 +141,17 @@ async def run_validation_job(
     else:
         end_dt = None
 
+    await _emit_progress(
+        on_progress,
+        ValidationProgressEvent(
+            phase="data",
+            message=(
+                "Loading OHLCV from Binance cache…"
+                if source == "exchange"
+                else "Loading sample CSV…"
+            ),
+        ),
+    )
     csv = await _resolve_data_csv(
         source=source,
         symbol=sym,
@@ -145,6 +174,18 @@ async def run_validation_job(
 
     start = timestamps[0]
     end = timestamps[-1]
+    await _emit_progress(
+        on_progress,
+        ValidationProgressEvent(
+            phase="data",
+            message=(
+                f"Loaded {len(timestamps)} bars "
+                f"({start.date().isoformat()} → {end.date().isoformat()})."
+            ),
+            current=len(timestamps),
+            total=len(timestamps),
+        ),
+    )
     clock = SimulatedClock(event_time=start)
     feature_store = InMemoryFeatureStore()
     state_store = InMemoryStateStore(
@@ -236,10 +277,17 @@ async def run_validation_job(
         revision_id=rev_id,
         experiment_id=exp_id,
     )
-    result = await harness.run()
+    result = await harness.run(on_progress=on_progress)
     result.experiment_run_id = experiment_run_id
 
     if persist_db:
+        await _emit_progress(
+            on_progress,
+            ValidationProgressEvent(
+                phase="persist",
+                message="Saving validation results to database…",
+            ),
+        )
         async with get_session_factory()() as session:
             await persist_validation_result(
                 session,

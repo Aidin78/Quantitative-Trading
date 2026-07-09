@@ -436,11 +436,16 @@ export type OptimizationApplyResponse = {
 export type ValidationJob = {
   id: string;
   status: string;
+  phase?: string;
+  message?: string;
+  elapsed_seconds?: number;
+  progress?: { current: number; total: number };
   engine_metrics?: Record<string, unknown>;
   outcome_metrics?: Record<string, unknown>;
   error?: string;
   revision_id?: string;
   experiment_id?: string;
+  run_id?: string;
 };
 
 export type DecisionDiff = {
