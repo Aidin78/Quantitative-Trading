@@ -58,6 +58,21 @@ def test_adx_components_compute(ohlcv: pd.DataFrame) -> None:
     assert plus_di + minus_di > 0
 
 
+def test_supertrend_compute(ohlcv: pd.DataFrame) -> None:
+    st_params = {"period": 10, "multiplier": 3.0}
+    line = get_indicator_class("supertrend")().compute(ohlcv, {**st_params, "component": "line"})
+    direction = get_indicator_class("supertrend")().compute(
+        ohlcv, {**st_params, "component": "direction"}
+    )
+    close = float(ohlcv["close"].iloc[-1])
+    assert line > 0
+    assert direction in (-1.0, 1.0)
+    if direction > 0:
+        assert close >= line
+    else:
+        assert close <= line
+
+
 def test_insufficient_data_raises() -> None:
     small = make_sample_ohlcv(bars=5)
     with pytest.raises(InsufficientDataError):

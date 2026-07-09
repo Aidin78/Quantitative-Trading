@@ -136,6 +136,8 @@ def write_features_config(
     adx_period: int = 14,
     bb_period: int = 20,
     bb_std: float = 2.0,
+    st_period: int = 10,
+    st_multiplier: float = 3.0,
 ) -> dict:
     from src.features.config import load_features_config
 
@@ -144,6 +146,7 @@ def write_features_config(
     macd_names = {"macd", "macd_signal", "macd_histogram", "macd_histogram_slope"}
     adx_names = {"adx_14", "plus_di_14", "minus_di_14"}
     bb_names = {"bb_upper", "bb_lower", "bb_middle"}
+    st_names = {"supertrend", "supertrend_direction"}
     with path.open(encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     for indicator in raw.get("indicators", []):
@@ -164,6 +167,10 @@ def write_features_config(
             params = indicator.setdefault("params", {})
             params["period"] = bb_period
             params["std"] = bb_std
+        elif indicator.get("name") in st_names:
+            params = indicator.setdefault("params", {})
+            params["period"] = st_period
+            params["multiplier"] = st_multiplier
     with path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(raw, f, sort_keys=False)
     load_features_config.cache_clear()
@@ -177,4 +184,6 @@ def write_features_config(
         "adx_period": adx_period,
         "bb_period": bb_period,
         "bb_std": bb_std,
+        "st_period": st_period,
+        "st_multiplier": st_multiplier,
     }

@@ -61,6 +61,11 @@ const DEFAULT_SPACE = {
   bb_enabled: [0],
   bb_avoid_high_vol: [1],
   bb_max_adx: [0, 25],
+  st_period: [7, 10, 14],
+  st_multiplier: [2.0, 3.0, 4.0],
+  st_weight: [1.0],
+  st_enabled: [0],
+  st_require_trend: [0],
 };
 
 export default function OptimizationPage() {

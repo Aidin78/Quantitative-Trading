@@ -16,6 +16,8 @@ def compute_min_lookback_bars(config_dir=None) -> int:  # noqa: ANN001
                 needed += 1
         elif indicator.type == "bollinger":
             needed = int(params.get("period", 20))
+        elif indicator.type == "supertrend":
+            needed = 2 * int(params.get("period", 10))
         else:
             needed = int(params.get("period", 14))
         max_period = max(max_period, needed)

@@ -61,6 +61,16 @@ def _build_runtime(
 
 
 @pytest.mark.asyncio
+async def test_supertrend_trend_analyze_without_error(csv_path: Path, real_providers) -> None:
+    st = instantiate_provider(ProviderConfig(provider_id="supertrend_trend", enabled=True))
+    runtime, _, _ = _build_runtime(csv_path, [st])
+    result = await runtime.run_cycle("BTC/USDT", "1h")
+    assert len(result.signals) == 1
+    assert result.signals[0].provider_id == "supertrend_trend"
+    assert result.signals[0].side in {"BUY", "SELL", "HOLD"}
+
+
+@pytest.mark.asyncio
 async def test_bollinger_reversion_analyze_without_error(csv_path: Path, real_providers) -> None:
     bb = instantiate_provider(ProviderConfig(provider_id="bollinger_reversion", enabled=True))
     runtime, _, _ = _build_runtime(csv_path, [bb])

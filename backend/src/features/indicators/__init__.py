@@ -220,3 +220,114 @@ class AdxIndicator:
             raise ValueError(f"Unknown adx component: {component}")
 
         return _last_valid(series, name=name, min_periods=min_periods)
+
+
+def _atr_series(df: pd.DataFrame, period: int) -> pd.Series:
+    high = df["high"]
+    low = df["low"]
+    close = df["close"]
+    prev_close = close.shift(1)
+    tr = pd.concat(
+        [
+            high - low,
+            (high - prev_close).abs(),
+            (low - prev_close).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
+    return tr.ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
+
+
+def _supertrend_components(
+    df: pd.DataFrame,
+    *,
+    period: int,
+    multiplier: float,
+) -> tuple[pd.Series, pd.Series]:
+    min_bars = 2 * period
+    if len(df) < min_bars:
+        raise InsufficientDataError(
+            f"Insufficient data for supertrend: need at least {min_bars} bars"
+        )
+
+    close = df["close"].to_numpy(dtype=float)
+    hl2 = ((df["high"] + df["low"]) / 2).to_numpy(dtype=float)
+    atr = _atr_series(df, period).to_numpy(dtype=float)
+    n = len(df)
+
+    basic_ub = hl2 + multiplier * atr
+    basic_lb = hl2 - multiplier * atr
+    final_ub = basic_ub.copy()
+    final_lb = basic_lb.copy()
+
+    for i in range(1, n):
+        if not pd.notna(basic_ub[i]):
+            continue
+        if pd.notna(final_ub[i - 1]) and (
+            basic_ub[i] < final_ub[i - 1] or close[i - 1] > final_ub[i - 1]
+        ):
+            final_ub[i] = basic_ub[i]
+        elif pd.notna(final_ub[i - 1]):
+            final_ub[i] = final_ub[i - 1]
+        else:
+            final_ub[i] = basic_ub[i]
+
+        if pd.notna(final_lb[i - 1]) and (
+            basic_lb[i] > final_lb[i - 1] or close[i - 1] < final_lb[i - 1]
+        ):
+            final_lb[i] = basic_lb[i]
+        elif pd.notna(final_lb[i - 1]):
+            final_lb[i] = final_lb[i - 1]
+        else:
+            final_lb[i] = basic_lb[i]
+
+    line = [float("nan")] * n
+    direction = [float("nan")] * n
+    in_uptrend = True
+
+    for i in range(n):
+        if not pd.notna(final_ub[i]) or not pd.notna(final_lb[i]):
+            continue
+
+        if i == 0:
+            in_uptrend = True
+            line[i] = final_lb[i]
+            direction[i] = 1.0
+            continue
+
+        if in_uptrend:
+            line[i] = final_lb[i]
+            direction[i] = 1.0
+            if close[i] < final_lb[i]:
+                in_uptrend = False
+                line[i] = final_ub[i]
+                direction[i] = -1.0
+        else:
+            line[i] = final_ub[i]
+            direction[i] = -1.0
+            if close[i] > final_ub[i]:
+                in_uptrend = True
+                line[i] = final_lb[i]
+                direction[i] = 1.0
+
+    return pd.Series(line, index=df.index), pd.Series(direction, index=df.index)
+
+
+@register_indicator("supertrend")
+class SuperTrendIndicator:
+    def compute(self, df: pd.DataFrame, params: dict[str, Any]) -> float:
+        period = int(params.get("period", 10))
+        multiplier = float(params.get("multiplier", 3.0))
+        component = str(params.get("component", "line"))
+        line, direction = _supertrend_components(df, period=period, multiplier=multiplier)
+
+        if component == "line":
+            series = line
+            name = "supertrend"
+        elif component == "direction":
+            series = direction
+            name = "supertrend_direction"
+        else:
+            raise ValueError(f"Unknown supertrend component: {component}")
+
+        return _last_valid(series, name=name, min_periods=2 * period)

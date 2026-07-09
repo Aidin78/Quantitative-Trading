@@ -107,12 +107,21 @@ def build_provider_overrides(trial: dict[str, Any]) -> dict[str, dict[str, Any]]
         "avoid_high_vol": bool(int(trial.get("bb_avoid_high_vol", 1))),
         "max_adx": float(trial.get("bb_max_adx", 0.0)),
     }
+    st_shared = {
+        "min_confidence": min_confidence,
+        "sl_atr_mult": sl_atr_mult,
+        "tp_atr_mult": tp_atr_mult,
+        "weight": float(trial.get("st_weight", 1.0)),
+        "enabled": bool(int(trial.get("st_enabled", 0))),
+        "require_trend": bool(int(trial.get("st_require_trend", 0))),
+    }
     return {
         "ema_crossover": ema_shared,
         "rsi_divergence": rsi_shared,
         "macd_momentum": macd_shared,
         "adx_trend_strength": adx_shared,
         "bollinger_reversion": bb_shared,
+        "supertrend_trend": st_shared,
     }
 
 
@@ -142,10 +151,13 @@ def build_features_config_from_trial(
     adx_period = int(trial.get("adx_period", 14))
     bb_period = int(trial.get("bb_period", 20))
     bb_std = float(trial.get("bb_std", 2.0))
+    st_period = int(trial.get("st_period", 10))
+    st_multiplier = float(trial.get("st_multiplier", 3.0))
 
     macd_names = {"macd", "macd_signal", "macd_histogram", "macd_histogram_slope"}
     adx_names = {"adx_14", "plus_di_14", "minus_di_14"}
     bb_names = {"bb_upper", "bb_lower", "bb_middle"}
+    st_names = {"supertrend", "supertrend_direction"}
     indicators: list[IndicatorDef] = []
     for indicator in base_config.indicators:
         if indicator.name == "ema_12":
@@ -171,6 +183,11 @@ def build_features_config_from_trial(
             params["period"] = bb_period
             params["std"] = bb_std
             indicators.append(IndicatorDef(name=indicator.name, type=indicator.type, params=params))
+        elif indicator.name in st_names:
+            params = dict(indicator.params)
+            params["period"] = st_period
+            params["multiplier"] = st_multiplier
+            indicators.append(IndicatorDef(name=indicator.name, type=indicator.type, params=params))
         else:
             indicators.append(indicator)
 
@@ -191,6 +208,8 @@ def build_features_config_from_trial(
             "adx_period": adx_period,
             "bb_period": bb_period,
             "bb_std": bb_std,
+            "st_period": st_period,
+            "st_multiplier": st_multiplier,
         },
         sort_keys=True,
     )

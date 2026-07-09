@@ -11,6 +11,7 @@ from src.providers.config import load_provider_yaml
 from src.providers.ema_crossover import EmaCrossoverProvider
 from src.providers.macd_momentum import MacdMomentumProvider
 from src.providers.rsi_divergence import RsiDivergenceProvider
+from src.providers.supertrend_trend import SuperTrendTrendProvider
 
 _PROVIDER_CLASSES: dict[str, type[BaseSignalProvider]] = {
     "ema_crossover": EmaCrossoverProvider,
@@ -18,6 +19,7 @@ _PROVIDER_CLASSES: dict[str, type[BaseSignalProvider]] = {
     "macd_momentum": MacdMomentumProvider,
     "adx_trend_strength": AdxTrendStrengthProvider,
     "bollinger_reversion": BollingerReversionProvider,
+    "supertrend_trend": SuperTrendTrendProvider,
 }
 
 

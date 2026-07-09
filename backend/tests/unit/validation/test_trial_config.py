@@ -117,3 +117,26 @@ def test_build_features_config_from_trial_changes_bb_params() -> None:
     assert upper.params["std"] == 2.5
     assert lower.params["period"] == 22
     assert middle.params["std"] == 2.5
+
+
+def test_build_provider_overrides_includes_supertrend() -> None:
+    overrides = build_provider_overrides(
+        {
+            "st_enabled": 1,
+            "st_weight": 0.8,
+            "st_require_trend": 1,
+        }
+    )
+    assert overrides["supertrend_trend"]["enabled"] is True
+    assert overrides["supertrend_trend"]["weight"] == 0.8
+    assert overrides["supertrend_trend"]["require_trend"] is True
+
+
+def test_build_features_config_from_trial_changes_st_params() -> None:
+    config, _ = build_features_config_from_trial({"st_period": 14, "st_multiplier": 4.0})
+    line = next(ind for ind in config.indicators if ind.name == "supertrend")
+    direction = next(ind for ind in config.indicators if ind.name == "supertrend_direction")
+    assert line.params["period"] == 14
+    assert line.params["multiplier"] == 4.0
+    assert direction.params["period"] == 14
+    assert direction.params["multiplier"] == 4.0

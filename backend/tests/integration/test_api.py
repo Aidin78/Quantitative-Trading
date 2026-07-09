@@ -259,6 +259,10 @@ async def test_provider_baseline_enables_all_core_providers(api_client) -> None:
         item for item in list_resp.json()["items"] if item["provider_id"] == "bollinger_reversion"
     )
     assert bb["enabled"] is False
+    st = next(
+        item for item in list_resp.json()["items"] if item["provider_id"] == "supertrend_trend"
+    )
+    assert st["enabled"] is False
 
 
 @pytest.mark.asyncio

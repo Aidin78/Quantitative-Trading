@@ -278,6 +278,37 @@ PROVIDER_METADATA: dict[str, ProviderMetadata] = {
         ),
         required_features=("bb_upper", "bb_lower", "bb_middle"),
     ),
+    "supertrend_trend": ProviderMetadata(
+        summary="SuperTrend trend-following: trade in the direction of the SuperTrend line.",
+        rules=(
+            "BUY when supertrend_direction > 0 (price above SuperTrend line).",
+            "SELL when supertrend_direction < 0 (price below SuperTrend line).",
+            "Neutral direction → HOLD.",
+            "If require_trend: block BUY in DOWN and SELL in UP.",
+            "Confidence scales with distance from SuperTrend line normalized by ATR.",
+            "Below min_confidence → HOLD.",
+        ),
+        default_config={
+            "enabled": False,
+            "weight": 1.0,
+            "params": {
+                "min_confidence": 0.6,
+                "sl_atr_mult": 1.5,
+                "tp_atr_mult": 4.0,
+                "require_trend": False,
+            },
+        },
+        param_fields=_SHARED_STOPS
+        + (
+            ParamField(
+                key="require_trend",
+                label="Require trend alignment",
+                type="bool",
+                description="Only BUY in UP trend and SELL in DOWN trend.",
+            ),
+        ),
+        required_features=("supertrend", "supertrend_direction"),
+    ),
 }
 
 

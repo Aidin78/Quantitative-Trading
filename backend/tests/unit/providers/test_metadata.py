@@ -11,6 +11,7 @@ def test_provider_metadata_has_defaults_for_all_builtins() -> None:
         "macd_momentum",
         "adx_trend_strength",
         "bollinger_reversion",
+        "supertrend_trend",
     ):
         meta = get_provider_metadata(provider_id)
         assert meta is not None

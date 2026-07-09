@@ -42,6 +42,12 @@ indicators:
   - name: minus_di_14
     type: adx
     params: { period: 14, component: minus_di }
+  - name: supertrend
+    type: supertrend
+    params: { period: 10, multiplier: 3.0, component: line }
+  - name: supertrend_direction
+    type: supertrend
+    params: { period: 10, multiplier: 3.0, component: direction }
 flags:
   - name: ema_cross_bullish
     expr: "ema_12 > ema_26"
