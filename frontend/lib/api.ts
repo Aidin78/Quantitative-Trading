@@ -87,10 +87,15 @@ export const api = {
   signals: () => apiFetch<{ items: SignalSummary[] }>("/api/v1/signals"),
   signal: (id: string) => apiFetch<DecisionDetail>(`/api/v1/signals/${id}`),
   providers: () => apiFetch<{ items: ProviderConfig[] }>("/api/v1/providers"),
+  provider: (id: string) => apiFetch<ProviderConfig>(`/api/v1/providers/${id}`),
   patchProvider: (id: string, body: Partial<ProviderConfig>) =>
-    apiFetch(`/api/v1/providers/${id}`, {
+    apiFetch<ProviderConfig>(`/api/v1/providers/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
+    }),
+  resetProvider: (id: string) =>
+    apiFetch<ProviderConfig>(`/api/v1/providers/${id}/reset`, {
+      method: "POST",
     }),
   runValidation: (body: ValidationRequest) =>
     apiFetch<{ id: string; status: string }>("/api/v1/validation/run", {
@@ -293,11 +298,31 @@ export type SignalSummary = {
   timestamp: string;
 };
 
+export type ProviderParamField = {
+  key: string;
+  label: string;
+  type: "float" | "int" | "bool";
+  description: string;
+  min?: number | null;
+  max?: number | null;
+  step?: number | null;
+};
+
 export type ProviderConfig = {
   provider_id: string;
+  name?: string;
   enabled: boolean;
   weight: number;
   params: Record<string, unknown>;
+  summary?: string;
+  rules?: string[];
+  default_config?: {
+    enabled: boolean;
+    weight: number;
+    params: Record<string, unknown>;
+  };
+  param_fields?: ProviderParamField[];
+  required_features?: string[];
 };
 
 export type ValidationRequest = {

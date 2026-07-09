@@ -77,9 +77,17 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
     }
     write_engine_config(engine_patch)
 
-    for provider_id in ("ema_crossover", "rsi_divergence"):
-        enabled_key = "ema_enabled" if provider_id == "ema_crossover" else "rsi_enabled"
-        weight_key = "ema_weight" if provider_id == "ema_crossover" else "rsi_weight"
+    provider_ids = ("ema_crossover", "rsi_divergence", "macd_momentum")
+    for provider_id in provider_ids:
+        if provider_id == "ema_crossover":
+            enabled_key = "ema_enabled"
+            weight_key = "ema_weight"
+        elif provider_id == "rsi_divergence":
+            enabled_key = "rsi_enabled"
+            weight_key = "rsi_weight"
+        else:
+            enabled_key = "macd_enabled"
+            weight_key = "macd_weight"
         provider_patch: dict[str, Any] = {
             "enabled": bool(int(params.get(enabled_key, 1))),
             "weight": float(params.get(weight_key, 1.0)),
@@ -95,6 +103,16 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
             provider_patch["params"]["avoid_high_vol"] = bool(int(params.get("avoid_high_vol", 1)))
         if provider_id == "ema_crossover":
             provider_patch["params"]["require_trend"] = bool(int(params.get("require_trend", 1)))
+        if provider_id == "macd_momentum":
+            provider_patch["params"]["require_signal_align"] = bool(
+                int(params.get("require_signal_align", 1))
+            )
+            provider_patch["params"]["min_histogram_slope"] = float(
+                params.get("min_histogram_slope", 0.0)
+            )
+            provider_patch["params"]["require_trend"] = bool(
+                int(params.get("macd_require_trend", 0))
+            )
         write_provider_config(provider_id, provider_patch)
 
     write_validation_settings(
@@ -107,6 +125,9 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         ema_fast=int(params.get("ema_fast", 12)),
         ema_slow=int(params.get("ema_slow", 26)),
         rsi_period=int(params.get("rsi_period", 14)),
+        macd_fast=int(params.get("macd_fast", 12)),
+        macd_slow=int(params.get("macd_slow", 26)),
+        macd_signal_period=int(params.get("macd_signal_period", 9)),
     )
 
 

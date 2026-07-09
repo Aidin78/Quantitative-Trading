@@ -19,12 +19,17 @@ def test_discover_provider_configs_from_repo() -> None:
     ids = {c.provider_id for c in configs}
     assert "ema_crossover" in ids
     assert "rsi_divergence" in ids
+    assert "macd_momentum" in ids
 
 
 def test_load_providers_returns_instances() -> None:
     providers = load_providers(resolve_config_dir())
     assert len(providers) >= 2
-    assert {p.provider_id for p in providers} >= {"ema_crossover", "rsi_divergence"}
+    assert {p.provider_id for p in providers} >= {
+        "ema_crossover",
+        "rsi_divergence",
+        "macd_momentum",
+    }
 
 
 def test_unknown_provider_id_raises() -> None:

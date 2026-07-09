@@ -14,7 +14,16 @@ indicators:
     params: { period: 14 }
   - name: macd
     type: macd
-    params: { fast: 12, slow: 26, signal: 9 }
+    params: { fast: 12, slow: 26, signal: 9, component: line }
+  - name: macd_signal
+    type: macd
+    params: { fast: 12, slow: 26, signal: 9, component: signal }
+  - name: macd_histogram
+    type: macd
+    params: { fast: 12, slow: 26, signal: 9, component: histogram }
+  - name: macd_histogram_slope
+    type: macd
+    params: { fast: 12, slow: 26, signal: 9, component: histogram_slope }
   - name: bb_upper
     type: bollinger
     params: { period: 20, std: 2, band: upper }
@@ -26,6 +35,10 @@ flags:
     expr: "ema_12 > ema_26"
   - name: ema_cross_bearish
     expr: "ema_12 < ema_26"
+  - name: macd_bullish
+    expr: "macd > macd_signal"
+  - name: macd_bearish
+    expr: "macd < macd_signal"
 context:
   trend: { method: ema_compare, fast: ema_12, slow: ema_26 }
   volatility: { method: atr_pct, atr: atr_14, low: 0.3, high: 1.0 }

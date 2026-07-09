@@ -10,7 +10,10 @@ def compute_min_lookback_bars(config_dir=None) -> int:  # noqa: ANN001
     for indicator in config.indicators:
         params = indicator.params
         if indicator.type == "macd":
+            component = str(params.get("component", "line"))
             needed = int(params.get("slow", 26)) + int(params.get("signal", 9))
+            if component == "histogram_slope":
+                needed += 1
         elif indicator.type == "bollinger":
             needed = int(params.get("period", 20))
         else:

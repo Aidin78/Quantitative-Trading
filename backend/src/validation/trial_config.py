@@ -78,9 +78,20 @@ def build_provider_overrides(trial: dict[str, Any]) -> dict[str, dict[str, Any]]
         "enabled": bool(int(trial.get("rsi_enabled", 1))),
         "avoid_high_vol": bool(int(trial.get("avoid_high_vol", 1))),
     }
+    macd_shared = {
+        "min_confidence": min_confidence,
+        "sl_atr_mult": sl_atr_mult,
+        "tp_atr_mult": tp_atr_mult,
+        "weight": float(trial.get("macd_weight", 1.0)),
+        "enabled": bool(int(trial.get("macd_enabled", 1))),
+        "require_signal_align": bool(int(trial.get("require_signal_align", 1))),
+        "min_histogram_slope": float(trial.get("min_histogram_slope", 0.0)),
+        "require_trend": bool(int(trial.get("macd_require_trend", 0))),
+    }
     return {
         "ema_crossover": ema_shared,
         "rsi_divergence": rsi_shared,
+        "macd_momentum": macd_shared,
     }
 
 
@@ -104,7 +115,11 @@ def build_features_config_from_trial(
     ema_fast = int(trial.get("ema_fast", 12))
     ema_slow = int(trial.get("ema_slow", 26))
     rsi_period = int(trial.get("rsi_period", 14))
+    macd_fast = int(trial.get("macd_fast", 12))
+    macd_slow = int(trial.get("macd_slow", 26))
+    macd_signal_period = int(trial.get("macd_signal_period", 9))
 
+    macd_names = {"macd", "macd_signal", "macd_histogram", "macd_histogram_slope"}
     indicators: list[IndicatorDef] = []
     for indicator in base_config.indicators:
         if indicator.name == "ema_12":
@@ -115,6 +130,12 @@ def build_features_config_from_trial(
             indicators.append(
                 IndicatorDef(name="rsi_14", type="rsi", params={"period": rsi_period})
             )
+        elif indicator.name in macd_names:
+            params = dict(indicator.params)
+            params["fast"] = macd_fast
+            params["slow"] = macd_slow
+            params["signal"] = macd_signal_period
+            indicators.append(IndicatorDef(name=indicator.name, type=indicator.type, params=params))
         else:
             indicators.append(indicator)
 
@@ -129,6 +150,9 @@ def build_features_config_from_trial(
             "ema_fast": ema_fast,
             "ema_slow": ema_slow,
             "rsi_period": rsi_period,
+            "macd_fast": macd_fast,
+            "macd_slow": macd_slow,
+            "macd_signal_period": macd_signal_period,
         },
         sort_keys=True,
     )

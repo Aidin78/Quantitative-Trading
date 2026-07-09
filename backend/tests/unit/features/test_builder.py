@@ -48,6 +48,10 @@ def test_builder_snapshot_stable_output(
     assert "rsi_14" in fs1.indicators
     assert "ema_12" in fs1.indicators
     assert "macd" in fs1.indicators
+    assert "macd_signal" in fs1.indicators
+    assert "macd_histogram" in fs1.indicators
+    assert "macd_histogram_slope" in fs1.indicators
+    assert "macd_bullish" in fs1.flags
     assert "ema_cross_bullish" in fs1.flags
 
 

@@ -41,6 +41,13 @@ const DEFAULT_SPACE = {
   rsi_weight: [1.0],
   ema_enabled: [1],
   rsi_enabled: [1],
+  macd_fast: [10, 12, 14],
+  macd_slow: [24, 26, 30],
+  macd_signal_period: [7, 9, 11],
+  macd_weight: [1.0],
+  macd_enabled: [1],
+  require_signal_align: [1, 0],
+  min_histogram_slope: [0.0],
 };
 
 export default function OptimizationPage() {

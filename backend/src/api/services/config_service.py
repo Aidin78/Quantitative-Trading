@@ -45,12 +45,31 @@ def write_provider_config(provider_id: str, patch: dict) -> dict:
         raise FileNotFoundError(f"Provider config not found: {provider_id}")
     with path.open(encoding="utf-8") as f:
         raw = yaml.safe_load(f)
-    for key in ("enabled", "weight", "params", "version"):
+    for key in ("enabled", "weight", "version"):
         if key in patch:
             raw[key] = patch[key]
+    if "params" in patch:
+        raw.setdefault("params", {}).update(patch["params"])
     with path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(raw, f, sort_keys=False)
     return load_provider_yaml(path).model_dump()
+
+
+def reset_provider_config(provider_id: str) -> dict:
+    from src.providers.metadata import get_provider_metadata
+
+    meta = get_provider_metadata(provider_id)
+    if meta is None:
+        raise FileNotFoundError(f"No defaults for provider: {provider_id}")
+    defaults = meta.default_config
+    return write_provider_config(
+        provider_id,
+        {
+            "enabled": defaults["enabled"],
+            "weight": defaults["weight"],
+            "params": dict(defaults["params"]),
+        },
+    )
 
 
 def write_validation_settings(patch: dict) -> dict:
@@ -71,11 +90,20 @@ def write_validation_settings(patch: dict) -> dict:
     return validation
 
 
-def write_features_config(*, ema_fast: int, ema_slow: int, rsi_period: int) -> dict:
+def write_features_config(
+    *,
+    ema_fast: int,
+    ema_slow: int,
+    rsi_period: int,
+    macd_fast: int = 12,
+    macd_slow: int = 26,
+    macd_signal_period: int = 9,
+) -> dict:
     from src.features.config import load_features_config
 
     config_dir = resolve_config_dir()
     path = config_dir / "features.yaml"
+    macd_names = {"macd", "macd_signal", "macd_histogram", "macd_histogram_slope"}
     with path.open(encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     for indicator in raw.get("indicators", []):
@@ -85,7 +113,19 @@ def write_features_config(*, ema_fast: int, ema_slow: int, rsi_period: int) -> d
             indicator.setdefault("params", {})["period"] = ema_slow
         elif indicator.get("name") == "rsi_14":
             indicator.setdefault("params", {})["period"] = rsi_period
+        elif indicator.get("name") in macd_names:
+            params = indicator.setdefault("params", {})
+            params["fast"] = macd_fast
+            params["slow"] = macd_slow
+            params["signal"] = macd_signal_period
     with path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(raw, f, sort_keys=False)
     load_features_config.cache_clear()
-    return {"ema_fast": ema_fast, "ema_slow": ema_slow, "rsi_period": rsi_period}
+    return {
+        "ema_fast": ema_fast,
+        "ema_slow": ema_slow,
+        "rsi_period": rsi_period,
+        "macd_fast": macd_fast,
+        "macd_slow": macd_slow,
+        "macd_signal_period": macd_signal_period,
+    }

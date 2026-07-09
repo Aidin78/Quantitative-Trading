@@ -61,11 +61,25 @@ def _build_runtime(
 
 
 @pytest.mark.asyncio
+async def test_macd_momentum_analyze_without_error(csv_path: Path, real_providers) -> None:
+    macd = next(p for p in real_providers if p.provider_id == "macd_momentum")
+    runtime, _, _ = _build_runtime(csv_path, [macd])
+    result = await runtime.run_cycle("BTC/USDT", "1h")
+    assert len(result.signals) == 1
+    assert result.signals[0].provider_id == "macd_momentum"
+    assert result.signals[0].side in {"BUY", "SELL", "HOLD"}
+
+
+@pytest.mark.asyncio
 async def test_real_providers_full_cycle(csv_path: Path, real_providers) -> None:
     runtime, _, _ = _build_runtime(csv_path, real_providers)
     result = await runtime.run_cycle("BTC/USDT", "1h", correlation_id="real_providers_cycle")
-    assert len(result.signals) == 2
-    assert {s.provider_id for s in result.signals} == {"ema_crossover", "rsi_divergence"}
+    assert len(result.signals) == 3
+    assert {s.provider_id for s in result.signals} == {
+        "ema_crossover",
+        "rsi_divergence",
+        "macd_momentum",
+    }
     decision_events = [e for e in result.events if e.event_family == EventFamily.DECISION]
     assert any(e.event_type == DecisionEventType.DECISION_MADE for e in decision_events)
     made = next(e for e in decision_events if e.event_type == DecisionEventType.DECISION_MADE)

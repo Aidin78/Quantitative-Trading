@@ -203,7 +203,32 @@ async def test_providers_list(api_client) -> None:
     client, _ = api_client
     resp = await client.get("/api/v1/providers")
     assert resp.status_code == 200
-    assert len(resp.json()["items"]) >= 2
+    items = resp.json()["items"]
+    assert len(items) >= 2
+    ema = next(item for item in items if item["provider_id"] == "ema_crossover")
+    assert ema["rules"]
+    assert ema["param_fields"]
+    assert ema["default_config"]
+    macd = next(item for item in items if item["provider_id"] == "macd_momentum")
+    assert "rsi_14" not in macd["required_features"]
+    assert "macd_histogram" in macd["required_features"]
+
+
+@pytest.mark.asyncio
+async def test_provider_reset(api_client) -> None:
+    client, _ = api_client
+    patch_resp = await client.patch(
+        "/api/v1/providers/ema_crossover",
+        json={"params": {"min_confidence": 0.99}},
+    )
+    assert patch_resp.status_code == 200
+    assert patch_resp.json()["params"]["min_confidence"] == 0.99
+
+    reset_resp = await client.post("/api/v1/providers/ema_crossover/reset")
+    assert reset_resp.status_code == 200
+    body = reset_resp.json()
+    assert body["params"]["min_confidence"] == 0.6
+    assert body["rules"]
 
 
 @pytest.mark.asyncio

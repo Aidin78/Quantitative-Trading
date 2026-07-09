@@ -43,6 +43,13 @@ TRIAL_PARAM_KEYS = [
     "rsi_weight",
     "ema_enabled",
     "rsi_enabled",
+    "macd_fast",
+    "macd_slow",
+    "macd_signal_period",
+    "macd_weight",
+    "macd_enabled",
+    "require_signal_align",
+    "min_histogram_slope",
 ]
 
 
@@ -67,6 +74,13 @@ class OptimizationSpace:
     rsi_weight: tuple[float, ...] = (1.0,)
     ema_enabled: tuple[int, ...] = (1,)
     rsi_enabled: tuple[int, ...] = (1,)
+    macd_fast: tuple[int, ...] = (12,)
+    macd_slow: tuple[int, ...] = (26,)
+    macd_signal_period: tuple[int, ...] = (9,)
+    macd_weight: tuple[float, ...] = (1.0,)
+    macd_enabled: tuple[int, ...] = (1,)
+    require_signal_align: tuple[int, ...] = (1,)
+    min_histogram_slope: tuple[float, ...] = (0.0,)
 
     def as_dict(self) -> dict[str, tuple[Any, ...]]:
         return {key: getattr(self, key) for key in TRIAL_PARAM_KEYS}

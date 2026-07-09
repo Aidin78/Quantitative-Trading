@@ -1,0 +1,11 @@
+provider_id: macd_momentum
+version: v1
+enabled: true
+weight: 1.0
+params:
+  min_confidence: 0.6
+  sl_atr_mult: 1.5
+  tp_atr_mult: 4.0
+  require_signal_align: true
+  min_histogram_slope: 0.0
+  require_trend: false

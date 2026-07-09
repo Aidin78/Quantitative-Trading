@@ -18,7 +18,17 @@ def test_rsi_ema_atr_macd_bollinger_compute(ohlcv: pd.DataFrame) -> None:
     rsi = get_indicator_class("rsi")().compute(ohlcv, {"period": 14})
     ema = get_indicator_class("ema")().compute(ohlcv, {"period": 12})
     atr = get_indicator_class("atr")().compute(ohlcv, {"period": 14})
-    get_indicator_class("macd")().compute(ohlcv, {"fast": 12, "slow": 26, "signal": 9})
+    macd_params = {"fast": 12, "slow": 26, "signal": 9}
+    macd = get_indicator_class("macd")().compute(ohlcv, macd_params)
+    macd_signal = get_indicator_class("macd")().compute(
+        ohlcv, {**macd_params, "component": "signal"}
+    )
+    macd_histogram = get_indicator_class("macd")().compute(
+        ohlcv, {**macd_params, "component": "histogram"}
+    )
+    macd_slope = get_indicator_class("macd")().compute(
+        ohlcv, {**macd_params, "component": "histogram_slope"}
+    )
     upper = get_indicator_class("bollinger")().compute(
         ohlcv, {"period": 20, "std": 2, "band": "upper"}
     )
@@ -28,6 +38,8 @@ def test_rsi_ema_atr_macd_bollinger_compute(ohlcv: pd.DataFrame) -> None:
     assert 0 <= rsi <= 100
     assert ema > 0
     assert atr > 0
+    assert macd_histogram == pytest.approx(macd - macd_signal, rel=1e-6, abs=1e-6)
+    assert isinstance(macd_slope, float)
     assert upper > lower
 
 

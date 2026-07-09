@@ -7,11 +7,13 @@ from src.engine.config import resolve_config_dir
 from src.providers.base import BaseSignalProvider, ProviderConfig
 from src.providers.config import load_provider_yaml
 from src.providers.ema_crossover import EmaCrossoverProvider
+from src.providers.macd_momentum import MacdMomentumProvider
 from src.providers.rsi_divergence import RsiDivergenceProvider
 
 _PROVIDER_CLASSES: dict[str, type[BaseSignalProvider]] = {
     "ema_crossover": EmaCrossoverProvider,
     "rsi_divergence": RsiDivergenceProvider,
+    "macd_momentum": MacdMomentumProvider,
 }
 
 
