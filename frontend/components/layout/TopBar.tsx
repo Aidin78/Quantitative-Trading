@@ -10,6 +10,7 @@ const titles: Record<string, string> = {
   "/replay": "Forensic Replay",
   "/signals": "Signals",
   "/validation": "Validation Harness",
+  "/optimization": "Auto Optimizer",
   "/providers": "Signal Providers",
 };
 

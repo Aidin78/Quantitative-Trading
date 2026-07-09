@@ -11,11 +11,13 @@ import {
   Layers,
   LineChart,
   Database,
+  Loader2,
   PlayCircle,
   Sparkles,
   Zap,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/app-info";
+import { useActiveOptimizationSweep } from "@/contexts/OptimizationSweepContext";
 
 const links = [
   { href: "/", label: "Decision Monitor", icon: Activity },
@@ -32,6 +34,8 @@ const links = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { isActive: optimizationRunning, sweepId } =
+    useActiveOptimizationSweep();
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--background-elevated)]/80 backdrop-blur-xl">
       <div className="border-b border-[var(--border)] p-5">
@@ -57,10 +61,16 @@ export function Sidebar() {
             pathname === link.href ||
             (link.href !== "/" && pathname.startsWith(link.href));
           const Icon = link.icon;
+          const showOptimizerPulse =
+            link.href === "/optimization" && optimizationRunning;
           return (
             <Link
               key={link.href}
-              href={link.href}
+              href={
+                link.href === "/optimization" && sweepId
+                  ? `/optimization?sweep=${encodeURIComponent(sweepId)}`
+                  : link.href
+              }
               className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                 active
                   ? "bg-[var(--accent-dim)] text-accent shadow-sm"
@@ -71,7 +81,9 @@ export function Sidebar() {
                 className={`h-4 w-4 shrink-0 ${active ? "text-accent" : "text-muted group-hover:text-foreground"}`}
               />
               {link.label}
-              {active ? (
+              {showOptimizerPulse ? (
+                <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-accent" />
+              ) : active ? (
                 <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--glow)]" />
               ) : null}
             </Link>

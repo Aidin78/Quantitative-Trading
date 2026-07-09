@@ -1,14 +1,15 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PlayCircle, ShieldCheck, Sparkles } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { OptimizationTrialsTable } from "@/components/optimization/OptimizationTrialsTable";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { DateRangeFields } from "@/components/ui/DateRangeFields";
 import { FieldLabel } from "@/components/ui/FieldLabel";
+import { useActiveOptimizationSweep } from "@/contexts/OptimizationSweepContext";
 import { api } from "@/lib/api";
 import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 import { dateRangeForPreset } from "@/lib/dateRange";
@@ -45,7 +46,13 @@ const DEFAULT_SPACE = {
 export default function OptimizationPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const [sweepId, setSweepId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const {
+    sweepId,
+    setActiveSweepId,
+    sweep,
+    isActive: isSweepActive,
+  } = useActiveOptimizationSweep();
   const [symbol, setSymbol] = useState("BTC/USDT");
   const [startDate, setStartDate] = useState(DEFAULT_RANGE.start);
   const [endDate, setEndDate] = useState(DEFAULT_RANGE.end);
@@ -60,6 +67,20 @@ export default function OptimizationPage() {
   );
   const [searchMethod, setSearchMethod] = useState<"grid" | "optuna">("grid");
   const [holdoutRatio, setHoldoutRatio] = useState(0.2);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("sweep");
+    if (fromUrl) {
+      setActiveSweepId(fromUrl);
+    }
+  }, [searchParams, setActiveSweepId]);
+
+  const persistSweepId = (id: string) => {
+    setActiveSweepId(id);
+    router.replace(`/optimization?sweep=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  };
 
   const run = useMutation({
     mutationFn: () =>
@@ -81,21 +102,8 @@ export default function OptimizationPage() {
         local_refine: true,
         space: DEFAULT_SPACE,
       }),
-    onSuccess: (res) => setSweepId(res.id),
+    onSuccess: (res) => persistSweepId(res.id),
   });
-
-  const { data: sweep } = useQuery({
-    queryKey: ["optimization", sweepId],
-    queryFn: () => api.optimization(sweepId!),
-    enabled: !!sweepId,
-    refetchInterval: (q) =>
-      q.state.data?.status === "completed" || q.state.data?.status === "failed"
-        ? false
-        : 2000,
-  });
-
-  const isSweepActive =
-    sweep?.status === "pending" || sweep?.status === "running";
 
   const apply = useMutation({
     mutationFn: (useFallback: boolean) =>
