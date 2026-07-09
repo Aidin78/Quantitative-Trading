@@ -85,11 +85,17 @@ class Settings(BaseSettings):
 
 
 def resolve_config_dir(settings: Settings | None = None) -> Path:
+    backend_root = Path(__file__).resolve().parents[2]
+
+    def _normalize(path: Path) -> Path:
+        if path.is_absolute():
+            return path
+        return (backend_root / path).resolve()
+
     if config_dir := os.environ.get("CONFIG_DIR"):
-        return Path(config_dir)
+        return _normalize(Path(config_dir))
     if settings and settings.config_dir:
-        return Path(settings.config_dir)
-    # backend/src/core/settings.py -> repo root
+        return _normalize(Path(settings.config_dir))
     return Path(__file__).resolve().parents[3] / "config"
 
 

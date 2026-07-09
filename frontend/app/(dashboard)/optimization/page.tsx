@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PlayCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { OptimizationTrialsTable } from "@/components/optimization/OptimizationTrialsTable";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
@@ -28,6 +28,21 @@ function fmtParams(params: Record<string, number | string>) {
 const DEFAULT_RANGE = dateRangeForPreset("180d");
 
 export default function OptimizationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="page-container flex items-center justify-center gap-2 py-24 text-muted">
+          <Loader2 className="h-5 w-5 animate-spin text-accent" />
+          Loading optimization…
+        </div>
+      }
+    >
+      <OptimizationPageContent />
+    </Suspense>
+  );
+}
+
+function OptimizationPageContent() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();

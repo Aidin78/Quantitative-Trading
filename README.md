@@ -73,10 +73,25 @@
 
 ## شروع سریع
 
-```bash
-# Clone and setup
-cp .env.example .env
+### روش پیشنهادی — همه‌چیز با Docker
 
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+داشبورد: [http://localhost:3000](http://localhost:3000) · API: [http://localhost:8000](http://localhost:8000)
+
+```bash
+docker compose logs -f backend frontend   # لاگ‌ها
+docker compose down                       # توقف
+```
+
+> اگر `npm run dev` لوکال دارید، اول آن را متوقف کنید (پورت 3000 مشترک است).
+
+### روش توسعه — backend/frontend جدا (اختیاری)
+
+```bash
 # Infrastructure (postgres + redis)
 docker compose up -d postgres redis
 

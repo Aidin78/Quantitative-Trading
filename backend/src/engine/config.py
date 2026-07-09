@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -35,10 +34,9 @@ class EngineConfig(BaseModel, frozen=True):
 
 
 def resolve_config_dir() -> Path:
-    if config_dir := os.environ.get("CONFIG_DIR"):
-        return Path(config_dir)
-    # backend/src/engine/config.py -> repo root
-    return Path(__file__).resolve().parents[3] / "config"
+    from src.core.settings import resolve_config_dir as _resolve
+
+    return _resolve()
 
 
 @lru_cache

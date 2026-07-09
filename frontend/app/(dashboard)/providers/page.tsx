@@ -9,7 +9,7 @@ import { api } from "@/lib/api";
 
 export default function ProvidersPage() {
   const queryClient = useQueryClient();
-  const { data } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["providers"],
     queryFn: () => api.providers(),
   });
@@ -75,10 +75,36 @@ export default function ProvidersPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {data?.items.map((p) => (
-          <ProviderCard key={p.provider_id} provider={p} />
-        ))}
-        {!data?.items.length && (
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-2 py-12 text-muted lg:col-span-2">
+            <Loader2 className="h-5 w-5 animate-spin text-accent" />
+            Loading providers…
+          </div>
+        ) : isError ? (
+          <div className="rounded-lg border border-danger/30 bg-[var(--danger-dim)] p-4 lg:col-span-2">
+            <p className="font-medium text-danger">Failed to load providers</p>
+            <p className="mt-1 text-sm text-muted">
+              {error instanceof Error ? error.message : "Unknown error"}
+            </p>
+            <p className="mt-2 text-sm text-muted">
+              Make sure the backend is running on{" "}
+              <code className="text-foreground">localhost:8000</code> (or set{" "}
+              <code className="text-foreground">NEXT_PUBLIC_API_URL</code>).
+            </p>
+            <button
+              type="button"
+              className="btn-secondary mt-3 text-sm"
+              onClick={() => refetch()}
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          data?.items.map((p) => (
+            <ProviderCard key={p.provider_id} provider={p} />
+          ))
+        )}
+        {!isLoading && !isError && !data?.items.length && (
           <EmptyState
             message="No providers configured"
             className="lg:col-span-2"

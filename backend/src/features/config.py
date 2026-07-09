@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -52,9 +51,9 @@ class FeaturesConfig(BaseModel, frozen=True):
 
 
 def resolve_config_dir() -> Path:
-    if config_dir := os.environ.get("CONFIG_DIR"):
-        return Path(config_dir)
-    return Path(__file__).resolve().parents[3] / "config"
+    from src.core.settings import resolve_config_dir as _resolve
+
+    return _resolve()
 
 
 def compute_config_hash(content: str) -> str:

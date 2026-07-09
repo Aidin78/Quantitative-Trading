@@ -33,10 +33,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
-      - NEXT_PUBLIC_WS_URL=ws://backend:8000
+      # Browser runs on the host — must use localhost, not the docker service name.
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
   postgres:

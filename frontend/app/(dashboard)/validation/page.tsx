@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Loader2, PlayCircle, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ValidationMetricsPanel } from "@/components/validation/ValidationMetricsPanel";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
@@ -22,6 +22,21 @@ const PHASE_LABELS: Record<string, string> = {
 };
 
 export default function ValidationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="page-container flex items-center justify-center gap-2 py-24 text-muted">
+          <Loader2 className="h-5 w-5 animate-spin text-accent" />
+          Loading validation…
+        </div>
+      }
+    >
+      <ValidationPageContent />
+    </Suspense>
+  );
+}
+
+function ValidationPageContent() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();

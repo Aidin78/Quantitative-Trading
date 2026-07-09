@@ -129,7 +129,10 @@ export function ProviderConfigModal({
         ) : null}
 
         <div>
-          <FieldLabel label="Weight" />
+          <FieldLabel
+            label="Weight"
+            tooltip="Vote weight in weighted majority aggregation. Higher values give this provider more influence."
+          />
           <input
             type="number"
             min={0}

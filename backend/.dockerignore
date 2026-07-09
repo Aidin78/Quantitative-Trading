@@ -1,0 +1,9 @@
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.git
+tests
+scripts
+# Keep README.md — required by pyproject.toml for poetry install --only-root
