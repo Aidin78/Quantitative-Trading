@@ -2,13 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Loader2, PlayCircle, Trash2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ValidationMetricsPanel } from "@/components/validation/ValidationMetricsPanel";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { DateRangeFields } from "@/components/ui/DateRangeFields";
 import { FieldLabel } from "@/components/ui/FieldLabel";
+import { useActiveValidationJob } from "@/contexts/ValidationJobContext";
 import { api } from "@/lib/api";
 import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 import { dateRangeForPreset } from "@/lib/dateRange";
@@ -22,8 +23,15 @@ const PHASE_LABELS: Record<string, string> = {
 
 export default function ValidationPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const [jobId, setJobId] = useState<string | null>(null);
+  const {
+    jobId,
+    setActiveJobId,
+    clearActiveJob,
+    job,
+    isActive: isJobActive,
+  } = useActiveValidationJob();
   const [symbol, setSymbol] = useState("BTC/USDT");
   const [startDate, setStartDate] = useState(
     () => dateRangeForPreset("30d").start,
@@ -41,14 +49,21 @@ export default function ValidationPage() {
 
   useEffect(() => {
     const job = searchParams.get("job");
-    if (job) setJobId(job);
+    if (job) setActiveJobId(job);
     const sym = searchParams.get("symbol");
     if (sym) setSymbol(sym);
     const start = searchParams.get("start");
     if (start) setStartDate(start);
     const end = searchParams.get("end");
     if (end) setEndDate(end);
-  }, [searchParams]);
+  }, [searchParams, setActiveJobId]);
+
+  const persistJobId = (id: string) => {
+    setActiveJobId(id);
+    router.replace(`/validation?job=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  };
 
   const { data: runHistory } = useQuery({
     queryKey: ["validation-runs", symbol],
@@ -71,7 +86,7 @@ export default function ValidationPage() {
         initial_capital: initialCapital,
         timeframe: "1h",
       }),
-    onSuccess: (res) => setJobId(res.id),
+    onSuccess: (res) => persistJobId(res.id),
   });
 
   const walkForward = useMutation({
@@ -88,16 +103,6 @@ export default function ValidationPage() {
       }),
   });
 
-  const { data: job } = useQuery({
-    queryKey: ["validation", jobId],
-    queryFn: () => api.validation(jobId!),
-    enabled: !!jobId,
-    refetchInterval: (q) =>
-      q.state.data?.status === "completed" || q.state.data?.status === "failed"
-        ? false
-        : 2000,
-  });
-
   const { data: tradesData } = useQuery({
     queryKey: ["validation-trades", jobId],
     queryFn: () => api.validationTrades(jobId!),
@@ -110,8 +115,6 @@ export default function ValidationPage() {
       : job?.status === "failed"
         ? "danger"
         : "accent";
-
-  const isJobActive = job?.status === "pending" || job?.status === "running";
 
   const progressPct =
     job?.progress && job.progress.total > 0
@@ -142,7 +145,7 @@ export default function ValidationPage() {
     mutationFn: (runId: string) => api.deleteValidationRun(runId),
     onSuccess: (_data, runId) => {
       setHistoryError(null);
-      if (jobId === runId) setJobId(null);
+      if (jobId === runId) clearActiveJob();
       if (compareRunA === runId) setCompareRunA("");
       if (compareRunB === runId) setCompareRunB("");
       invalidateHistory();
@@ -156,7 +159,7 @@ export default function ValidationPage() {
     mutationFn: (runIds: string[]) => api.deleteValidationRuns(runIds),
     onSuccess: (result) => {
       setHistoryError(null);
-      if (jobId && result.deleted.includes(jobId)) setJobId(null);
+      if (jobId && result.deleted.includes(jobId)) clearActiveJob();
       if (compareRunA && result.deleted.includes(compareRunA)) {
         setCompareRunA("");
       }
@@ -502,7 +505,7 @@ export default function ValidationPage() {
                           <button
                             type="button"
                             className="btn-secondary text-xs"
-                            onClick={() => setJobId(row.run_id)}
+                            onClick={() => persistJobId(row.run_id)}
                           >
                             View
                           </button>

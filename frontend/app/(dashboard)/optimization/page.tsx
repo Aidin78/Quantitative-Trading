@@ -10,6 +10,7 @@ import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { DateRangeFields } from "@/components/ui/DateRangeFields";
 import { FieldLabel } from "@/components/ui/FieldLabel";
 import { useActiveOptimizationSweep } from "@/contexts/OptimizationSweepContext";
+import { useActiveValidationJob } from "@/contexts/ValidationJobContext";
 import { api } from "@/lib/api";
 import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 import { dateRangeForPreset } from "@/lib/dateRange";
@@ -60,6 +61,7 @@ export default function OptimizationPage() {
     sweep,
     isActive: isSweepActive,
   } = useActiveOptimizationSweep();
+  const { setActiveJobId } = useActiveValidationJob();
   const [symbol, setSymbol] = useState("BTC/USDT");
   const [startDate, setStartDate] = useState(DEFAULT_RANGE.start);
   const [endDate, setEndDate] = useState(DEFAULT_RANGE.end);
@@ -170,7 +172,8 @@ export default function OptimizationPage() {
       });
     },
     onSuccess: (res) => {
-      router.push(`/validation?job=${res.id}`);
+      setActiveJobId(res.id);
+      router.push(`/validation?job=${encodeURIComponent(res.id)}`);
     },
   });
 
