@@ -69,3 +69,23 @@ def write_validation_settings(patch: dict) -> dict:
 
     load_app_yaml_config.cache_clear()
     return validation
+
+
+def write_features_config(*, ema_fast: int, ema_slow: int, rsi_period: int) -> dict:
+    from src.features.config import load_features_config
+
+    config_dir = resolve_config_dir()
+    path = config_dir / "features.yaml"
+    with path.open(encoding="utf-8") as f:
+        raw = yaml.safe_load(f)
+    for indicator in raw.get("indicators", []):
+        if indicator.get("name") == "ema_12":
+            indicator.setdefault("params", {})["period"] = ema_fast
+        elif indicator.get("name") == "ema_26":
+            indicator.setdefault("params", {})["period"] = ema_slow
+        elif indicator.get("name") == "rsi_14":
+            indicator.setdefault("params", {})["period"] = rsi_period
+    with path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(raw, f, sort_keys=False)
+    load_features_config.cache_clear()
+    return {"ema_fast": ema_fast, "ema_slow": ema_slow, "rsi_period": rsi_period}

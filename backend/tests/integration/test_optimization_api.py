@@ -26,7 +26,23 @@ async def test_run_optimization_picks_best_on_test() -> None:
             sl_atr_mult=(1.0,),
             tp_atr_mult=(2.0,),
             max_bars_in_trade=(24,),
+            oversold=(30,),
+            overbought=(70,),
+            risk_pct_per_trade=(1.0,),
+            min_atr_pct=(0.3,),
+            session_preset=("eu_us",),
+            max_signals_per_day=(10,),
+            ema_fast=(12,),
+            ema_slow=(26,),
+            rsi_period=(14,),
+            ema_weight=(1.0,),
+            rsi_weight=(1.0,),
+            ema_enabled=(1,),
+            rsi_enabled=(1,),
         ),
+        min_trades=0,
+        holdout_ratio=0.0,
+        local_refine=False,
     )
     assert len(result.trials) == 2
     assert result.best is not None

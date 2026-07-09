@@ -13,7 +13,18 @@ from src.execution.config import (
     load_default_fill_model,
     load_validation_execution_config,
 )
+from src.features.config import FeaturesConfig, IndicatorDef, load_features_config
 from src.providers.registry import discover_provider_configs, instantiate_provider
+
+SESSION_PRESETS: dict[str, tuple[str, ...]] = {
+    "eu_us": ("EUROPE", "US", "OVERLAP"),
+    "us_only": ("US",),
+    "all": ("ASIA", "EUROPE", "US", "OVERLAP"),
+}
+
+
+def _session_preset(preset: str) -> tuple[str, ...]:
+    return SESSION_PRESETS.get(preset, SESSION_PRESETS["eu_us"])
 
 
 def build_engine_config_from_trial(
@@ -31,23 +42,43 @@ def build_engine_config_from_trial(
         update={
             "min_confidence": float(trial.get("min_confidence", cfg.risk.min_confidence)),
             "min_risk_reward": float(trial.get("min_risk_reward", cfg.risk.min_risk_reward)),
+            "max_signals_per_day": int(
+                trial.get("max_signals_per_day", cfg.risk.max_signals_per_day)
+            ),
         }
     )
-    return cfg.model_copy(update={"aggregation": aggregation, "risk": risk})
+    filter_cfg = cfg.filter.model_copy(
+        update={
+            "min_atr_pct": float(trial.get("min_atr_pct", cfg.filter.min_atr_pct)),
+            "allowed_sessions": _session_preset(str(trial.get("session_preset", "eu_us"))),
+        }
+    )
+    return cfg.model_copy(update={"aggregation": aggregation, "risk": risk, "filter": filter_cfg})
 
 
 def build_provider_overrides(trial: dict[str, Any]) -> dict[str, dict[str, Any]]:
     min_confidence = float(trial.get("min_confidence", 0.65))
     sl_atr_mult = float(trial.get("sl_atr_mult", 1.5))
     tp_atr_mult = float(trial.get("tp_atr_mult", 3.0))
-    shared = {
+    ema_shared = {
         "min_confidence": min_confidence,
         "sl_atr_mult": sl_atr_mult,
         "tp_atr_mult": tp_atr_mult,
+        "weight": float(trial.get("ema_weight", 1.0)),
+        "enabled": bool(int(trial.get("ema_enabled", 1))),
+    }
+    rsi_shared = {
+        "min_confidence": min_confidence,
+        "sl_atr_mult": sl_atr_mult,
+        "tp_atr_mult": tp_atr_mult,
+        "oversold": float(trial.get("oversold", 30.0)),
+        "overbought": float(trial.get("overbought", 70.0)),
+        "weight": float(trial.get("rsi_weight", 1.0)),
+        "enabled": bool(int(trial.get("rsi_enabled", 1))),
     }
     return {
-        "ema_crossover": dict(shared),
-        "rsi_divergence": dict(shared),
+        "ema_crossover": ema_shared,
+        "rsi_divergence": rsi_shared,
     }
 
 
@@ -64,17 +95,67 @@ def build_execution_config_from_trial(
     )
 
 
+def build_features_config_from_trial(
+    trial: dict[str, Any],
+) -> tuple[FeaturesConfig, str]:
+    base_config, _ = load_features_config()
+    ema_fast = int(trial.get("ema_fast", 12))
+    ema_slow = int(trial.get("ema_slow", 26))
+    rsi_period = int(trial.get("rsi_period", 14))
+
+    indicators: list[IndicatorDef] = []
+    for indicator in base_config.indicators:
+        if indicator.name == "ema_12":
+            indicators.append(IndicatorDef(name="ema_12", type="ema", params={"period": ema_fast}))
+        elif indicator.name == "ema_26":
+            indicators.append(IndicatorDef(name="ema_26", type="ema", params={"period": ema_slow}))
+        elif indicator.name == "rsi_14":
+            indicators.append(
+                IndicatorDef(name="rsi_14", type="rsi", params={"period": rsi_period})
+            )
+        else:
+            indicators.append(indicator)
+
+    config = FeaturesConfig(
+        version=base_config.version,
+        indicators=tuple(indicators),
+        flags=base_config.flags,
+        context=base_config.context,
+    )
+    payload = json.dumps(
+        {
+            "ema_fast": ema_fast,
+            "ema_slow": ema_slow,
+            "rsi_period": rsi_period,
+        },
+        sort_keys=True,
+    )
+    config_hash = hashlib.sha256(payload.encode()).hexdigest()[:16]
+    return config, config_hash
+
+
 def build_providers_from_overrides(
     provider_overrides: dict[str, dict[str, Any]] | None = None,
 ) -> list[SignalProvider]:
     providers: list[SignalProvider] = []
     for cfg in discover_provider_configs(resolve_config_dir()):
-        if not cfg.enabled:
-            continue
         params = dict(cfg.params)
+        enabled = cfg.enabled
+        weight = cfg.weight
         if provider_overrides and cfg.provider_id in provider_overrides:
-            params.update(provider_overrides[cfg.provider_id])
-        providers.append(instantiate_provider(cfg.model_copy(update={"params": params})))
+            override = provider_overrides[cfg.provider_id]
+            enabled = bool(override.get("enabled", enabled))
+            weight = float(override.get("weight", weight))
+            params.update(
+                {key: value for key, value in override.items() if key not in {"enabled", "weight"}}
+            )
+        if not enabled:
+            continue
+        providers.append(
+            instantiate_provider(
+                cfg.model_copy(update={"enabled": enabled, "weight": weight, "params": params})
+            )
+        )
     return providers
 
 

@@ -143,14 +143,22 @@ def compute_strategy_score(outcome: dict) -> float:
     score = (
         100
         * (
-            0.35 * _clamp(return_pct / 10, -1, 1)
-            + 0.25 * _clamp(sharpe / 2, -1, 1)
-            + 0.20 * _clamp((win_rate - 0.5) * 2, -1, 1)
+            0.45 * _clamp(return_pct / 10, -1, 1)
+            + 0.20 * _clamp(sharpe / 2, -1, 1)
+            + 0.15 * _clamp((win_rate - 0.5) * 2, -1, 1)
             + 0.20 * _clamp(pf_term, 0, 1)
         )
         - 1.5 * max_dd_pct
     )
     return round(score, 2)
+
+
+def compute_optimization_score(outcome: dict) -> float:
+    score = compute_strategy_score(outcome)
+    trades = int(outcome.get("total_trades", 0))
+    if trades < 10:
+        return min(score, -50.0)
+    return score
 
 
 def compute_engine_metrics(
@@ -276,4 +284,5 @@ def compute_outcome_metrics(
     )
     outcome["diagnostics"] = compute_diagnostics(events)
     outcome["score"] = compute_strategy_score(outcome)
+    outcome["optimization_score"] = compute_optimization_score(outcome)
     return outcome

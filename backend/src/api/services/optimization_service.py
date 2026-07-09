@@ -55,9 +55,17 @@ def trial_to_dict(trial: TrialResult) -> dict[str, Any]:
         "train_score": trial.train_score,
         "test_score": trial.test_score,
         "stability": trial.stability,
+        "composite_score": trial.composite_score,
+        "fold_scores": trial.fold_scores,
+        "fold_std": trial.fold_std,
+        "pareto_rank": trial.pareto_rank,
         "revision_id": trial.revision_id,
         "train_total_trades": (trial.train_outcome or {}).get("total_trades"),
+        "train_return_pct": (trial.train_outcome or {}).get("return_pct"),
         "test_total_trades": (trial.test_outcome or {}).get("total_trades")
+        if trial.test_outcome
+        else None,
+        "test_return_pct": (trial.test_outcome or {}).get("return_pct")
         if trial.test_outcome
         else None,
     }
@@ -72,6 +80,11 @@ def result_to_dict(result: OptimizationResult) -> dict[str, Any]:
         "train_end": result.train_end.isoformat(),
         "test_start": result.test_start.isoformat(),
         "test_end": result.test_end.isoformat(),
+        "holdout_start": result.holdout_start.isoformat() if result.holdout_start else None,
+        "holdout_end": result.holdout_end.isoformat() if result.holdout_end else None,
+        "optimization_end": result.optimization_end.isoformat()
+        if result.optimization_end
+        else None,
         "space": result.space.as_dict(),
         "trials": [trial_to_dict(t) for t in result.trials],
         "best": trial_to_dict(result.best) if result.best else None,

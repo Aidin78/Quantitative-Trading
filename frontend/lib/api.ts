@@ -391,19 +391,31 @@ export type OptimizationRequest = {
   train_ratio?: number;
   max_trials?: number;
   top_k?: number;
-  space?: Record<string, number[]>;
+  space?: Record<string, Array<number | string>>;
   csv_path?: string;
+  seed?: number;
+  min_trades?: number;
+  min_return_pct?: number;
+  holdout_ratio?: number;
+  walk_forward_windows?: number;
+  local_refine?: boolean;
 };
 
 export type OptimizationTrial = {
   trial_id: string;
-  params: Record<string, number>;
+  params: Record<string, number | string>;
   train_score: number;
   test_score?: number | null;
   stability?: number | null;
+  composite_score?: number | null;
+  fold_scores?: number[];
+  fold_std?: number | null;
+  pareto_rank?: number | null;
   revision_id?: string | null;
   train_total_trades?: number;
+  train_return_pct?: number;
   test_total_trades?: number | null;
+  test_return_pct?: number | null;
 };
 
 export type OptimizationSweep = {
@@ -422,6 +434,9 @@ export type OptimizationSweep = {
   train_end?: string;
   test_start?: string;
   test_end?: string;
+  holdout_start?: string | null;
+  holdout_end?: string | null;
+  optimization_end?: string | null;
   trials?: OptimizationTrial[];
   best?: OptimizationTrial | null;
 };
@@ -429,8 +444,10 @@ export type OptimizationSweep = {
 export type OptimizationApplyResponse = {
   sweep_id: string;
   revision_id: string;
-  applied_params: Record<string, number>;
+  applied_params: Record<string, number | string>;
   best?: OptimizationTrial | null;
+  holdout_start?: string | null;
+  holdout_end?: string | null;
 };
 
 export type ValidationJob = {

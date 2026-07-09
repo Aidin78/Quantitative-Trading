@@ -9,6 +9,7 @@ from src.events.envelopes import ExecutionEventType, build_envelope
 from src.validation.metrics import (
     compute_diagnostics,
     compute_monthly_breakdown,
+    compute_optimization_score,
     compute_outcome_metrics,
     compute_strategy_score,
 )
@@ -112,4 +113,17 @@ def test_outcome_metrics_includes_analysis_fields() -> None:
     assert "monthly_breakdown" in outcome
     assert "diagnostics" in outcome
     assert "score" in outcome
+    assert "optimization_score" in outcome
     assert len(outcome["monthly_breakdown"]) == 1
+
+
+def test_optimization_score_caps_low_trade_count() -> None:
+    outcome = {
+        "return_pct": 8.0,
+        "sharpe_ratio": 1.5,
+        "win_rate": 0.7,
+        "profit_factor": 2.0,
+        "max_drawdown_pct": 2.0,
+        "total_trades": 5,
+    }
+    assert compute_optimization_score(outcome) <= -50.0

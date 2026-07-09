@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.deps import get_current_user, get_db
 from src.api.services.config_service import (
     write_engine_config,
+    write_features_config,
     write_provider_config,
     write_validation_settings,
 )
@@ -23,6 +24,7 @@ from src.api.services.optimization_service import (
 from src.api.services.validation_runner import format_validation_error
 from src.governance.revision_store import compute_config_revision, save_revision
 from src.validation.optimizer import OptimizationSpace, ProgressEvent, run_optimization
+from src.validation.trial_config import SESSION_PRESETS
 
 router = APIRouter(
     prefix="/optimization", tags=["optimization"], dependencies=[Depends(get_current_user)]
@@ -41,6 +43,12 @@ class OptimizationRunRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
     space: dict[str, list[Any]] | None = None
     csv_path: str | None = None
+    seed: int | None = None
+    min_trades: int = Field(default=20, ge=0)
+    min_return_pct: float = Field(default=0.0)
+    holdout_ratio: float = Field(default=0.2, ge=0.0, lt=0.5)
+    walk_forward_windows: int = Field(default=1, ge=1, le=6)
+    local_refine: bool = True
 
 
 async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
@@ -68,15 +76,16 @@ async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
         sweep.progress_current = event.current
         sweep.progress_total = event.total
         sweep.phase = event.phase
-        if event.phase == "train":
+        if event.phase in {"train", "refine"}:
             if event.stage == "start":
+                label = "Refining" if event.phase == "refine" else "Training"
                 sweep.message = (
-                    f"Training candidate {event.current + 1} of "
+                    f"{label} candidate {event.current + 1} of "
                     f"{event.train_count} on in-sample data…"
                 )
             else:
                 sweep.message = (
-                    f"Finished training candidate {event.current} of " f"{event.train_count}."
+                    f"Finished evaluating candidate {event.current} of " f"{event.train_count}."
                 )
                 if event.trial is not None:
                     sweep.live_trials.append(event.trial)
@@ -104,6 +113,12 @@ async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
             top_k=body.top_k,
             space=space,
             csv_path=body.csv_path,
+            seed=body.seed,
+            min_trades=body.min_trades,
+            min_return_pct=body.min_return_pct,
+            holdout_ratio=body.holdout_ratio,
+            walk_forward_windows=body.walk_forward_windows,
+            local_refine=body.local_refine,
             on_progress=on_progress,
         )
         result.sweep_id = sweep_id
@@ -140,31 +155,51 @@ async def apply_optimization_best(sweep_id: str, db: AsyncSession = Depends(get_
         raise HTTPException(status_code=404, detail="No completed optimization with a best trial")
 
     params = sweep.result.best.params
+    session_preset = str(params.get("session_preset", "eu_us"))
+    allowed_sessions = list(SESSION_PRESETS.get(session_preset, SESSION_PRESETS["eu_us"]))
     engine_patch = {
         "aggregation": {
             "min_agreeing_providers": int(params["min_agreeing_providers"]),
         },
+        "filter": {
+            "min_atr_pct": float(params.get("min_atr_pct", 0.3)),
+            "allowed_sessions": allowed_sessions,
+        },
         "risk": {
             "min_confidence": float(params["min_confidence"]),
             "min_risk_reward": float(params["min_risk_reward"]),
+            "max_signals_per_day": int(params.get("max_signals_per_day", 10)),
         },
     }
     write_engine_config(engine_patch)
 
-    provider_patch = {
-        "params": {
-            "min_confidence": float(params["min_confidence"]),
-            "sl_atr_mult": float(params["sl_atr_mult"]),
-            "tp_atr_mult": float(params["tp_atr_mult"]),
-        }
-    }
     for provider_id in ("ema_crossover", "rsi_divergence"):
+        enabled_key = "ema_enabled" if provider_id == "ema_crossover" else "rsi_enabled"
+        weight_key = "ema_weight" if provider_id == "ema_crossover" else "rsi_weight"
+        provider_patch: dict[str, Any] = {
+            "enabled": bool(int(params.get(enabled_key, 1))),
+            "weight": float(params.get(weight_key, 1.0)),
+            "params": {
+                "min_confidence": float(params["min_confidence"]),
+                "sl_atr_mult": float(params["sl_atr_mult"]),
+                "tp_atr_mult": float(params["tp_atr_mult"]),
+            },
+        }
+        if provider_id == "rsi_divergence":
+            provider_patch["params"]["oversold"] = float(params.get("oversold", 30.0))
+            provider_patch["params"]["overbought"] = float(params.get("overbought", 70.0))
         write_provider_config(provider_id, provider_patch)
 
     write_validation_settings(
         {
             "max_bars_in_trade": int(params["max_bars_in_trade"]),
+            "risk_pct_per_trade": float(params.get("risk_pct_per_trade", 1.0)),
         }
+    )
+    write_features_config(
+        ema_fast=int(params.get("ema_fast", 12)),
+        ema_slow=int(params.get("ema_slow", 26)),
+        rsi_period=int(params.get("rsi_period", 14)),
     )
 
     revision = compute_config_revision(label=f"optimizer_apply_{sweep_id}")
@@ -176,4 +211,8 @@ async def apply_optimization_best(sweep_id: str, db: AsyncSession = Depends(get_
         "revision_id": revision.revision_id,
         "applied_params": params,
         "best": result_to_dict(sweep.result)["best"],
+        "holdout_start": sweep.result.holdout_start.isoformat()
+        if sweep.result.holdout_start
+        else None,
+        "holdout_end": sweep.result.holdout_end.isoformat() if sweep.result.holdout_end else None,
     }

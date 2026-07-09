@@ -7,11 +7,27 @@ from src.core.contracts.signal import StrategySignal
 from src.providers.base import BaseSignalProvider
 
 
+def _ema_confidence(features: FeatureSet, context: MarketContext, bullish: bool) -> float:
+    if not bullish:
+        return 0.5
+    ema_fast = float(features.indicators.get("ema_12", context.current_price))
+    ema_slow = float(features.indicators.get("ema_26", context.current_price))
+    spread = ema_fast - ema_slow
+    atr = max(context.atr, 1e-9)
+    spread_ratio = spread / atr
+    return min(0.95, max(0.55, 0.55 + 0.12 * spread_ratio))
+
+
 class EmaCrossoverProvider(BaseSignalProvider):
     def analyze(self, features: FeatureSet, context: MarketContext) -> StrategySignal:
         bullish = features.flags.get("ema_cross_bullish", False)
         min_confidence = float(self.params.get("min_confidence", 0.6))
-        confidence = 0.78 if bullish else 0.5
+        require_trend = bool(self.params.get("require_trend", True))
+        confidence = _ema_confidence(features, context, bullish)
+
+        if require_trend and context.trend == "DOWN":
+            bullish = False
+            confidence = 0.5
 
         if not bullish or confidence < min_confidence:
             return self._build_signal(

@@ -20,6 +20,7 @@ from src.events.in_memory_bus import InMemoryEventBus
 from src.execution.config import ValidationExecutionConfig, load_default_fill_model
 from src.execution.simulated import SimulatedExecutionEngine
 from src.features.builder import DefaultFeatureBuilder
+from src.features.config import FeaturesConfig
 from src.features.store import InMemoryFeatureStore
 from src.governance.revision_store import (
     compute_config_revision,
@@ -127,6 +128,7 @@ async def run_validation_job(
     engine_config: EngineConfig | None = None,
     provider_overrides: dict[str, dict] | None = None,
     execution_config: ValidationExecutionConfig | None = None,
+    features_config: tuple[FeaturesConfig, str] | None = None,
     on_progress: ValidationProgressCallback | None = None,
 ) -> ValidationResult:
     app = load_app_yaml_config()
@@ -208,9 +210,18 @@ async def run_validation_job(
         if provider_overrides is not None
         else load_providers(resolve_config_dir())
     )
+    if features_config is not None:
+        feature_config, feature_hash = features_config
+        feature_builder = DefaultFeatureBuilder(
+            config=feature_config,
+            config_hash=feature_hash,
+            store=feature_store,
+        )
+    else:
+        feature_builder = DefaultFeatureBuilder(store=feature_store)
     runtime = PlatformRuntime(
         data_provider=provider,
-        feature_builder=DefaultFeatureBuilder(store=feature_store),
+        feature_builder=feature_builder,
         feature_store=feature_store,
         state_store=state_store,
         providers=signal_providers,
