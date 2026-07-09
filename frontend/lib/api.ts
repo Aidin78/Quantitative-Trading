@@ -84,7 +84,19 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
-  signals: () => apiFetch<{ items: SignalSummary[] }>("/api/v1/signals"),
+  signals: (params?: { page?: number; limit?: number; symbol?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.page != null) qs.set("page", String(params.page));
+    if (params?.limit != null) qs.set("limit", String(params.limit));
+    if (params?.symbol) qs.set("symbol", params.symbol);
+    const q = qs.toString();
+    return apiFetch<{
+      items: SignalSummary[];
+      total: number;
+      page: number;
+      limit: number;
+    }>(`/api/v1/signals${q ? `?${q}` : ""}`);
+  },
   signal: (id: string) => apiFetch<DecisionDetail>(`/api/v1/signals/${id}`),
   providers: () => apiFetch<{ items: ProviderConfig[] }>("/api/v1/providers"),
   provider: (id: string) => apiFetch<ProviderConfig>(`/api/v1/providers/${id}`),
@@ -304,6 +316,7 @@ export type SignalSummary = {
   side: string;
   confidence: number;
   timestamp: string;
+  decision_id?: string;
 };
 
 export type ProviderParamField = {

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, GitBranch, Loader2, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { FieldLabel } from "@/components/ui/FieldLabel";
@@ -56,28 +56,54 @@ function buildGraphTree(
   return result;
 }
 
+function parseErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    try {
+      const parsed = JSON.parse(error.message) as { detail?: string };
+      if (parsed.detail) return parsed.detail;
+    } catch {
+      // fall through
+    }
+    return error.message;
+  }
+  return "Failed to load replay";
+}
+
 function ReplayContent() {
   const params = useSearchParams();
-  const [correlationId, setCorrelationId] = useState(
-    params.get("correlation_id") ?? "",
-  );
+  const urlCorrelationId = params.get("correlation_id") ?? "";
+  const [correlationId, setCorrelationId] = useState(urlCorrelationId);
+  const [submittedId, setSubmittedId] = useState("");
   const [mode, setMode] = useState<"strict" | "re_execute">("strict");
   const [revisionId, setRevisionId] = useState("");
 
-  const { data, refetch, isFetching, isSuccess } = useQuery({
-    queryKey: ["replay", correlationId, mode, revisionId],
+  useEffect(() => {
+    if (urlCorrelationId) {
+      setCorrelationId(urlCorrelationId);
+      setSubmittedId(urlCorrelationId);
+    }
+  }, [urlCorrelationId]);
+
+  const { data, isFetching, isSuccess, isError, error, refetch } = useQuery({
+    queryKey: ["replay", submittedId, mode, revisionId],
     queryFn: () =>
-      api.replay(correlationId, {
+      api.replay(submittedId, {
         mode,
         revision_id: revisionId || undefined,
       }),
-    enabled: false,
+    enabled: Boolean(submittedId),
+    retry: false,
   });
 
   const graphTree = useMemo(
     () => buildGraphTree(data?.causal_graph, data?.timeline ?? []),
     [data?.causal_graph, data?.timeline],
   );
+
+  const handleLoad = () => {
+    if (!correlationId.trim()) return;
+    setSubmittedId(correlationId.trim());
+  };
 
   return (
     <div className="page-container">
@@ -88,7 +114,7 @@ function ReplayContent() {
 
       <Card
         title="Cycle Search"
-        subtitle="Enter a correlation_id from a decision"
+        subtitle="Enter a correlation_id from a decision or open from Signals / Monitor"
       >
         <div className="space-y-4">
           <FieldLabel
@@ -100,12 +126,15 @@ function ReplayContent() {
               className="input-field flex-1 font-mono text-sm"
               value={correlationId}
               onChange={(e) => setCorrelationId(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleLoad();
+              }}
               placeholder="cycle_btc_1h_..."
             />
             <button
               type="button"
-              onClick={() => refetch()}
-              disabled={!correlationId || isFetching}
+              onClick={handleLoad}
+              disabled={!correlationId.trim() || isFetching}
               className="btn-primary shrink-0"
             >
               {isFetching ? (
@@ -147,6 +176,32 @@ function ReplayContent() {
           </div>
         </div>
       </Card>
+
+      {isError ? (
+        <div className="flex items-start gap-3 rounded-lg border border-danger/30 bg-[var(--danger-dim)] p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
+          <div>
+            <p className="font-medium text-danger">Replay failed</p>
+            <p className="mt-1 text-sm text-muted">
+              {parseErrorMessage(error)}
+            </p>
+            <button
+              type="button"
+              className="btn-secondary mt-3 text-xs"
+              onClick={() => refetch()}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {isFetching && !data ? (
+        <div className="flex items-center justify-center gap-2 py-12 text-muted">
+          <Loader2 className="h-5 w-5 animate-spin text-accent" />
+          Loading timeline…
+        </div>
+      ) : null}
 
       {isSuccess && data?.feature_drift?.detected ? (
         <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-[var(--warning-dim)] p-4">
@@ -238,10 +293,10 @@ function ReplayContent() {
         </Card>
       ) : null}
 
-      {isSuccess && data?.timeline && (
+      {isSuccess && data ? (
         <Card
           title="Event Timeline"
-          subtitle={`${data.timeline.length} events · ${data.mode}`}
+          subtitle={`${data.timeline.length} events · ${data.mode} · ${data.correlation_id}`}
           className="animate-fade-in"
         >
           {data.timeline.length === 0 ? (
@@ -250,7 +305,10 @@ function ReplayContent() {
             <div className="relative space-y-0">
               <div className="absolute bottom-4 left-[1.125rem] top-4 w-px bg-[var(--border)]" />
               {data.timeline.map((entry, i) => (
-                <div key={i} className="relative flex gap-4 pb-6 last:pb-0">
+                <div
+                  key={entry.event_id ?? i}
+                  className="relative flex gap-4 pb-6 last:pb-0"
+                >
                   <div className="relative z-10 mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--background-elevated)]">
                     <GitBranch className="h-3.5 w-3.5 text-accent" />
                   </div>
@@ -263,6 +321,11 @@ function ReplayContent() {
                         </span>
                       ) : null}
                     </div>
+                    {entry.summary ? (
+                      <p className="mt-1 text-sm text-foreground/90">
+                        {entry.summary}
+                      </p>
+                    ) : null}
                     <p className="mt-1 font-mono text-xs text-muted">
                       {String(entry.event_time ?? "")}
                     </p>
@@ -272,7 +335,14 @@ function ReplayContent() {
             </div>
           )}
         </Card>
-      )}
+      ) : null}
+
+      {!submittedId && !isFetching ? (
+        <EmptyState
+          message="No replay loaded"
+          hint="Paste a correlation_id from Decision Monitor or Signals, then load the timeline"
+        />
+      ) : null}
     </div>
   );
 }
