@@ -24,6 +24,7 @@ def test_discover_provider_configs_from_repo() -> None:
     assert "bollinger_reversion" in ids
     assert "supertrend_trend" in ids
     assert "volume_order_flow" in ids
+    assert "market_structure" in ids
 
 
 def test_load_providers_returns_instances() -> None:
@@ -37,6 +38,7 @@ def test_load_providers_returns_instances() -> None:
         "bollinger_reversion",
         "supertrend_trend",
         "volume_order_flow",
+        "market_structure",
     }
 
 

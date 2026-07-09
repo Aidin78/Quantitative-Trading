@@ -13,6 +13,7 @@ def test_provider_metadata_has_defaults_for_all_builtins() -> None:
         "bollinger_reversion",
         "supertrend_trend",
         "volume_order_flow",
+        "market_structure",
     ):
         meta = get_provider_metadata(provider_id)
         assert meta is not None

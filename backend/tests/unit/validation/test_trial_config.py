@@ -167,3 +167,28 @@ def test_build_features_config_from_trial_changes_vol_period() -> None:
     ratio = next(ind for ind in config.indicators if ind.name == "volume_ratio_20")
     assert cmf.params["period"] == 26
     assert ratio.params["period"] == 26
+
+
+def test_build_provider_overrides_includes_market_structure() -> None:
+    overrides = build_provider_overrides(
+        {
+            "ms_enabled": 1,
+            "ms_weight": 0.85,
+            "ms_pivot_bars": 7,
+            "ms_require_bos": 0,
+            "ms_require_trend": 1,
+        }
+    )
+    assert overrides["market_structure"]["enabled"] is True
+    assert overrides["market_structure"]["weight"] == 0.85
+    assert overrides["market_structure"]["pivot_bars"] == 7
+    assert overrides["market_structure"]["require_bos"] is False
+    assert overrides["market_structure"]["require_trend"] is True
+
+
+def test_build_features_config_from_trial_changes_ms_pivot_bars() -> None:
+    config, _ = build_features_config_from_trial({"ms_pivot_bars": 7})
+    bias = next(ind for ind in config.indicators if ind.name == "ms_bias")
+    bos = next(ind for ind in config.indicators if ind.name == "ms_bos")
+    assert bias.params["pivot_bars"] == 7
+    assert bos.params["pivot_bars"] == 7

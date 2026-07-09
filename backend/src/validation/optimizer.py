@@ -73,6 +73,11 @@ TRIAL_PARAM_KEYS = [
     "min_cmf",
     "min_volume_ratio",
     "vol_require_price_align",
+    "ms_pivot_bars",
+    "ms_weight",
+    "ms_enabled",
+    "ms_require_bos",
+    "ms_require_trend",
 ]
 
 
@@ -127,6 +132,11 @@ class OptimizationSpace:
     min_cmf: tuple[float, ...] = (0.05,)
     min_volume_ratio: tuple[float, ...] = (1.2,)
     vol_require_price_align: tuple[int, ...] = (1,)
+    ms_pivot_bars: tuple[int, ...] = (5,)
+    ms_weight: tuple[float, ...] = (1.0,)
+    ms_enabled: tuple[int, ...] = (0,)
+    ms_require_bos: tuple[int, ...] = (1,)
+    ms_require_trend: tuple[int, ...] = (0,)
 
     def as_dict(self) -> dict[str, tuple[Any, ...]]:
         return {key: getattr(self, key) for key in TRIAL_PARAM_KEYS}

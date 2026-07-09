@@ -57,6 +57,12 @@ indicators:
   - name: close_delta
     type: volume_flow
     params: { component: close_delta }
+  - name: ms_bias
+    type: market_structure
+    params: { pivot_bars: 5, component: bias }
+  - name: ms_bos
+    type: market_structure
+    params: { pivot_bars: 5, component: bos }
 flags:
   - name: ema_cross_bullish
     expr: "ema_12 > ema_26"

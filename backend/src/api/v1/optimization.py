@@ -85,6 +85,7 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         "bollinger_reversion",
         "supertrend_trend",
         "volume_order_flow",
+        "market_structure",
     )
     for provider_id in provider_ids:
         if provider_id == "ema_crossover":
@@ -105,9 +106,12 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         elif provider_id == "supertrend_trend":
             enabled_key = "st_enabled"
             weight_key = "st_weight"
-        else:
+        elif provider_id == "volume_order_flow":
             enabled_key = "vol_enabled"
             weight_key = "vol_weight"
+        else:
+            enabled_key = "ms_enabled"
+            weight_key = "ms_weight"
         enabled_default = (
             0
             if provider_id
@@ -116,6 +120,7 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
                 "bollinger_reversion",
                 "supertrend_trend",
                 "volume_order_flow",
+                "market_structure",
             }
             else 1
         )
@@ -166,6 +171,10 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
             provider_patch["params"]["require_price_align"] = bool(
                 int(params.get("vol_require_price_align", 1))
             )
+        if provider_id == "market_structure":
+            provider_patch["params"]["pivot_bars"] = int(params.get("ms_pivot_bars", 5))
+            provider_patch["params"]["require_bos"] = bool(int(params.get("ms_require_bos", 1)))
+            provider_patch["params"]["require_trend"] = bool(int(params.get("ms_require_trend", 0)))
         write_provider_config(provider_id, provider_patch)
 
     write_validation_settings(
@@ -187,6 +196,7 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         st_period=int(params.get("st_period", 10)),
         st_multiplier=float(params.get("st_multiplier", 3.0)),
         vol_period=int(params.get("vol_period", 20)),
+        ms_pivot_bars=int(params.get("ms_pivot_bars", 5)),
     )
 
 

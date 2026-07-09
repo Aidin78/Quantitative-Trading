@@ -1,0 +1,11 @@
+provider_id: market_structure
+version: v1
+enabled: false
+weight: 1.0
+params:
+  min_confidence: 0.6
+  sl_atr_mult: 1.5
+  tp_atr_mult: 4.0
+  pivot_bars: 5
+  require_bos: true
+  require_trend: false

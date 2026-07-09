@@ -267,6 +267,10 @@ async def test_provider_baseline_enables_all_core_providers(api_client) -> None:
         item for item in list_resp.json()["items"] if item["provider_id"] == "volume_order_flow"
     )
     assert vol["enabled"] is False
+    ms = next(
+        item for item in list_resp.json()["items"] if item["provider_id"] == "market_structure"
+    )
+    assert ms["enabled"] is False
 
 
 @pytest.mark.asyncio

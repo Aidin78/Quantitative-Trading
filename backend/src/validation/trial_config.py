@@ -126,6 +126,16 @@ def build_provider_overrides(trial: dict[str, Any]) -> dict[str, dict[str, Any]]
         "min_volume_ratio": float(trial.get("min_volume_ratio", 1.2)),
         "require_price_align": bool(int(trial.get("vol_require_price_align", 1))),
     }
+    ms_shared = {
+        "min_confidence": min_confidence,
+        "sl_atr_mult": sl_atr_mult,
+        "tp_atr_mult": tp_atr_mult,
+        "weight": float(trial.get("ms_weight", 1.0)),
+        "enabled": bool(int(trial.get("ms_enabled", 0))),
+        "pivot_bars": int(trial.get("ms_pivot_bars", 5)),
+        "require_bos": bool(int(trial.get("ms_require_bos", 1))),
+        "require_trend": bool(int(trial.get("ms_require_trend", 0))),
+    }
     return {
         "ema_crossover": ema_shared,
         "rsi_divergence": rsi_shared,
@@ -134,6 +144,7 @@ def build_provider_overrides(trial: dict[str, Any]) -> dict[str, dict[str, Any]]
         "bollinger_reversion": bb_shared,
         "supertrend_trend": st_shared,
         "volume_order_flow": vol_shared,
+        "market_structure": ms_shared,
     }
 
 
@@ -166,12 +177,14 @@ def build_features_config_from_trial(
     st_period = int(trial.get("st_period", 10))
     st_multiplier = float(trial.get("st_multiplier", 3.0))
     vol_period = int(trial.get("vol_period", 20))
+    ms_pivot_bars = int(trial.get("ms_pivot_bars", 5))
 
     macd_names = {"macd", "macd_signal", "macd_histogram", "macd_histogram_slope"}
     adx_names = {"adx_14", "plus_di_14", "minus_di_14"}
     bb_names = {"bb_upper", "bb_lower", "bb_middle"}
     st_names = {"supertrend", "supertrend_direction"}
     vol_names = {"cmf_20", "volume_ratio_20"}
+    ms_names = {"ms_bias", "ms_bos"}
     indicators: list[IndicatorDef] = []
     for indicator in base_config.indicators:
         if indicator.name == "ema_12":
@@ -206,6 +219,10 @@ def build_features_config_from_trial(
             params = dict(indicator.params)
             params["period"] = vol_period
             indicators.append(IndicatorDef(name=indicator.name, type=indicator.type, params=params))
+        elif indicator.name in ms_names:
+            params = dict(indicator.params)
+            params["pivot_bars"] = ms_pivot_bars
+            indicators.append(IndicatorDef(name=indicator.name, type=indicator.type, params=params))
         else:
             indicators.append(indicator)
 
@@ -229,6 +246,7 @@ def build_features_config_from_trial(
             "st_period": st_period,
             "st_multiplier": st_multiplier,
             "vol_period": vol_period,
+            "ms_pivot_bars": ms_pivot_bars,
         },
         sort_keys=True,
     )

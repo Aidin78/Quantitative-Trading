@@ -24,6 +24,8 @@ def compute_min_lookback_bars(config_dir=None) -> int:  # noqa: ANN001
                 needed = 2
             else:
                 needed = int(params.get("period", 20))
+        elif indicator.type == "market_structure":
+            needed = 4 * int(params.get("pivot_bars", 5)) + 1
         else:
             needed = int(params.get("period", 14))
         max_period = max(max_period, needed)

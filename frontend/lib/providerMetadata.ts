@@ -12,6 +12,7 @@ export const PROVIDER_REQUIRED_FEATURES: Record<string, string[]> = {
   bollinger_reversion: ["bb_upper", "bb_lower", "bb_middle"],
   supertrend_trend: ["supertrend", "supertrend_direction"],
   volume_order_flow: ["cmf_20", "volume_ratio_20", "close_delta"],
+  market_structure: ["ms_bias", "ms_bos"],
 };
 
 export function requiredFeaturesForProvider(providerId: string): string[] {

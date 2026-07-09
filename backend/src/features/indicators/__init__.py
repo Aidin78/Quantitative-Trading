@@ -392,3 +392,99 @@ class VolumeFlowIndicator:
             raise ValueError(f"Unknown volume_flow component: {component}")
 
         return _last_valid(series, name=name, min_periods=min_periods)
+
+
+def _find_confirmed_pivots(
+    df: pd.DataFrame,
+    *,
+    pivot_bars: int,
+    up_to_index: int,
+) -> tuple[list[tuple[int, float]], list[tuple[int, float]]]:
+    highs: list[tuple[int, float]] = []
+    lows: list[tuple[int, float]] = []
+    high_series = df["high"]
+    low_series = df["low"]
+    last_confirmable = up_to_index - pivot_bars
+    for i in range(pivot_bars, last_confirmable + 1):
+        window_start = i - pivot_bars
+        window_end = i + pivot_bars + 1
+        window_high = high_series.iloc[window_start:window_end]
+        window_low = low_series.iloc[window_start:window_end]
+        if float(high_series.iloc[i]) >= float(window_high.max()):
+            highs.append((i, float(high_series.iloc[i])))
+        if float(low_series.iloc[i]) <= float(window_low.min()):
+            lows.append((i, float(low_series.iloc[i])))
+    return highs, lows
+
+
+def _structure_bias(highs: list[tuple[int, float]], lows: list[tuple[int, float]]) -> float:
+    if len(highs) < 2 or len(lows) < 2:
+        return 0.0
+    _, h1 = highs[-2]
+    _, h2 = highs[-1]
+    _, l1 = lows[-2]
+    _, l2 = lows[-1]
+    if h2 > h1 and l2 > l1:
+        return 1.0
+    if h2 < h1 and l2 < l1:
+        return -1.0
+    return 0.0
+
+
+def _structure_bos(
+    close: float,
+    highs: list[tuple[int, float]],
+    lows: list[tuple[int, float]],
+) -> float:
+    if not highs and not lows:
+        return 0.0
+    if highs and close > highs[-1][1]:
+        return 1.0
+    if lows and close < lows[-1][1]:
+        return -1.0
+    return 0.0
+
+
+def _market_structure_components(
+    df: pd.DataFrame,
+    *,
+    pivot_bars: int,
+) -> tuple[pd.Series, pd.Series]:
+    min_bars = 4 * pivot_bars + 1
+    if len(df) < min_bars:
+        raise InsufficientDataError(
+            f"Insufficient data for market_structure: need at least {min_bars} bars"
+        )
+
+    n = len(df)
+    bias_values = [float("nan")] * n
+    bos_values = [float("nan")] * n
+    close_series = df["close"]
+
+    for t in range(min_bars - 1, n):
+        highs, lows = _find_confirmed_pivots(df, pivot_bars=pivot_bars, up_to_index=t)
+        bias_values[t] = _structure_bias(highs, lows)
+        bos_values[t] = _structure_bos(float(close_series.iloc[t]), highs, lows)
+
+    index = df.index
+    return pd.Series(bias_values, index=index), pd.Series(bos_values, index=index)
+
+
+@register_indicator("market_structure")
+class MarketStructureIndicator:
+    def compute(self, df: pd.DataFrame, params: dict[str, Any]) -> float:
+        pivot_bars = int(params.get("pivot_bars", 5))
+        component = str(params.get("component", "bias"))
+        bias, bos = _market_structure_components(df, pivot_bars=pivot_bars)
+        min_periods = 4 * pivot_bars + 1
+
+        if component == "bias":
+            series = bias
+            name = "ms_bias"
+        elif component == "bos":
+            series = bos
+            name = "ms_bos"
+        else:
+            raise ValueError(f"Unknown market_structure component: {component}")
+
+        return _last_valid(series, name=name, min_periods=min_periods)

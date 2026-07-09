@@ -369,6 +369,58 @@ PROVIDER_METADATA: dict[str, ProviderMetadata] = {
         ),
         required_features=("cmf_20", "volume_ratio_20", "close_delta"),
     ),
+    "market_structure": ProviderMetadata(
+        summary=(
+            "SMC-style market structure from swing pivots: "
+            "HH/HL vs LH/LL and break of structure."
+        ),
+        rules=(
+            "BUY when ms_bias > 0 (HH + HL bullish structure).",
+            "SELL when ms_bias < 0 (LH + LL bearish structure).",
+            "If require_bos: bias must align with ms_bos break of last swing.",
+            "Neutral/choppy structure or missing BOS → HOLD.",
+            "If require_trend: block BUY in DOWN and SELL in UP.",
+            "Confidence scales with structure and BOS strength.",
+            "Below min_confidence → HOLD.",
+        ),
+        default_config={
+            "enabled": False,
+            "weight": 1.0,
+            "params": {
+                "min_confidence": 0.6,
+                "sl_atr_mult": 1.5,
+                "tp_atr_mult": 4.0,
+                "pivot_bars": 5,
+                "require_bos": True,
+                "require_trend": False,
+            },
+        },
+        param_fields=_SHARED_STOPS
+        + (
+            ParamField(
+                key="pivot_bars",
+                label="Pivot bars",
+                type="int",
+                description="Bars on each side to confirm swing highs/lows.",
+                min=2.0,
+                max=20.0,
+                step=1.0,
+            ),
+            ParamField(
+                key="require_bos",
+                label="Require BOS",
+                type="bool",
+                description="Only emit signals when break of structure confirms bias.",
+            ),
+            ParamField(
+                key="require_trend",
+                label="Require trend alignment",
+                type="bool",
+                description="Only BUY in UP trend and SELL in DOWN trend.",
+            ),
+        ),
+        required_features=("ms_bias", "ms_bos"),
+    ),
 }
 
 

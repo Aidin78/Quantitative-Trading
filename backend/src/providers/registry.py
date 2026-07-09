@@ -10,6 +10,7 @@ from src.providers.bollinger_reversion import BollingerReversionProvider
 from src.providers.config import load_provider_yaml
 from src.providers.ema_crossover import EmaCrossoverProvider
 from src.providers.macd_momentum import MacdMomentumProvider
+from src.providers.market_structure import MarketStructureProvider
 from src.providers.rsi_divergence import RsiDivergenceProvider
 from src.providers.supertrend_trend import SuperTrendTrendProvider
 from src.providers.volume_order_flow import VolumeOrderFlowProvider
@@ -22,6 +23,7 @@ _PROVIDER_CLASSES: dict[str, type[BaseSignalProvider]] = {
     "bollinger_reversion": BollingerReversionProvider,
     "supertrend_trend": SuperTrendTrendProvider,
     "volume_order_flow": VolumeOrderFlowProvider,
+    "market_structure": MarketStructureProvider,
 }
 
 
