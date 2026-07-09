@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -34,7 +36,8 @@ class MarketDataDownloadRequest(BaseModel):
 
 @router.get("/cache")
 async def market_data_cache() -> dict:
-    return {"items": list_cache_entries()}
+    entries = await asyncio.to_thread(list_cache_entries)
+    return {"items": entries}
 
 
 @router.post("/download")

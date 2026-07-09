@@ -34,9 +34,17 @@ export default function MarketDataPage() {
   const [force, setForce] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
 
-  const { data: cache, isLoading } = useQuery({
+  const {
+    data: cache,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useQuery({
     queryKey: ["market-data-cache"],
     queryFn: () => api.marketDataCache(),
+    retry: 1,
   });
 
   const download = useMutation({
@@ -210,11 +218,6 @@ export default function MarketDataPage() {
               source, the same cache file is reused — no repeat download unless
               you force refresh or change the date range.
             </p>
-            <p>
-              For quick testing without Binance, keep using{" "}
-              <strong className="text-foreground">Sample CSV</strong> on those
-              pages.
-            </p>
           </div>
         </Card>
       </div>
@@ -223,6 +226,30 @@ export default function MarketDataPage() {
         {isLoading ? (
           <div className="flex justify-center py-10">
             <Loader2 className="h-6 w-6 animate-spin text-accent" />
+          </div>
+        ) : isError ? (
+          <div className="space-y-3 py-6 text-center">
+            <p className="text-sm text-danger">
+              {error instanceof Error
+                ? error.message
+                : "Failed to load cache list"}
+            </p>
+            <p className="text-xs text-muted">
+              Make sure the backend is running on port 8000.
+            </p>
+            <button
+              type="button"
+              className="btn-secondary mx-auto text-xs"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3" />
+              )}
+              Retry
+            </button>
           </div>
         ) : !cache?.items.length ? (
           <EmptyState

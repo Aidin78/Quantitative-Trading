@@ -24,7 +24,6 @@ export default function ValidationPage() {
     () => dateRangeForPreset("30d").start,
   );
   const [endDate, setEndDate] = useState(() => dateRangeForPreset("30d").end);
-  const [source, setSource] = useState<"exchange" | "csv">("exchange");
   const [initialCapital, setInitialCapital] = useState(10000);
   const [wfWindows, setWfWindows] = useState(3);
   const [wfTrainRatio, setWfTrainRatio] = useState(0.7);
@@ -50,7 +49,7 @@ export default function ValidationPage() {
         symbol,
         start_date: startDate,
         end_date: endDate || undefined,
-        source,
+        source: "exchange",
         initial_capital: initialCapital,
         timeframe: "1h",
       }),
@@ -63,7 +62,7 @@ export default function ValidationPage() {
         symbol,
         start_date: startDate,
         end_date: endDate || undefined,
-        source,
+        source: "exchange",
         initial_capital: initialCapital,
         timeframe: "1h",
         windows: wfWindows,
@@ -134,28 +133,6 @@ export default function ValidationPage() {
           subtitle="Historical validation with live exchange data"
         >
           <div className="space-y-4">
-            <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                Data Source
-              </label>
-              <select
-                className="input-field mt-2"
-                value={source}
-                onChange={(e) =>
-                  setSource(e.target.value as "exchange" | "csv")
-                }
-              >
-                <option value="exchange">
-                  Exchange (Binance, free public data)
-                </option>
-                <option value="csv">Sample CSV (bundled fixture)</option>
-              </select>
-              <p className="mt-2 text-xs text-muted">
-                {source === "exchange"
-                  ? "Downloads OHLCV from Binance public API. First run caches data on disk."
-                  : "Uses the bundled sample CSV (2026-01-01 to 2026-01-05)."}
-              </p>
-            </div>
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-muted">
                 Symbol

@@ -15,16 +15,14 @@ function fmtParams(params: Record<string, number>) {
     .join(" · ");
 }
 
-const SAMPLE_CSV_START = "2026-01-01";
-const SAMPLE_CSV_END = "2026-01-05";
+const DEFAULT_RANGE = dateRangeForPreset("30d");
 
 export default function OptimizationPage() {
   const queryClient = useQueryClient();
   const [sweepId, setSweepId] = useState<string | null>(null);
   const [symbol, setSymbol] = useState("BTC/USDT");
-  const [startDate, setStartDate] = useState(SAMPLE_CSV_START);
-  const [endDate, setEndDate] = useState(SAMPLE_CSV_END);
-  const [source, setSource] = useState<"exchange" | "csv">("csv");
+  const [startDate, setStartDate] = useState(DEFAULT_RANGE.start);
+  const [endDate, setEndDate] = useState(DEFAULT_RANGE.end);
   const [initialCapital, setInitialCapital] = useState(10000);
   const [trainRatio, setTrainRatio] = useState(0.7);
   const [maxTrials, setMaxTrials] = useState(12);
@@ -37,7 +35,7 @@ export default function OptimizationPage() {
         timeframe: "1h",
         start_date: startDate,
         end_date: endDate,
-        source,
+        source: "exchange",
         initial_capital: initialCapital,
         train_ratio: trainRatio,
         max_trials: maxTrials,
@@ -107,35 +105,6 @@ export default function OptimizationPage() {
           subtitle="Train/test split optimization"
         >
           <div className="space-y-4">
-            <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                Data Source
-              </label>
-              <select
-                className="input-field mt-2"
-                value={source}
-                onChange={(e) => {
-                  const next = e.target.value as "exchange" | "csv";
-                  setSource(next);
-                  if (next === "csv") {
-                    setStartDate(SAMPLE_CSV_START);
-                    setEndDate(SAMPLE_CSV_END);
-                  } else {
-                    const range = dateRangeForPreset("30d");
-                    setStartDate(range.start);
-                    setEndDate(range.end);
-                  }
-                }}
-              >
-                <option value="csv">Sample CSV (fast)</option>
-                <option value="exchange">Exchange (Binance)</option>
-              </select>
-              <p className="mt-2 text-xs text-muted">
-                {source === "csv"
-                  ? `Sample CSV covers ${SAMPLE_CSV_START} → ${SAMPLE_CSV_END}.`
-                  : "Uses cached Binance OHLCV. Download data on Market Data first for faster runs."}
-              </p>
-            </div>
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-muted">
                 Symbol

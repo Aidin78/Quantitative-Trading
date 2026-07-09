@@ -3,6 +3,6 @@ version: v1
 enabled: true
 weight: 1.0
 params:
-  min_confidence: 0.65
-  sl_atr_mult: 1.5
-  tp_atr_mult: 3.0
+  min_confidence: 0.6
+  sl_atr_mult: 2.0
+  tp_atr_mult: 4.0

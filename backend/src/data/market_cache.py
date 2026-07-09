@@ -5,8 +5,6 @@ import calendar
 from datetime import UTC, datetime
 from pathlib import Path
 
-import pandas as pd
-
 from src.core.exceptions import DataProviderError
 from src.core.settings import get_settings
 from src.data.live_provider import LiveProvider
@@ -78,18 +76,43 @@ def _download_to_csv(
 
 
 def csv_summary(path: Path) -> dict:
-    df = pd.read_csv(path)
-    rows = len(df)
-    first_ts = None
-    last_ts = None
-    if rows and "timestamp" in df.columns:
-        first_ts = str(df["timestamp"].iloc[0])
-        last_ts = str(df["timestamp"].iloc[-1])
+    size_bytes = path.stat().st_size
+    rows = 0
+    first_ts: str | None = None
+    last_ts: str | None = None
+    last_line: str | None = None
+    try:
+        with path.open(encoding="utf-8") as handle:
+            header = handle.readline()
+            if not header:
+                return {
+                    "rows": 0,
+                    "first_timestamp": None,
+                    "last_timestamp": None,
+                    "size_bytes": size_bytes,
+                }
+            for line in handle:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                if rows == 0:
+                    first_ts = stripped.split(",", 1)[0]
+                rows += 1
+                last_line = stripped
+    except OSError:
+        return {
+            "rows": 0,
+            "first_timestamp": None,
+            "last_timestamp": None,
+            "size_bytes": size_bytes,
+        }
+    if last_line is not None:
+        last_ts = last_line.split(",", 1)[0]
     return {
         "rows": rows,
         "first_timestamp": first_ts,
         "last_timestamp": last_ts,
-        "size_bytes": path.stat().st_size,
+        "size_bytes": size_bytes,
     }
 
 
