@@ -126,9 +126,10 @@ export const api = {
     }),
   optimization: (id: string) =>
     apiFetch<OptimizationSweep>(`/api/v1/optimization/${id}`),
-  applyOptimization: (id: string) =>
+  applyOptimization: (id: string, body?: { use_fallback?: boolean }) =>
     apiFetch<OptimizationApplyResponse>(`/api/v1/optimization/${id}/apply`, {
       method: "POST",
+      body: JSON.stringify(body ?? {}),
     }),
   replay: (
     correlationId: string,
@@ -155,6 +156,18 @@ export const api = {
     apiFetch<Experiment>("/api/v1/experiments", {
       method: "POST",
       body: JSON.stringify(body),
+    }),
+  deleteExperiment: (id: string) =>
+    apiFetch<{ deleted: string }>(
+      `/api/v1/experiments/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+      },
+    ),
+  deleteExperiments: (experiment_ids: string[]) =>
+    apiFetch<ExperimentBulkDeleteResult>("/api/v1/experiments/bulk-delete", {
+      method: "POST",
+      body: JSON.stringify({ experiment_ids }),
     }),
   liveStatus: () => apiFetch<LiveStatus>("/api/v1/live/status"),
   startLive: (body: LiveStartRequest) =>
@@ -448,6 +461,7 @@ export type OptimizationApplyResponse = {
   sweep_id: string;
   revision_id: string;
   applied_params: Record<string, number | string>;
+  applied_from?: "best" | "fallback";
   best?: OptimizationTrial | null;
   holdout_start?: string | null;
   holdout_end?: string | null;
@@ -524,6 +538,13 @@ export type ExperimentCreateRequest = {
   mode?: string;
   description?: string;
   hypothesis?: string;
+};
+
+export type ExperimentBulkDeleteResult = {
+  deleted: string[];
+  not_found: string[];
+  blocked: string[];
+  deleted_count: number;
 };
 
 export type TimelineEntry = {

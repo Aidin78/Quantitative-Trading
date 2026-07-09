@@ -668,6 +668,11 @@ async def run_optimization(
         trial.test_score = test_score
         trial.test_outcome = test_outcome
         trial.stability = compute_stability(test_outcome)
+        trial.composite_score = composite_score(
+            trial,
+            min_trades=min_trades,
+            min_return_pct=min_return_pct,
+        )
         step += 1
         await _emit(
             on_progress,

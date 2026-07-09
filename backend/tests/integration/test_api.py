@@ -311,7 +311,11 @@ async def test_optimization_api_apply(api_client, auth_headers, monkeypatch) -> 
             train_score=10.0,
             train_outcome={"total_trades": 1},
             test_score=12.0,
-            test_outcome={"monthly_breakdown": [{"pnl": 1}]},
+            test_outcome={
+                "monthly_breakdown": [{"pnl": 1}],
+                "total_trades": 30,
+                "return_pct": 5.0,
+            },
             stability=1.0,
         )
         return OptimizationResult(
@@ -324,6 +328,7 @@ async def test_optimization_api_apply(api_client, auth_headers, monkeypatch) -> 
             test_end=datetime(2026, 1, 5, tzinfo=UTC),
             trials=[trial],
             best=trial,
+            best_valid=True,
         )
 
     monkeypatch.setattr("src.api.v1.optimization.run_optimization", fast_run)
@@ -338,6 +343,10 @@ async def test_optimization_api_apply(api_client, auth_headers, monkeypatch) -> 
     monkeypatch.setattr(
         "src.api.v1.optimization.write_validation_settings",
         lambda patch: patch,
+    )
+    monkeypatch.setattr(
+        "src.api.v1.optimization.write_features_config",
+        lambda **kwargs: kwargs,
     )
 
     client, _ = api_client
@@ -373,3 +382,48 @@ async def test_optimization_api_apply(api_client, auth_headers, monkeypatch) -> 
     body = apply_resp.json()
     assert body["revision_id"].startswith("rev_")
     assert body["applied_params"]["min_confidence"] == 0.65
+
+
+@pytest.mark.asyncio
+async def test_experiments_delete_and_bulk_delete(api_client, auth_headers) -> None:
+    client, factory = api_client
+
+    created_ids: list[str] = []
+    for name in ("exp-delete-a", "exp-delete-b"):
+        resp = await client.post(
+            "/api/v1/experiments",
+            headers=auth_headers,
+            json={"name": name, "mode": "validation"},
+        )
+        assert resp.status_code == 200
+        created_ids.append(resp.json()["experiment_id"])
+
+    delete_one = await client.delete(
+        f"/api/v1/experiments/{created_ids[0]}",
+        headers=auth_headers,
+    )
+    assert delete_one.status_code == 200
+    assert delete_one.json()["deleted"] == created_ids[0]
+
+    bulk = await client.post(
+        "/api/v1/experiments/bulk-delete",
+        headers=auth_headers,
+        json={"experiment_ids": [created_ids[1], "exp_does_not_exist"]},
+    )
+    assert bulk.status_code == 200
+    body = bulk.json()
+    assert body["deleted"] == [created_ids[1]]
+    assert body["not_found"] == ["exp_does_not_exist"]
+    assert body["deleted_count"] == 1
+
+    list_resp = await client.get("/api/v1/experiments", headers=auth_headers)
+    assert list_resp.status_code == 200
+    remaining = {item["experiment_id"] for item in list_resp.json()["items"]}
+    assert created_ids[0] not in remaining
+    assert created_ids[1] not in remaining
+
+    async with factory() as session:
+        from src.governance.experiment_store import get_experiment
+
+        assert await get_experiment(session, created_ids[0]) is None
+        assert await get_experiment(session, created_ids[1]) is None

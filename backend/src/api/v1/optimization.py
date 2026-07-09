@@ -51,6 +51,59 @@ class OptimizationRunRequest(BaseModel):
     local_refine: bool = True
 
 
+class OptimizationApplyRequest(BaseModel):
+    use_fallback: bool = False
+
+
+def _apply_trial_params(params: dict[str, Any]) -> None:
+    session_preset = str(params.get("session_preset", "eu_us"))
+    allowed_sessions = list(SESSION_PRESETS.get(session_preset, SESSION_PRESETS["eu_us"]))
+    engine_patch = {
+        "aggregation": {
+            "min_agreeing_providers": int(params["min_agreeing_providers"]),
+        },
+        "filter": {
+            "min_atr_pct": float(params.get("min_atr_pct", 0.3)),
+            "allowed_sessions": allowed_sessions,
+        },
+        "risk": {
+            "min_confidence": float(params["min_confidence"]),
+            "min_risk_reward": float(params["min_risk_reward"]),
+            "max_signals_per_day": int(params.get("max_signals_per_day", 10)),
+        },
+    }
+    write_engine_config(engine_patch)
+
+    for provider_id in ("ema_crossover", "rsi_divergence"):
+        enabled_key = "ema_enabled" if provider_id == "ema_crossover" else "rsi_enabled"
+        weight_key = "ema_weight" if provider_id == "ema_crossover" else "rsi_weight"
+        provider_patch: dict[str, Any] = {
+            "enabled": bool(int(params.get(enabled_key, 1))),
+            "weight": float(params.get(weight_key, 1.0)),
+            "params": {
+                "min_confidence": float(params["min_confidence"]),
+                "sl_atr_mult": float(params["sl_atr_mult"]),
+                "tp_atr_mult": float(params["tp_atr_mult"]),
+            },
+        }
+        if provider_id == "rsi_divergence":
+            provider_patch["params"]["oversold"] = float(params.get("oversold", 30.0))
+            provider_patch["params"]["overbought"] = float(params.get("overbought", 70.0))
+        write_provider_config(provider_id, provider_patch)
+
+    write_validation_settings(
+        {
+            "max_bars_in_trade": int(params["max_bars_in_trade"]),
+            "risk_pct_per_trade": float(params.get("risk_pct_per_trade", 1.0)),
+        }
+    )
+    write_features_config(
+        ema_fast=int(params.get("ema_fast", 12)),
+        ema_slow=int(params.get("ema_slow", 26)),
+        rsi_period=int(params.get("rsi_period", 14)),
+    )
+
+
 async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
     from src.core.settings import load_app_yaml_config
 
@@ -149,74 +202,50 @@ async def get_optimization(sweep_id: str) -> dict:
 
 
 @router.post("/{sweep_id}/apply")
-async def apply_optimization_best(sweep_id: str, db: AsyncSession = Depends(get_db)) -> dict:
+async def apply_optimization_best(
+    sweep_id: str,
+    body: OptimizationApplyRequest = OptimizationApplyRequest(),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
     sweep = optimization_sweeps.get(sweep_id)
     if sweep is None or sweep.result is None:
         raise HTTPException(status_code=404, detail="No completed optimization sweep found")
-    if not sweep.result.best_valid or sweep.result.best is None:
+
+    use_fallback = body.use_fallback
+    applied_from = "best"
+    if sweep.result.best_valid and sweep.result.best is not None:
+        params = sweep.result.best.params
+    elif use_fallback and sweep.result.fallback_trial is not None:
+        params = sweep.result.fallback_trial.params
+        applied_from = "fallback"
+    else:
         raise HTTPException(
             status_code=400,
             detail=sweep.result.selection_message
-            or "No valid best configuration met the minimum trade guardrails",
+            or (
+                "No valid best configuration. "
+                "Pass use_fallback=true to apply the closest candidate."
+            ),
         )
 
-    params = sweep.result.best.params
-    session_preset = str(params.get("session_preset", "eu_us"))
-    allowed_sessions = list(SESSION_PRESETS.get(session_preset, SESSION_PRESETS["eu_us"]))
-    engine_patch = {
-        "aggregation": {
-            "min_agreeing_providers": int(params["min_agreeing_providers"]),
-        },
-        "filter": {
-            "min_atr_pct": float(params.get("min_atr_pct", 0.3)),
-            "allowed_sessions": allowed_sessions,
-        },
-        "risk": {
-            "min_confidence": float(params["min_confidence"]),
-            "min_risk_reward": float(params["min_risk_reward"]),
-            "max_signals_per_day": int(params.get("max_signals_per_day", 10)),
-        },
-    }
-    write_engine_config(engine_patch)
-
-    for provider_id in ("ema_crossover", "rsi_divergence"):
-        enabled_key = "ema_enabled" if provider_id == "ema_crossover" else "rsi_enabled"
-        weight_key = "ema_weight" if provider_id == "ema_crossover" else "rsi_weight"
-        provider_patch: dict[str, Any] = {
-            "enabled": bool(int(params.get(enabled_key, 1))),
-            "weight": float(params.get(weight_key, 1.0)),
-            "params": {
-                "min_confidence": float(params["min_confidence"]),
-                "sl_atr_mult": float(params["sl_atr_mult"]),
-                "tp_atr_mult": float(params["tp_atr_mult"]),
-            },
-        }
-        if provider_id == "rsi_divergence":
-            provider_patch["params"]["oversold"] = float(params.get("oversold", 30.0))
-            provider_patch["params"]["overbought"] = float(params.get("overbought", 70.0))
-        write_provider_config(provider_id, provider_patch)
-
-    write_validation_settings(
-        {
-            "max_bars_in_trade": int(params["max_bars_in_trade"]),
-            "risk_pct_per_trade": float(params.get("risk_pct_per_trade", 1.0)),
-        }
-    )
-    write_features_config(
-        ema_fast=int(params.get("ema_fast", 12)),
-        ema_slow=int(params.get("ema_slow", 26)),
-        rsi_period=int(params.get("rsi_period", 14)),
-    )
+    _apply_trial_params(params)
 
     revision = compute_config_revision(label=f"optimizer_apply_{sweep_id}")
     await save_revision(db, revision)
     await db.commit()
 
+    trial_payload = (
+        result_to_dict(sweep.result)["best"]
+        if applied_from == "best"
+        else result_to_dict(sweep.result).get("fallback_trial")
+    )
+
     return {
         "sweep_id": sweep_id,
         "revision_id": revision.revision_id,
         "applied_params": params,
-        "best": result_to_dict(sweep.result)["best"],
+        "applied_from": applied_from,
+        "best": trial_payload,
         "holdout_start": sweep.result.holdout_start.isoformat()
         if sweep.result.holdout_start
         else None,

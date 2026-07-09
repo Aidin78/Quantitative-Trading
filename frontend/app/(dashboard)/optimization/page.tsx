@@ -6,7 +6,9 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { DateRangeFields } from "@/components/ui/DateRangeFields";
+import { FieldLabel } from "@/components/ui/FieldLabel";
 import { api } from "@/lib/api";
+import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 import { dateRangeForPreset } from "@/lib/dateRange";
 
 function fmtParams(params: Record<string, number | string>) {
@@ -87,7 +89,8 @@ export default function OptimizationPage() {
     sweep?.status === "pending" || sweep?.status === "running";
 
   const apply = useMutation({
-    mutationFn: () => api.applyOptimization(sweepId!),
+    mutationFn: (useFallback: boolean) =>
+      api.applyOptimization(sweepId!, { use_fallback: useFallback }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["optimization", sweepId] });
     },
@@ -141,9 +144,7 @@ export default function OptimizationPage() {
         >
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                Symbol
-              </label>
+              <FieldLabel label="Symbol" tooltip={FORM_TOOLTIPS.symbol} />
               <input
                 className="input-field mt-2"
                 value={symbol}
@@ -159,9 +160,10 @@ export default function OptimizationPage() {
             />
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Train Ratio
-                </label>
+                <FieldLabel
+                  label="Train Ratio"
+                  tooltip={FORM_TOOLTIPS.trainRatio}
+                />
                 <input
                   type="number"
                   min={0.1}
@@ -173,9 +175,10 @@ export default function OptimizationPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Initial Capital
-                </label>
+                <FieldLabel
+                  label="Initial Capital"
+                  tooltip={FORM_TOOLTIPS.initialCapital}
+                />
                 <input
                   type="number"
                   className="input-field mt-2"
@@ -186,9 +189,10 @@ export default function OptimizationPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Max Trials
-                </label>
+                <FieldLabel
+                  label="Max Trials"
+                  tooltip={FORM_TOOLTIPS.maxTrials}
+                />
                 <input
                   type="number"
                   min={1}
@@ -199,9 +203,7 @@ export default function OptimizationPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Top K (test)
-                </label>
+                <FieldLabel label="Top K (test)" tooltip={FORM_TOOLTIPS.topK} />
                 <input
                   type="number"
                   min={1}
@@ -214,9 +216,10 @@ export default function OptimizationPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Min Trades
-                </label>
+                <FieldLabel
+                  label="Min Trades"
+                  tooltip={FORM_TOOLTIPS.minTrades}
+                />
                 <input
                   type="number"
                   min={0}
@@ -226,9 +229,10 @@ export default function OptimizationPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  WF Windows
-                </label>
+                <FieldLabel
+                  label="WF Windows"
+                  tooltip={FORM_TOOLTIPS.walkForwardWindows}
+                />
                 <input
                   type="number"
                   min={1}
@@ -241,9 +245,10 @@ export default function OptimizationPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Holdout Ratio
-                </label>
+                <FieldLabel
+                  label="Holdout Ratio"
+                  tooltip={FORM_TOOLTIPS.holdoutRatio}
+                />
                 <input
                   type="number"
                   min={0}
@@ -413,14 +418,21 @@ export default function OptimizationPage() {
                 Closest candidate by test trades (not recommended to apply):
               </p>
             ) : null}
+            <p className="rounded-lg border border-[var(--border)] bg-[var(--background-elevated)]/50 p-3 text-xs text-muted">
+              Return/Trades without a test score use train-period values.
+              Composite shows &quot;ineligible&quot; when test trades are below
+              min trades.
+            </p>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-lg border border-[var(--border)] p-3">
                 <p className="text-xs text-muted">Composite</p>
                 <p className="text-lg font-semibold">
                   {displayTrial.composite_score != null &&
-                  displayTrial.composite_score > -1e9
+                  Number.isFinite(displayTrial.composite_score)
                     ? displayTrial.composite_score.toFixed(1)
-                    : "—"}
+                    : displayTrial.test_score != null
+                      ? "ineligible"
+                      : "—"}
                 </p>
               </div>
               <div className="rounded-lg border border-[var(--border)] p-3">
@@ -434,7 +446,9 @@ export default function OptimizationPage() {
                 <p className="text-lg font-semibold">
                   {displayTrial.test_return_pct != null
                     ? `${displayTrial.test_return_pct.toFixed(2)}%`
-                    : "—"}
+                    : displayTrial.train_return_pct != null
+                      ? `${displayTrial.train_return_pct.toFixed(2)}% (train)`
+                      : "—"}
                 </p>
               </div>
               <div className="rounded-lg border border-[var(--border)] p-3">
@@ -472,11 +486,9 @@ export default function OptimizationPage() {
             ) : null}
             <button
               type="button"
-              onClick={() => apply.mutate()}
+              onClick={() => apply.mutate(!sweep.best_valid)}
               disabled={
-                apply.isPending ||
-                sweep.status !== "completed" ||
-                !sweep.best_valid
+                apply.isPending || sweep.status !== "completed" || !displayTrial
               }
               className="btn-primary"
             >
@@ -487,11 +499,12 @@ export default function OptimizationPage() {
               )}
               {sweep.best_valid
                 ? "Apply best config"
-                : "Apply disabled — no valid best"}
+                : "Apply candidate config"}
             </button>
             {apply.data?.revision_id ? (
               <p className="text-sm text-[var(--success)]">
-                Applied — revision {apply.data.revision_id}
+                Applied ({apply.data.applied_from ?? "best"}) — revision{" "}
+                {apply.data.revision_id}
               </p>
             ) : null}
             {apply.error ? (
@@ -506,7 +519,10 @@ export default function OptimizationPage() {
       ) : null}
 
       {sweep?.trials?.length ? (
-        <Card title="Trials" subtitle="All parameter combinations evaluated">
+        <Card
+          title="Trials"
+          subtitle="Top-K rows include test metrics; others show train-only values"
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -528,46 +544,55 @@ export default function OptimizationPage() {
                       (b.composite_score ?? b.test_score ?? b.train_score) -
                       (a.composite_score ?? a.test_score ?? a.train_score),
                   )
-                  .map((trial) => (
-                    <tr
-                      key={trial.trial_id}
-                      className={`border-b border-[var(--border)]/50 ${
-                        topTrialIds.has(trial.trial_id)
-                          ? "bg-[var(--accent-dim)]/30"
-                          : ""
-                      }`}
-                    >
-                      <td className="py-2 pr-3 font-mono text-xs">
-                        {fmtParams(trial.params)}
-                      </td>
-                      <td className="py-2 pr-3">
-                        {trial.train_score.toFixed(1)}
-                      </td>
-                      <td className="py-2 pr-3">
-                        {trial.test_score != null
-                          ? trial.test_score.toFixed(1)
-                          : "—"}
-                      </td>
-                      <td className="py-2 pr-3">
-                        {trial.test_return_pct != null
-                          ? `${trial.test_return_pct.toFixed(1)}%`
-                          : "—"}
-                      </td>
-                      <td className="py-2 pr-3">
-                        {trial.test_total_trades ?? "—"}
-                      </td>
-                      <td className="py-2 pr-3">
-                        {trial.composite_score != null
-                          ? trial.composite_score.toFixed(1)
-                          : "—"}
-                      </td>
-                      <td className="py-2">
-                        {trial.stability != null
-                          ? `${(trial.stability * 100).toFixed(0)}%`
-                          : "—"}
-                      </td>
-                    </tr>
-                  ))}
+                  .map((trial) => {
+                    const hasTest = trial.test_score != null;
+                    const returnLabel =
+                      trial.test_return_pct != null
+                        ? `${trial.test_return_pct.toFixed(1)}%`
+                        : trial.train_return_pct != null
+                          ? `${trial.train_return_pct.toFixed(1)}% (train)`
+                          : "—";
+                    const compositeLabel =
+                      trial.composite_score != null
+                        ? trial.composite_score.toFixed(1)
+                        : hasTest
+                          ? "ineligible"
+                          : "—";
+                    return (
+                      <tr
+                        key={trial.trial_id}
+                        className={`border-b border-[var(--border)]/50 ${
+                          topTrialIds.has(trial.trial_id)
+                            ? "bg-[var(--accent-dim)]/30"
+                            : ""
+                        }`}
+                      >
+                        <td className="py-2 pr-3 font-mono text-xs">
+                          {fmtParams(trial.params)}
+                        </td>
+                        <td className="py-2 pr-3">
+                          {trial.train_score.toFixed(1)}
+                        </td>
+                        <td className="py-2 pr-3">
+                          {hasTest ? trial.test_score!.toFixed(1) : "—"}
+                        </td>
+                        <td className="py-2 pr-3 text-xs">{returnLabel}</td>
+                        <td className="py-2 pr-3">
+                          {hasTest
+                            ? (trial.test_total_trades ?? "—")
+                            : (trial.train_total_trades ?? "—")}
+                        </td>
+                        <td className="py-2 pr-3 text-xs text-muted">
+                          {compositeLabel}
+                        </td>
+                        <td className="py-2">
+                          {trial.stability != null
+                            ? `${(trial.stability * 100).toFixed(0)}%`
+                            : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>

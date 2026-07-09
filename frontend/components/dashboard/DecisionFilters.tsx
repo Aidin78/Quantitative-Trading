@@ -1,6 +1,8 @@
 "use client";
 
+import { FieldLabel } from "@/components/ui/FieldLabel";
 import type { DecisionFilters as Filters } from "@/lib/api";
+import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 
 type Props = {
   filters: Filters;
@@ -12,9 +14,7 @@ export function DecisionFiltersBar({ filters, providers, onChange }: Props) {
   return (
     <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <div>
-        <label className="text-xs font-medium uppercase tracking-wider text-muted">
-          Result
-        </label>
+        <FieldLabel label="Result" tooltip={FORM_TOOLTIPS.filterResult} />
         <select
           className="input-field mt-2"
           value={filters.result ?? ""}
@@ -28,9 +28,7 @@ export function DecisionFiltersBar({ filters, providers, onChange }: Props) {
         </select>
       </div>
       <div>
-        <label className="text-xs font-medium uppercase tracking-wider text-muted">
-          Side
-        </label>
+        <FieldLabel label="Side" tooltip={FORM_TOOLTIPS.filterSide} />
         <select
           className="input-field mt-2"
           value={filters.side ?? ""}
@@ -45,9 +43,10 @@ export function DecisionFiltersBar({ filters, providers, onChange }: Props) {
         </select>
       </div>
       <div>
-        <label className="text-xs font-medium uppercase tracking-wider text-muted">
-          Rejection reason
-        </label>
+        <FieldLabel
+          label="Rejection reason"
+          tooltip={FORM_TOOLTIPS.filterRejectionReason}
+        />
         <input
           className="input-field mt-2"
           placeholder="e.g. low_confidence"
@@ -61,9 +60,7 @@ export function DecisionFiltersBar({ filters, providers, onChange }: Props) {
         />
       </div>
       <div>
-        <label className="text-xs font-medium uppercase tracking-wider text-muted">
-          Provider
-        </label>
+        <FieldLabel label="Provider" tooltip={FORM_TOOLTIPS.filterProvider} />
         <select
           className="input-field mt-2"
           value={filters.provider ?? ""}

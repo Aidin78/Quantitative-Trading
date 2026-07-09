@@ -7,7 +7,9 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { ValidationMetricsPanel } from "@/components/validation/ValidationMetricsPanel";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { DateRangeFields } from "@/components/ui/DateRangeFields";
+import { FieldLabel } from "@/components/ui/FieldLabel";
 import { api } from "@/lib/api";
+import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 import { dateRangeForPreset } from "@/lib/dateRange";
 
 const PHASE_LABELS: Record<string, string> = {
@@ -134,9 +136,7 @@ export default function ValidationPage() {
         >
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                Symbol
-              </label>
+              <FieldLabel label="Symbol" tooltip={FORM_TOOLTIPS.symbol} />
               <input
                 className="input-field mt-2"
                 value={symbol}
@@ -150,9 +150,10 @@ export default function ValidationPage() {
               onEndDateChange={setEndDate}
             />
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                Initial Capital
-              </label>
+              <FieldLabel
+                label="Initial Capital"
+                tooltip={FORM_TOOLTIPS.initialCapital}
+              />
               <input
                 type="number"
                 min={100}
@@ -359,9 +360,7 @@ export default function ValidationPage() {
       <Card title="Compare Runs" subtitle="Side-by-side metrics for two runs">
         <div className="mb-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-muted">
-              Run A
-            </label>
+            <FieldLabel label="Run A" tooltip={FORM_TOOLTIPS.compareRunA} />
             <select
               className="input-field mt-2"
               value={compareRunA}
@@ -377,9 +376,7 @@ export default function ValidationPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-muted">
-              Run B
-            </label>
+            <FieldLabel label="Run B" tooltip={FORM_TOOLTIPS.compareRunB} />
             <select
               className="input-field mt-2"
               value={compareRunB}
@@ -465,9 +462,7 @@ export default function ValidationPage() {
       <Card title="Walk-Forward" subtitle="Rolling window validation">
         <div className="mb-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-muted">
-              Windows
-            </label>
+            <FieldLabel label="Windows" tooltip={FORM_TOOLTIPS.wfWindows} />
             <input
               type="number"
               min={2}
@@ -478,9 +473,10 @@ export default function ValidationPage() {
             />
           </div>
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-muted">
-              Train Ratio
-            </label>
+            <FieldLabel
+              label="Train Ratio"
+              tooltip={FORM_TOOLTIPS.wfTrainRatio}
+            />
             <input
               type="number"
               min={0.1}

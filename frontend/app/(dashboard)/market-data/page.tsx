@@ -6,7 +6,9 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { DateRangeFields } from "@/components/ui/DateRangeFields";
+import { CheckboxField, FieldLabel } from "@/components/ui/FieldLabel";
 import { api } from "@/lib/api";
+import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 import { dateRangeForPreset } from "@/lib/dateRange";
 
 const MONTH_PRESETS = [
@@ -82,9 +84,7 @@ export default function MarketDataPage() {
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Symbol
-                </label>
+                <FieldLabel label="Symbol" tooltip={FORM_TOOLTIPS.symbol} />
                 <input
                   className="input-field mt-2"
                   value={symbol}
@@ -92,9 +92,10 @@ export default function MarketDataPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Timeframe
-                </label>
+                <FieldLabel
+                  label="Timeframe"
+                  tooltip={FORM_TOOLTIPS.timeframe}
+                />
                 <select
                   className="input-field mt-2"
                   value={timeframe}
@@ -107,9 +108,10 @@ export default function MarketDataPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                Range Mode
-              </label>
+              <FieldLabel
+                label="Range Mode"
+                tooltip={FORM_TOOLTIPS.rangeMode}
+              />
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -130,9 +132,7 @@ export default function MarketDataPage() {
 
             {!useCustomRange ? (
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Period
-                </label>
+                <FieldLabel label="Period" tooltip={FORM_TOOLTIPS.period} />
                 <div className="mt-2 flex flex-wrap gap-2">
                   {MONTH_PRESETS.map((preset) => (
                     <button
@@ -160,14 +160,12 @@ export default function MarketDataPage() {
               />
             )}
 
-            <label className="flex items-center gap-2 text-sm text-muted">
-              <input
-                type="checkbox"
-                checked={force}
-                onChange={(e) => setForce(e.target.checked)}
-              />
-              Force re-download (ignore existing cache file)
-            </label>
+            <CheckboxField
+              label="Force re-download (ignore existing cache file)"
+              tooltip={FORM_TOOLTIPS.forceRedownload}
+              checked={force}
+              onChange={setForce}
+            />
 
             {download.error ? (
               <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger">

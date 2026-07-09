@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -49,25 +50,26 @@ def new_sweep_id() -> str:
 
 
 def trial_to_dict(trial: TrialResult) -> dict[str, Any]:
+    composite = trial.composite_score
+    composite_export = composite if composite is not None and math.isfinite(composite) else None
+    test_outcome = trial.test_outcome or {}
+    train_outcome = trial.train_outcome or {}
     return {
         "trial_id": trial.trial_id,
         "params": trial.params,
         "train_score": trial.train_score,
         "test_score": trial.test_score,
         "stability": trial.stability,
-        "composite_score": trial.composite_score,
+        "composite_score": composite_export,
+        "composite_eligible": composite_export is not None,
         "fold_scores": trial.fold_scores,
         "fold_std": trial.fold_std,
         "pareto_rank": trial.pareto_rank,
         "revision_id": trial.revision_id,
-        "train_total_trades": (trial.train_outcome or {}).get("total_trades"),
-        "train_return_pct": (trial.train_outcome or {}).get("return_pct"),
-        "test_total_trades": (trial.test_outcome or {}).get("total_trades")
-        if trial.test_outcome
-        else None,
-        "test_return_pct": (trial.test_outcome or {}).get("return_pct")
-        if trial.test_outcome
-        else None,
+        "train_total_trades": train_outcome.get("total_trades"),
+        "train_return_pct": train_outcome.get("return_pct"),
+        "test_total_trades": test_outcome.get("total_trades") if trial.test_outcome else None,
+        "test_return_pct": test_outcome.get("return_pct") if trial.test_outcome else None,
     }
 
 

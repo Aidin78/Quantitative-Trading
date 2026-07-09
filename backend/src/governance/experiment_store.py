@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from sqlalchemy import delete as sql_delete
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -80,6 +81,43 @@ async def list_experiments(session: AsyncSession, *, limit: int = 50) -> list[Ex
     stmt = select(ExperimentRow).order_by(ExperimentRow.created_at.desc()).limit(limit)
     rows = (await session.execute(stmt)).scalars().all()
     return [_row_to_experiment(row) for row in rows]
+
+
+async def delete_experiment(session: AsyncSession, experiment_id: str) -> bool:
+    row = await session.get(ExperimentRow, experiment_id)
+    if row is None:
+        return False
+    await session.execute(
+        sql_delete(ExperimentRunRow).where(ExperimentRunRow.experiment_id == experiment_id)
+    )
+    await session.delete(row)
+    await session.flush()
+    return True
+
+
+async def delete_experiments(
+    session: AsyncSession,
+    experiment_ids: list[str],
+    *,
+    skip_ids: frozenset[str] = frozenset(),
+) -> tuple[list[str], list[str], list[str]]:
+    """Delete experiments by id. Returns (deleted, not_found, skipped)."""
+    deleted: list[str] = []
+    not_found: list[str] = []
+    skipped: list[str] = []
+    seen: set[str] = set()
+    for experiment_id in experiment_ids:
+        if experiment_id in seen:
+            continue
+        seen.add(experiment_id)
+        if experiment_id in skip_ids:
+            skipped.append(experiment_id)
+            continue
+        if await delete_experiment(session, experiment_id):
+            deleted.append(experiment_id)
+        else:
+            not_found.append(experiment_id)
+    return deleted, not_found, skipped
 
 
 async def create_experiment_run(

@@ -5,6 +5,8 @@ import {
   type DateRangePreset,
   dateRangeForPreset,
 } from "@/lib/dateRange";
+import { FORM_TOOLTIPS } from "@/lib/formTooltips";
+import { FieldLabel } from "@/components/ui/FieldLabel";
 
 type Props = {
   startDate: string;
@@ -31,9 +33,7 @@ export function DateRangeFields({
     layout === "grid" ? (
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="text-xs font-medium uppercase tracking-wider text-muted">
-            Start Date
-          </label>
+          <FieldLabel label="Start Date" tooltip={FORM_TOOLTIPS.startDate} />
           <input
             type="date"
             className="input-field mt-2"
@@ -42,9 +42,7 @@ export function DateRangeFields({
           />
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-wider text-muted">
-            End Date
-          </label>
+          <FieldLabel label="End Date" tooltip={FORM_TOOLTIPS.endDate} />
           <input
             type="date"
             className="input-field mt-2"
@@ -56,9 +54,7 @@ export function DateRangeFields({
     ) : (
       <>
         <div>
-          <label className="text-xs font-medium uppercase tracking-wider text-muted">
-            Start Date
-          </label>
+          <FieldLabel label="Start Date" tooltip={FORM_TOOLTIPS.startDate} />
           <input
             type="date"
             className="input-field mt-2"
@@ -67,9 +63,7 @@ export function DateRangeFields({
           />
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-wider text-muted">
-            End Date
-          </label>
+          <FieldLabel label="End Date" tooltip={FORM_TOOLTIPS.endDate} />
           <input
             type="date"
             className="input-field mt-2"
@@ -82,7 +76,12 @@ export function DateRangeFields({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <FieldLabel
+          label="Quick range"
+          tooltip={FORM_TOOLTIPS.datePresets}
+          className="mr-1"
+        />
         {DATE_RANGE_PRESETS.map((preset) => (
           <button
             key={preset.id}

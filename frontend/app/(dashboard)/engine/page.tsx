@@ -5,7 +5,9 @@ import { Cpu, Filter, Save, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
+import { FieldLabel } from "@/components/ui/FieldLabel";
 import { api } from "@/lib/api";
+import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 
 export default function EngineConfigPage() {
   const qc = useQueryClient();
@@ -63,9 +65,11 @@ export default function EngineConfigPage() {
           <div className="flex items-center gap-2 text-accent">
             <Shield className="h-4 w-4" />
           </div>
-          <label className="mt-4 block text-xs font-medium uppercase tracking-wider text-muted">
-            Min Confidence
-          </label>
+          <FieldLabel
+            label="Min Confidence"
+            tooltip={FORM_TOOLTIPS.minConfidence}
+            className="mt-4"
+          />
           <input
             className="input-field mt-2"
             value={minConfidence}
@@ -77,9 +81,11 @@ export default function EngineConfigPage() {
           <div className="flex items-center gap-2 text-accent">
             <Cpu className="h-4 w-4" />
           </div>
-          <label className="mt-4 block text-xs font-medium uppercase tracking-wider text-muted">
-            Min Agreeing Providers
-          </label>
+          <FieldLabel
+            label="Min Agreeing Providers"
+            tooltip={FORM_TOOLTIPS.minAgreeingProviders}
+            className="mt-4"
+          />
           <input
             className="input-field mt-2"
             value={minAgreeing}
@@ -91,9 +97,11 @@ export default function EngineConfigPage() {
           <div className="flex items-center gap-2 text-accent">
             <Filter className="h-4 w-4" />
           </div>
-          <label className="mt-4 block text-xs font-medium uppercase tracking-wider text-muted">
-            Min ATR %
-          </label>
+          <FieldLabel
+            label="Min ATR %"
+            tooltip={FORM_TOOLTIPS.minAtrPct}
+            className="mt-4"
+          />
           <input
             className="input-field mt-2"
             value={minAtrPct}

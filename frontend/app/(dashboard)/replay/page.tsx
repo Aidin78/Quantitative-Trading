@@ -6,7 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
+import { FieldLabel } from "@/components/ui/FieldLabel";
 import { api, type CausalGraph, type TimelineEntry } from "@/lib/api";
+import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 
 function buildGraphTree(
   graph: CausalGraph | undefined,
@@ -89,6 +91,10 @@ function ReplayContent() {
         subtitle="Enter a correlation_id from a decision"
       >
         <div className="space-y-4">
+          <FieldLabel
+            label="Correlation ID"
+            tooltip={FORM_TOOLTIPS.correlationId}
+          />
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               className="input-field flex-1 font-mono text-sm"
@@ -112,9 +118,7 @@ function ReplayContent() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                Mode
-              </label>
+              <FieldLabel label="Mode" tooltip={FORM_TOOLTIPS.replayMode} />
               <select
                 className="input-field mt-2"
                 value={mode}
@@ -128,9 +132,10 @@ function ReplayContent() {
             </div>
             {mode === "re_execute" ? (
               <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Revision ID (optional)
-                </label>
+                <FieldLabel
+                  label="Revision ID (optional)"
+                  tooltip={FORM_TOOLTIPS.revisionId}
+                />
                 <input
                   className="input-field mt-2 font-mono text-sm"
                   value={revisionId}

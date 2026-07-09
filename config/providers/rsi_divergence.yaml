@@ -4,5 +4,5 @@ enabled: true
 weight: 1.0
 params:
   min_confidence: 0.6
-  sl_atr_mult: 2.0
+  sl_atr_mult: 1.5
   tp_atr_mult: 4.0
