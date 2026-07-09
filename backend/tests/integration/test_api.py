@@ -250,6 +250,12 @@ async def test_provider_baseline_enables_all_core_providers(api_client) -> None:
         assert provider_id in items
         assert items[provider_id]["enabled"] is True
 
+    list_resp = await client.get("/api/v1/providers")
+    adx = next(
+        item for item in list_resp.json()["items"] if item["provider_id"] == "adx_trend_strength"
+    )
+    assert adx["enabled"] is False
+
 
 @pytest.mark.asyncio
 async def test_validation_runs_and_compare(api_client, auth_headers) -> None:

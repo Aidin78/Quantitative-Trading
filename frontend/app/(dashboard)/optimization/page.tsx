@@ -49,6 +49,12 @@ const DEFAULT_SPACE = {
   macd_enabled: [1],
   require_signal_align: [1, 0],
   min_histogram_slope: [0.0],
+  adx_period: [12, 14, 16],
+  adx_weight: [1.0],
+  adx_enabled: [0],
+  min_adx: [20, 25, 30],
+  min_di_spread: [3, 5, 8],
+  adx_require_trend: [0],
 };
 
 export default function OptimizationPage() {

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from src.core.contracts.provider import SignalProvider
 from src.engine.config import resolve_config_dir
+from src.providers.adx_trend_strength import AdxTrendStrengthProvider
 from src.providers.base import BaseSignalProvider, ProviderConfig
 from src.providers.config import load_provider_yaml
 from src.providers.ema_crossover import EmaCrossoverProvider
@@ -14,6 +15,7 @@ _PROVIDER_CLASSES: dict[str, type[BaseSignalProvider]] = {
     "ema_crossover": EmaCrossoverProvider,
     "rsi_divergence": RsiDivergenceProvider,
     "macd_momentum": MacdMomentumProvider,
+    "adx_trend_strength": AdxTrendStrengthProvider,
 }
 
 

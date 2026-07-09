@@ -61,6 +61,16 @@ def _build_runtime(
 
 
 @pytest.mark.asyncio
+async def test_adx_trend_strength_analyze_without_error(csv_path: Path, real_providers) -> None:
+    adx = instantiate_provider(ProviderConfig(provider_id="adx_trend_strength", enabled=True))
+    runtime, _, _ = _build_runtime(csv_path, [adx])
+    result = await runtime.run_cycle("BTC/USDT", "1h")
+    assert len(result.signals) == 1
+    assert result.signals[0].provider_id == "adx_trend_strength"
+    assert result.signals[0].side in {"BUY", "SELL", "HOLD"}
+
+
+@pytest.mark.asyncio
 async def test_macd_momentum_analyze_without_error(csv_path: Path, real_providers) -> None:
     macd = next(p for p in real_providers if p.provider_id == "macd_momentum")
     runtime, _, _ = _build_runtime(csv_path, [macd])

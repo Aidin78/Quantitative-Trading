@@ -20,6 +20,7 @@ def test_discover_provider_configs_from_repo() -> None:
     assert "ema_crossover" in ids
     assert "rsi_divergence" in ids
     assert "macd_momentum" in ids
+    assert "adx_trend_strength" in ids
 
 
 def test_load_providers_returns_instances() -> None:
@@ -29,6 +30,7 @@ def test_load_providers_returns_instances() -> None:
         "ema_crossover",
         "rsi_divergence",
         "macd_momentum",
+        "adx_trend_strength",
     }
 
 

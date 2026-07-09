@@ -84,11 +84,15 @@ def reset_all_provider_configs() -> list[dict]:
 
 
 def apply_baseline_provider_setup() -> list[dict]:
-    """Reset core providers to factory params and enable all three."""
-    from src.providers.metadata import PROVIDER_METADATA
+    """Reset core providers to factory params and enable the baseline trio."""
+    from src.providers.metadata import get_provider_metadata
 
+    baseline_ids = ("ema_crossover", "rsi_divergence", "macd_momentum")
     results: list[dict] = []
-    for provider_id, meta in PROVIDER_METADATA.items():
+    for provider_id in baseline_ids:
+        meta = get_provider_metadata(provider_id)
+        if meta is None:
+            raise FileNotFoundError(f"No defaults for provider: {provider_id}")
         defaults = meta.default_config
         results.append(
             write_provider_config(
@@ -129,12 +133,14 @@ def write_features_config(
     macd_fast: int = 12,
     macd_slow: int = 26,
     macd_signal_period: int = 9,
+    adx_period: int = 14,
 ) -> dict:
     from src.features.config import load_features_config
 
     config_dir = resolve_config_dir()
     path = config_dir / "features.yaml"
     macd_names = {"macd", "macd_signal", "macd_histogram", "macd_histogram_slope"}
+    adx_names = {"adx_14", "plus_di_14", "minus_di_14"}
     with path.open(encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     for indicator in raw.get("indicators", []):
@@ -149,6 +155,8 @@ def write_features_config(
             params["fast"] = macd_fast
             params["slow"] = macd_slow
             params["signal"] = macd_signal_period
+        elif indicator.get("name") in adx_names:
+            indicator.setdefault("params", {})["period"] = adx_period
     with path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(raw, f, sort_keys=False)
     load_features_config.cache_clear()
@@ -159,4 +167,5 @@ def write_features_config(
         "macd_fast": macd_fast,
         "macd_slow": macd_slow,
         "macd_signal_period": macd_signal_period,
+        "adx_period": adx_period,
     }

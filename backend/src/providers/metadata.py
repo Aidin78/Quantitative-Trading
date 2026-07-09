@@ -185,6 +185,57 @@ PROVIDER_METADATA: dict[str, ProviderMetadata] = {
             "macd_histogram_slope",
         ),
     ),
+    "adx_trend_strength": ProviderMetadata(
+        summary="ADX trend strength with directional DI confirmation.",
+        rules=(
+            "BUY when ADX >= min_adx and plus_di > minus_di with spread >= min_di_spread.",
+            "SELL when ADX >= min_adx and minus_di > plus_di with spread >= min_di_spread.",
+            "ADX below min_adx or narrow DI spread → HOLD (weak/choppy market).",
+            "If require_trend: block BUY in DOWN and SELL in UP.",
+            "Confidence scales with ADX level and DI spread.",
+            "Below min_confidence → HOLD.",
+        ),
+        default_config={
+            "enabled": False,
+            "weight": 1.0,
+            "params": {
+                "min_confidence": 0.6,
+                "sl_atr_mult": 1.5,
+                "tp_atr_mult": 4.0,
+                "min_adx": 25.0,
+                "min_di_spread": 5.0,
+                "require_trend": False,
+            },
+        },
+        param_fields=_SHARED_STOPS
+        + (
+            ParamField(
+                key="min_adx",
+                label="Min ADX",
+                type="float",
+                description="Minimum ADX for a strong trend.",
+                min=0.0,
+                max=100.0,
+                step=1.0,
+            ),
+            ParamField(
+                key="min_di_spread",
+                label="Min DI spread",
+                type="float",
+                description="Minimum |+DI - -DI| for directional conviction.",
+                min=0.0,
+                max=100.0,
+                step=1.0,
+            ),
+            ParamField(
+                key="require_trend",
+                label="Require trend alignment",
+                type="bool",
+                description="Only BUY in UP trend and SELL in DOWN trend.",
+            ),
+        ),
+        required_features=("adx_14", "plus_di_14", "minus_di_14"),
+    ),
 }
 
 

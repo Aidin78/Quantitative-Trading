@@ -8,6 +8,7 @@ export const PROVIDER_REQUIRED_FEATURES: Record<string, string[]> = {
     "macd_histogram",
     "macd_histogram_slope",
   ],
+  adx_trend_strength: ["adx_14", "plus_di_14", "minus_di_14"],
 };
 
 export function requiredFeaturesForProvider(providerId: string): string[] {

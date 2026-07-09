@@ -30,6 +30,15 @@ indicators:
   - name: bb_lower
     type: bollinger
     params: { period: 20, std: 2, band: lower }
+  - name: adx_14
+    type: adx
+    params: { period: 14, component: adx }
+  - name: plus_di_14
+    type: adx
+    params: { period: 14, component: plus_di }
+  - name: minus_di_14
+    type: adx
+    params: { period: 14, component: minus_di }
 flags:
   - name: ema_cross_bullish
     expr: "ema_12 > ema_26"

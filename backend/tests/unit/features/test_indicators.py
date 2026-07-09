@@ -43,6 +43,17 @@ def test_rsi_ema_atr_macd_bollinger_compute(ohlcv: pd.DataFrame) -> None:
     assert upper > lower
 
 
+def test_adx_components_compute(ohlcv: pd.DataFrame) -> None:
+    adx_params = {"period": 14}
+    adx = get_indicator_class("adx")().compute(ohlcv, {**adx_params, "component": "adx"})
+    plus_di = get_indicator_class("adx")().compute(ohlcv, {**adx_params, "component": "plus_di"})
+    minus_di = get_indicator_class("adx")().compute(ohlcv, {**adx_params, "component": "minus_di"})
+    assert 0 <= adx <= 100
+    assert 0 <= plus_di <= 100
+    assert 0 <= minus_di <= 100
+    assert plus_di + minus_di > 0
+
+
 def test_insufficient_data_raises() -> None:
     small = make_sample_ohlcv(bars=5)
     with pytest.raises(InsufficientDataError):

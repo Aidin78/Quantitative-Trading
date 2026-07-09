@@ -88,10 +88,21 @@ def build_provider_overrides(trial: dict[str, Any]) -> dict[str, dict[str, Any]]
         "min_histogram_slope": float(trial.get("min_histogram_slope", 0.0)),
         "require_trend": bool(int(trial.get("macd_require_trend", 0))),
     }
+    adx_shared = {
+        "min_confidence": min_confidence,
+        "sl_atr_mult": sl_atr_mult,
+        "tp_atr_mult": tp_atr_mult,
+        "weight": float(trial.get("adx_weight", 1.0)),
+        "enabled": bool(int(trial.get("adx_enabled", 0))),
+        "min_adx": float(trial.get("min_adx", 25.0)),
+        "min_di_spread": float(trial.get("min_di_spread", 5.0)),
+        "require_trend": bool(int(trial.get("adx_require_trend", 0))),
+    }
     return {
         "ema_crossover": ema_shared,
         "rsi_divergence": rsi_shared,
         "macd_momentum": macd_shared,
+        "adx_trend_strength": adx_shared,
     }
 
 
@@ -118,8 +129,10 @@ def build_features_config_from_trial(
     macd_fast = int(trial.get("macd_fast", 12))
     macd_slow = int(trial.get("macd_slow", 26))
     macd_signal_period = int(trial.get("macd_signal_period", 9))
+    adx_period = int(trial.get("adx_period", 14))
 
     macd_names = {"macd", "macd_signal", "macd_histogram", "macd_histogram_slope"}
+    adx_names = {"adx_14", "plus_di_14", "minus_di_14"}
     indicators: list[IndicatorDef] = []
     for indicator in base_config.indicators:
         if indicator.name == "ema_12":
@@ -135,6 +148,10 @@ def build_features_config_from_trial(
             params["fast"] = macd_fast
             params["slow"] = macd_slow
             params["signal"] = macd_signal_period
+            indicators.append(IndicatorDef(name=indicator.name, type=indicator.type, params=params))
+        elif indicator.name in adx_names:
+            params = dict(indicator.params)
+            params["period"] = adx_period
             indicators.append(IndicatorDef(name=indicator.name, type=indicator.type, params=params))
         else:
             indicators.append(indicator)
@@ -153,6 +170,7 @@ def build_features_config_from_trial(
             "macd_fast": macd_fast,
             "macd_slow": macd_slow,
             "macd_signal_period": macd_signal_period,
+            "adx_period": adx_period,
         },
         sort_keys=True,
     )

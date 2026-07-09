@@ -77,7 +77,12 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
     }
     write_engine_config(engine_patch)
 
-    provider_ids = ("ema_crossover", "rsi_divergence", "macd_momentum")
+    provider_ids = (
+        "ema_crossover",
+        "rsi_divergence",
+        "macd_momentum",
+        "adx_trend_strength",
+    )
     for provider_id in provider_ids:
         if provider_id == "ema_crossover":
             enabled_key = "ema_enabled"
@@ -85,9 +90,12 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         elif provider_id == "rsi_divergence":
             enabled_key = "rsi_enabled"
             weight_key = "rsi_weight"
-        else:
+        elif provider_id == "macd_momentum":
             enabled_key = "macd_enabled"
             weight_key = "macd_weight"
+        else:
+            enabled_key = "adx_enabled"
+            weight_key = "adx_weight"
         provider_patch: dict[str, Any] = {
             "enabled": bool(int(params.get(enabled_key, 1))),
             "weight": float(params.get(weight_key, 1.0)),
@@ -113,6 +121,12 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
             provider_patch["params"]["require_trend"] = bool(
                 int(params.get("macd_require_trend", 0))
             )
+        if provider_id == "adx_trend_strength":
+            provider_patch["params"]["min_adx"] = float(params.get("min_adx", 25.0))
+            provider_patch["params"]["min_di_spread"] = float(params.get("min_di_spread", 5.0))
+            provider_patch["params"]["require_trend"] = bool(
+                int(params.get("adx_require_trend", 0))
+            )
         write_provider_config(provider_id, provider_patch)
 
     write_validation_settings(
@@ -128,6 +142,7 @@ def _apply_trial_params(params: dict[str, Any]) -> None:
         macd_fast=int(params.get("macd_fast", 12)),
         macd_slow=int(params.get("macd_slow", 26)),
         macd_signal_period=int(params.get("macd_signal_period", 9)),
+        adx_period=int(params.get("adx_period", 14)),
     )
 
 

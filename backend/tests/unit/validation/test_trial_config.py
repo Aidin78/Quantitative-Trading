@@ -64,3 +64,30 @@ def test_build_provider_overrides_includes_macd() -> None:
     assert overrides["macd_momentum"]["weight"] == 0.8
     assert overrides["macd_momentum"]["require_signal_align"] is False
     assert overrides["macd_momentum"]["min_histogram_slope"] == 0.0001
+
+
+def test_build_provider_overrides_includes_adx() -> None:
+    overrides = build_provider_overrides(
+        {
+            "adx_enabled": 1,
+            "adx_weight": 0.7,
+            "min_adx": 22.0,
+            "min_di_spread": 4.0,
+            "adx_require_trend": 1,
+        }
+    )
+    assert overrides["adx_trend_strength"]["enabled"] is True
+    assert overrides["adx_trend_strength"]["weight"] == 0.7
+    assert overrides["adx_trend_strength"]["min_adx"] == 22.0
+    assert overrides["adx_trend_strength"]["min_di_spread"] == 4.0
+    assert overrides["adx_trend_strength"]["require_trend"] is True
+
+
+def test_build_features_config_from_trial_changes_adx_period() -> None:
+    config, _ = build_features_config_from_trial({"adx_period": 16})
+    adx = next(ind for ind in config.indicators if ind.name == "adx_14")
+    plus_di = next(ind for ind in config.indicators if ind.name == "plus_di_14")
+    minus_di = next(ind for ind in config.indicators if ind.name == "minus_di_14")
+    assert adx.params["period"] == 16
+    assert plus_di.params["period"] == 16
+    assert minus_di.params["period"] == 16

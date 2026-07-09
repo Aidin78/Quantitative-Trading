@@ -50,6 +50,12 @@ TRIAL_PARAM_KEYS = [
     "macd_enabled",
     "require_signal_align",
     "min_histogram_slope",
+    "adx_period",
+    "adx_weight",
+    "adx_enabled",
+    "min_adx",
+    "min_di_spread",
+    "adx_require_trend",
 ]
 
 
@@ -81,6 +87,12 @@ class OptimizationSpace:
     macd_enabled: tuple[int, ...] = (1,)
     require_signal_align: tuple[int, ...] = (1,)
     min_histogram_slope: tuple[float, ...] = (0.0,)
+    adx_period: tuple[int, ...] = (14,)
+    adx_weight: tuple[float, ...] = (1.0,)
+    adx_enabled: tuple[int, ...] = (0,)
+    min_adx: tuple[float, ...] = (25.0,)
+    min_di_spread: tuple[float, ...] = (5.0,)
+    adx_require_trend: tuple[int, ...] = (0,)
 
     def as_dict(self) -> dict[str, tuple[Any, ...]]:
         return {key: getattr(self, key) for key in TRIAL_PARAM_KEYS}
