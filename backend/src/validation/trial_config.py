@@ -57,6 +57,7 @@ def build_engine_config_from_trial(
 
 
 def build_provider_overrides(trial: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Flat override map used by in-memory sweeps (enabled/weight mixed with params)."""
     min_confidence = float(trial.get("min_confidence", 0.65))
     sl_atr_mult = float(trial.get("sl_atr_mult", 1.5))
     tp_atr_mult = float(trial.get("tp_atr_mult", 3.0))
@@ -145,6 +146,64 @@ def build_provider_overrides(trial: dict[str, Any]) -> dict[str, dict[str, Any]]
         "supertrend_trend": st_shared,
         "volume_order_flow": vol_shared,
         "market_structure": ms_shared,
+    }
+
+
+def build_engine_write_patch(trial: dict[str, Any]) -> dict[str, Any]:
+    """Engine YAML patch derived from the same trial keys as in-memory sweeps."""
+    return {
+        "aggregation": {
+            "min_agreeing_providers": int(trial.get("min_agreeing_providers", 1)),
+        },
+        "filter": {
+            "min_atr_pct": float(trial.get("min_atr_pct", 0.3)),
+            "allowed_sessions": list(_session_preset(str(trial.get("session_preset", "eu_us")))),
+        },
+        "risk": {
+            "min_confidence": float(trial.get("min_confidence", 0.65)),
+            "min_risk_reward": float(trial.get("min_risk_reward", 2.0)),
+            "max_signals_per_day": int(trial.get("max_signals_per_day", 10)),
+        },
+    }
+
+
+def build_provider_write_patches(trial: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Provider YAML patches — same source of truth as build_provider_overrides."""
+    patches: dict[str, dict[str, Any]] = {}
+    for provider_id, override in build_provider_overrides(trial).items():
+        patches[provider_id] = {
+            "enabled": bool(override["enabled"]),
+            "weight": float(override["weight"]),
+            "params": {
+                key: value for key, value in override.items() if key not in {"enabled", "weight"}
+            },
+        }
+    return patches
+
+
+def build_validation_settings_patch(trial: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "max_bars_in_trade": int(trial.get("max_bars_in_trade", 48)),
+        "risk_pct_per_trade": float(trial.get("risk_pct_per_trade", 1.0)),
+    }
+
+
+def build_features_write_kwargs(trial: dict[str, Any]) -> dict[str, Any]:
+    """Keyword args for write_features_config — mirrors build_features_config_from_trial."""
+    return {
+        "ema_fast": int(trial.get("ema_fast", 12)),
+        "ema_slow": int(trial.get("ema_slow", 26)),
+        "rsi_period": int(trial.get("rsi_period", 14)),
+        "macd_fast": int(trial.get("macd_fast", 12)),
+        "macd_slow": int(trial.get("macd_slow", 26)),
+        "macd_signal_period": int(trial.get("macd_signal_period", 9)),
+        "adx_period": int(trial.get("adx_period", 14)),
+        "bb_period": int(trial.get("bb_period", 20)),
+        "bb_std": float(trial.get("bb_std", 2.0)),
+        "st_period": int(trial.get("st_period", 10)),
+        "st_multiplier": float(trial.get("st_multiplier", 3.0)),
+        "vol_period": int(trial.get("vol_period", 20)),
+        "ms_pivot_bars": int(trial.get("ms_pivot_bars", 5)),
     }
 
 

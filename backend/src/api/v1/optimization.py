@@ -24,7 +24,12 @@ from src.api.services.optimization_service import (
 from src.api.services.validation_runner import format_validation_error
 from src.governance.revision_store import compute_config_revision, save_revision
 from src.validation.optimizer import OptimizationSpace, ProgressEvent, run_optimization
-from src.validation.trial_config import SESSION_PRESETS
+from src.validation.trial_config import (
+    build_engine_write_patch,
+    build_features_write_kwargs,
+    build_provider_write_patches,
+    build_validation_settings_patch,
+)
 
 router = APIRouter(
     prefix="/optimization", tags=["optimization"], dependencies=[Depends(get_current_user)]
@@ -59,145 +64,12 @@ class OptimizationApplyRequest(BaseModel):
 
 
 def _apply_trial_params(params: dict[str, Any]) -> None:
-    session_preset = str(params.get("session_preset", "eu_us"))
-    allowed_sessions = list(SESSION_PRESETS.get(session_preset, SESSION_PRESETS["eu_us"]))
-    engine_patch = {
-        "aggregation": {
-            "min_agreeing_providers": int(params["min_agreeing_providers"]),
-        },
-        "filter": {
-            "min_atr_pct": float(params.get("min_atr_pct", 0.3)),
-            "allowed_sessions": allowed_sessions,
-        },
-        "risk": {
-            "min_confidence": float(params["min_confidence"]),
-            "min_risk_reward": float(params["min_risk_reward"]),
-            "max_signals_per_day": int(params.get("max_signals_per_day", 10)),
-        },
-    }
-    write_engine_config(engine_patch)
-
-    provider_ids = (
-        "ema_crossover",
-        "rsi_divergence",
-        "macd_momentum",
-        "adx_trend_strength",
-        "bollinger_reversion",
-        "supertrend_trend",
-        "volume_order_flow",
-        "market_structure",
-    )
-    for provider_id in provider_ids:
-        if provider_id == "ema_crossover":
-            enabled_key = "ema_enabled"
-            weight_key = "ema_weight"
-        elif provider_id == "rsi_divergence":
-            enabled_key = "rsi_enabled"
-            weight_key = "rsi_weight"
-        elif provider_id == "macd_momentum":
-            enabled_key = "macd_enabled"
-            weight_key = "macd_weight"
-        elif provider_id == "adx_trend_strength":
-            enabled_key = "adx_enabled"
-            weight_key = "adx_weight"
-        elif provider_id == "bollinger_reversion":
-            enabled_key = "bb_enabled"
-            weight_key = "bb_weight"
-        elif provider_id == "supertrend_trend":
-            enabled_key = "st_enabled"
-            weight_key = "st_weight"
-        elif provider_id == "volume_order_flow":
-            enabled_key = "vol_enabled"
-            weight_key = "vol_weight"
-        else:
-            enabled_key = "ms_enabled"
-            weight_key = "ms_weight"
-        enabled_default = (
-            0
-            if provider_id
-            in {
-                "adx_trend_strength",
-                "bollinger_reversion",
-                "supertrend_trend",
-                "volume_order_flow",
-                "market_structure",
-            }
-            else 1
-        )
-        provider_patch: dict[str, Any] = {
-            "enabled": bool(int(params.get(enabled_key, enabled_default))),
-            "weight": float(params.get(weight_key, 1.0)),
-            "params": {
-                "min_confidence": float(params["min_confidence"]),
-                "sl_atr_mult": float(params["sl_atr_mult"]),
-                "tp_atr_mult": float(params["tp_atr_mult"]),
-            },
-        }
-        if provider_id == "rsi_divergence":
-            provider_patch["params"]["oversold"] = float(params.get("oversold", 30.0))
-            provider_patch["params"]["overbought"] = float(params.get("overbought", 70.0))
-            provider_patch["params"]["avoid_high_vol"] = bool(int(params.get("avoid_high_vol", 1)))
-        if provider_id == "ema_crossover":
-            provider_patch["params"]["require_trend"] = bool(int(params.get("require_trend", 1)))
-        if provider_id == "macd_momentum":
-            provider_patch["params"]["require_signal_align"] = bool(
-                int(params.get("require_signal_align", 1))
-            )
-            provider_patch["params"]["min_histogram_slope"] = float(
-                params.get("min_histogram_slope", 0.0)
-            )
-            provider_patch["params"]["require_trend"] = bool(
-                int(params.get("macd_require_trend", 0))
-            )
-        if provider_id == "adx_trend_strength":
-            provider_patch["params"]["min_adx"] = float(params.get("min_adx", 25.0))
-            provider_patch["params"]["min_di_spread"] = float(params.get("min_di_spread", 5.0))
-            provider_patch["params"]["require_trend"] = bool(
-                int(params.get("adx_require_trend", 0))
-            )
-        if provider_id == "bollinger_reversion":
-            provider_patch["params"]["avoid_high_vol"] = bool(
-                int(params.get("bb_avoid_high_vol", 1))
-            )
-            provider_patch["params"]["max_adx"] = float(params.get("bb_max_adx", 0.0))
-        if provider_id == "supertrend_trend":
-            provider_patch["params"]["require_trend"] = bool(int(params.get("st_require_trend", 0)))
-        if provider_id == "volume_order_flow":
-            provider_patch["params"]["period"] = int(params.get("vol_period", 20))
-            provider_patch["params"]["min_cmf"] = float(params.get("min_cmf", 0.05))
-            provider_patch["params"]["min_volume_ratio"] = float(
-                params.get("min_volume_ratio", 1.2)
-            )
-            provider_patch["params"]["require_price_align"] = bool(
-                int(params.get("vol_require_price_align", 1))
-            )
-        if provider_id == "market_structure":
-            provider_patch["params"]["pivot_bars"] = int(params.get("ms_pivot_bars", 5))
-            provider_patch["params"]["require_bos"] = bool(int(params.get("ms_require_bos", 1)))
-            provider_patch["params"]["require_trend"] = bool(int(params.get("ms_require_trend", 0)))
+    """Persist a trial using the same mappers as in-memory optimization sweeps."""
+    write_engine_config(build_engine_write_patch(params))
+    for provider_id, provider_patch in build_provider_write_patches(params).items():
         write_provider_config(provider_id, provider_patch)
-
-    write_validation_settings(
-        {
-            "max_bars_in_trade": int(params["max_bars_in_trade"]),
-            "risk_pct_per_trade": float(params.get("risk_pct_per_trade", 1.0)),
-        }
-    )
-    write_features_config(
-        ema_fast=int(params.get("ema_fast", 12)),
-        ema_slow=int(params.get("ema_slow", 26)),
-        rsi_period=int(params.get("rsi_period", 14)),
-        macd_fast=int(params.get("macd_fast", 12)),
-        macd_slow=int(params.get("macd_slow", 26)),
-        macd_signal_period=int(params.get("macd_signal_period", 9)),
-        adx_period=int(params.get("adx_period", 14)),
-        bb_period=int(params.get("bb_period", 20)),
-        bb_std=float(params.get("bb_std", 2.0)),
-        st_period=int(params.get("st_period", 10)),
-        st_multiplier=float(params.get("st_multiplier", 3.0)),
-        vol_period=int(params.get("vol_period", 20)),
-        ms_pivot_bars=int(params.get("ms_pivot_bars", 5)),
-    )
+    write_validation_settings(build_validation_settings_patch(params))
+    write_features_config(**build_features_write_kwargs(params))
 
 
 async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
@@ -228,7 +100,7 @@ async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
         if event.phase in {"train", "refine"}:
             if event.stage == "start":
                 label = "Refining" if event.phase == "refine" else "Training"
-                sweep.message = (
+                sweep.message = event.detail or (
                     f"{label} candidate {event.current + 1} of "
                     f"{event.train_count} on in-sample data…"
                 )

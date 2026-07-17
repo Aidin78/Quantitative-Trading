@@ -16,6 +16,9 @@ def compute_min_lookback_bars(config_dir=None) -> int:  # noqa: ANN001
                 needed += 1
         elif indicator.type == "bollinger":
             needed = int(params.get("period", 20))
+        elif indicator.type == "adx":
+            # AdxIndicator / _adx_components require 2 * period bars.
+            needed = 2 * int(params.get("period", 14))
         elif indicator.type == "supertrend":
             needed = 2 * int(params.get("period", 10))
         elif indicator.type == "volume_flow":
