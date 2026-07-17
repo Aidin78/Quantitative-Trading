@@ -62,6 +62,7 @@ class PlatformRuntime:
         mode: Literal["validation", "live", "paper", "replay"] = "validation",
         execution_engine: ExecutionEngine | None = None,
         persist_features: bool = True,
+        emit_events: bool = True,
     ) -> None:
         self._data_provider = data_provider
         self._feature_store = feature_store
@@ -79,6 +80,7 @@ class PlatformRuntime:
         self._mode = mode
         self._execution_engine = execution_engine
         self._persist_features = persist_features
+        self._emit_events = emit_events
         self._signals_day: date | None = None
 
     async def run_cycle(
@@ -127,27 +129,28 @@ class PlatformRuntime:
                 self._state_store.apply_transition(transition)
             execution_events.extend(bar_eval.events)
 
-        candle_event = build_envelope(
-            event_family=EventFamily.MARKET,
-            event_type=MarketEventType.CANDLE_RECEIVED,
-            event_time=event_time,
-            processing_time=processing_time,
-            correlation_id=cycle_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            mode=self._mode,
-            payload={
-                "open": bar["open"],
-                "high": bar["high"],
-                "low": bar["low"],
-                "close": bar["close"],
-                "volume": bar["volume"],
-            },
-            revision_id=revision_id,
-            experiment_id=experiment_id,
-        )
-        events.append(candle_event)
-        causation_id = candle_event.event_id
+        if self._emit_events:
+            candle_event = build_envelope(
+                event_family=EventFamily.MARKET,
+                event_type=MarketEventType.CANDLE_RECEIVED,
+                event_time=event_time,
+                processing_time=processing_time,
+                correlation_id=cycle_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                mode=self._mode,
+                payload={
+                    "open": bar["open"],
+                    "high": bar["high"],
+                    "low": bar["low"],
+                    "close": bar["close"],
+                    "volume": bar["volume"],
+                },
+                revision_id=revision_id,
+                experiment_id=experiment_id,
+            )
+            events.append(candle_event)
+            causation_id = candle_event.event_id
 
         feature_set, context = self._feature_builder.build(
             df,
@@ -161,45 +164,46 @@ class PlatformRuntime:
             if stored_record.market_context != context:
                 raise RuntimeError("FeatureStore record does not match built MarketContext")
 
-        feature_event = build_envelope(
-            event_family=EventFamily.MARKET,
-            event_type=MarketEventType.FEATURE_SET_BUILT,
-            event_time=event_time,
-            processing_time=processing_time,
-            correlation_id=cycle_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            mode=self._mode,
-            causation_id=causation_id,
-            payload={
-                "feature_set_id": feature_set.feature_set_id,
-                "feature_version": feature_set.feature_version,
-                "config_hash": feature_set.config_hash,
-                "indicators": feature_set.indicators,
-                "flags": feature_set.flags,
-            },
-            revision_id=revision_id,
-            experiment_id=experiment_id,
-        )
-        events.append(feature_event)
-        causation_id = feature_event.event_id
+        if self._emit_events:
+            feature_event = build_envelope(
+                event_family=EventFamily.MARKET,
+                event_type=MarketEventType.FEATURE_SET_BUILT,
+                event_time=event_time,
+                processing_time=processing_time,
+                correlation_id=cycle_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                mode=self._mode,
+                causation_id=causation_id,
+                payload={
+                    "feature_set_id": feature_set.feature_set_id,
+                    "feature_version": feature_set.feature_version,
+                    "config_hash": feature_set.config_hash,
+                    "indicators": feature_set.indicators,
+                    "flags": feature_set.flags,
+                },
+                revision_id=revision_id,
+                experiment_id=experiment_id,
+            )
+            events.append(feature_event)
+            causation_id = feature_event.event_id
 
-        context_event = build_envelope(
-            event_family=EventFamily.MARKET,
-            event_type=MarketEventType.MARKET_CONTEXT_DERIVED,
-            event_time=event_time,
-            processing_time=processing_time,
-            correlation_id=cycle_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            mode=self._mode,
-            causation_id=causation_id,
-            payload=context.model_dump(mode="json"),
-            revision_id=revision_id,
-            experiment_id=experiment_id,
-        )
-        events.append(context_event)
-        causation_id = context_event.event_id
+            context_event = build_envelope(
+                event_family=EventFamily.MARKET,
+                event_type=MarketEventType.MARKET_CONTEXT_DERIVED,
+                event_time=event_time,
+                processing_time=processing_time,
+                correlation_id=cycle_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                mode=self._mode,
+                causation_id=causation_id,
+                payload=context.model_dump(mode="json"),
+                revision_id=revision_id,
+                experiment_id=experiment_id,
+            )
+            events.append(context_event)
+            causation_id = context_event.event_id
 
         self._maybe_reset_daily_risk(event_time, cycle_id)
 
@@ -209,9 +213,30 @@ class PlatformRuntime:
         signals: list[StrategySignal] = []
         for provider in self._providers:
             if not provider.enabled:
-                skip_event = build_envelope(
+                if self._emit_events:
+                    skip_event = build_envelope(
+                        event_family=EventFamily.SIGNAL,
+                        event_type=SignalEventType.PROVIDER_SKIPPED,
+                        event_time=event_time,
+                        processing_time=processing_time,
+                        correlation_id=cycle_id,
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        mode=self._mode,
+                        causation_id=causation_id,
+                        payload={"provider_id": provider.provider_id, "reason": "disabled"},
+                        revision_id=revision_id,
+                        experiment_id=experiment_id,
+                    )
+                    events.append(skip_event)
+                continue
+
+            signal = provider.analyze(feature_set, context)
+            signals.append(signal)
+            if self._emit_events:
+                opinion_event = build_envelope(
                     event_family=EventFamily.SIGNAL,
-                    event_type=SignalEventType.PROVIDER_SKIPPED,
+                    event_type=SignalEventType.PROVIDER_OPINION,
                     event_time=event_time,
                     processing_time=processing_time,
                     correlation_id=cycle_id,
@@ -219,35 +244,16 @@ class PlatformRuntime:
                     timeframe=timeframe,
                     mode=self._mode,
                     causation_id=causation_id,
-                    payload={"provider_id": provider.provider_id, "reason": "disabled"},
+                    payload={
+                        "provider_id": provider.provider_id,
+                        "side": signal.side,
+                        "confidence": signal.confidence,
+                        "rationale": signal.rationale.model_dump(mode="json"),
+                    },
                     revision_id=revision_id,
                     experiment_id=experiment_id,
                 )
-                events.append(skip_event)
-                continue
-
-            signal = provider.analyze(feature_set, context)
-            signals.append(signal)
-            opinion_event = build_envelope(
-                event_family=EventFamily.SIGNAL,
-                event_type=SignalEventType.PROVIDER_OPINION,
-                event_time=event_time,
-                processing_time=processing_time,
-                correlation_id=cycle_id,
-                symbol=symbol,
-                timeframe=timeframe,
-                mode=self._mode,
-                causation_id=causation_id,
-                payload={
-                    "provider_id": provider.provider_id,
-                    "side": signal.side,
-                    "confidence": signal.confidence,
-                    "rationale": signal.rationale.model_dump(mode="json"),
-                },
-                revision_id=revision_id,
-                experiment_id=experiment_id,
-            )
-            events.append(opinion_event)
+                events.append(opinion_event)
 
         decision = self._decision_engine.process(
             signals,
@@ -260,32 +266,10 @@ class PlatformRuntime:
             experiment_id=experiment_id,
         )
 
-        made_event = build_envelope(
-            event_family=EventFamily.DECISION,
-            event_type=DecisionEventType.DECISION_MADE,
-            event_time=event_time,
-            processing_time=processing_time,
-            correlation_id=cycle_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            mode=self._mode,
-            causation_id=causation_id,
-            payload={
-                "decision_id": decision.decision_id,
-                "result": decision.result.value,
-                "state_snapshot_id": snapshot.snapshot_id,
-                "decision_log": decision.decision_log.model_dump(mode="json"),
-            },
-            revision_id=revision_id,
-            experiment_id=experiment_id,
-        )
-        events.append(made_event)
-        causation_id = made_event.event_id
-
-        if decision.is_approved:
-            outcome_event = build_envelope(
+        if self._emit_events:
+            made_event = build_envelope(
                 event_family=EventFamily.DECISION,
-                event_type=DecisionEventType.DECISION_APPROVED,
+                event_type=DecisionEventType.DECISION_MADE,
                 event_time=event_time,
                 processing_time=processing_time,
                 correlation_id=cycle_id,
@@ -295,64 +279,87 @@ class PlatformRuntime:
                 causation_id=causation_id,
                 payload={
                     "decision_id": decision.decision_id,
+                    "result": decision.result.value,
                     "state_snapshot_id": snapshot.snapshot_id,
-                    "final_signal": decision.final_signal.model_dump(mode="json")
-                    if decision.final_signal
-                    else None,
-                },
-                revision_id=revision_id,
-                experiment_id=experiment_id,
-            )
-        else:
-            outcome_event = build_envelope(
-                event_family=EventFamily.DECISION,
-                event_type=DecisionEventType.DECISION_REJECTED,
-                event_time=event_time,
-                processing_time=processing_time,
-                correlation_id=cycle_id,
-                symbol=symbol,
-                timeframe=timeframe,
-                mode=self._mode,
-                causation_id=causation_id,
-                payload={
-                    "decision_id": decision.decision_id,
-                    "state_snapshot_id": snapshot.snapshot_id,
-                    "rejection_stage": decision.result.rejection_stage,
-                    "rejection_reason": decision.result.rejection_reason,
                     "decision_log": decision.decision_log.model_dump(mode="json"),
                 },
                 revision_id=revision_id,
                 experiment_id=experiment_id,
             )
-        events.append(outcome_event)
-        causation_id = outcome_event.event_id
+            events.append(made_event)
+            causation_id = made_event.event_id
 
-        if decision.is_approved and decision.final_signal is not None:
-            fs = decision.final_signal
-            signal_event = build_envelope(
-                event_family=EventFamily.EXECUTION,
-                event_type=ExecutionEventType.SIGNAL_PUBLISHED,
-                event_time=event_time,
-                processing_time=processing_time,
-                correlation_id=cycle_id,
-                symbol=symbol,
-                timeframe=timeframe,
-                mode=self._mode,
-                causation_id=causation_id,
-                payload={
-                    "decision_id": decision.decision_id,
-                    "side": fs.side,
-                    "entry_price": fs.entry_price,
-                    "stop_loss": fs.stop_loss,
-                    "take_profit": fs.take_profit,
-                    "confidence": fs.confidence,
-                    "risk_reward": fs.risk_reward,
-                    "provider_ids": list(fs.contributing_providers),
-                },
-                revision_id=revision_id,
-                experiment_id=experiment_id,
-            )
-            events.append(signal_event)
+            if decision.is_approved:
+                outcome_event = build_envelope(
+                    event_family=EventFamily.DECISION,
+                    event_type=DecisionEventType.DECISION_APPROVED,
+                    event_time=event_time,
+                    processing_time=processing_time,
+                    correlation_id=cycle_id,
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    mode=self._mode,
+                    causation_id=causation_id,
+                    payload={
+                        "decision_id": decision.decision_id,
+                        "state_snapshot_id": snapshot.snapshot_id,
+                        "final_signal": decision.final_signal.model_dump(mode="json")
+                        if decision.final_signal
+                        else None,
+                    },
+                    revision_id=revision_id,
+                    experiment_id=experiment_id,
+                )
+            else:
+                outcome_event = build_envelope(
+                    event_family=EventFamily.DECISION,
+                    event_type=DecisionEventType.DECISION_REJECTED,
+                    event_time=event_time,
+                    processing_time=processing_time,
+                    correlation_id=cycle_id,
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    mode=self._mode,
+                    causation_id=causation_id,
+                    payload={
+                        "decision_id": decision.decision_id,
+                        "state_snapshot_id": snapshot.snapshot_id,
+                        "rejection_stage": decision.result.rejection_stage,
+                        "rejection_reason": decision.result.rejection_reason,
+                        "decision_log": decision.decision_log.model_dump(mode="json"),
+                    },
+                    revision_id=revision_id,
+                    experiment_id=experiment_id,
+                )
+            events.append(outcome_event)
+            causation_id = outcome_event.event_id
+
+            if decision.is_approved and decision.final_signal is not None:
+                fs = decision.final_signal
+                signal_event = build_envelope(
+                    event_family=EventFamily.EXECUTION,
+                    event_type=ExecutionEventType.SIGNAL_PUBLISHED,
+                    event_time=event_time,
+                    processing_time=processing_time,
+                    correlation_id=cycle_id,
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    mode=self._mode,
+                    causation_id=causation_id,
+                    payload={
+                        "decision_id": decision.decision_id,
+                        "side": fs.side,
+                        "entry_price": fs.entry_price,
+                        "stop_loss": fs.stop_loss,
+                        "take_profit": fs.take_profit,
+                        "confidence": fs.confidence,
+                        "risk_reward": fs.risk_reward,
+                        "provider_ids": list(fs.contributing_providers),
+                    },
+                    revision_id=revision_id,
+                    experiment_id=experiment_id,
+                )
+                events.append(signal_event)
 
         if decision.is_approved:
             risk_transition = StateTransitionEvent(
@@ -401,7 +408,8 @@ class PlatformRuntime:
             execution_events.extend(exec_result.events)
 
         events.extend(execution_events)
-        await self._event_bus.publish_many(events)
+        if events:
+            await self._event_bus.publish_many(events)
 
         return CycleResult(
             correlation_id=cycle_id,

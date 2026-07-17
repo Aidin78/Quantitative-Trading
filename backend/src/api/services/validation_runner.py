@@ -205,6 +205,7 @@ async def run_validation_job(
         fill_model,
         clock,
         config=execution_config,
+        emit_events=persist_db,
     )
     log_handler = EventLogHandler(
         families=None if persist_db else {EventFamily.EXECUTION},
@@ -241,6 +242,7 @@ async def run_validation_job(
         mode="validation",
         execution_engine=execution_engine,
         persist_features=persist_db,
+        emit_events=persist_db,
     )
     config = ValidationConfig(
         symbol=sym,

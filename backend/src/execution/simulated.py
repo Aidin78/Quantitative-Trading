@@ -32,6 +32,14 @@ class _PendingEntry:
 
 
 class SimulatedExecutionEngine:
+    _SCORE_OUTCOME_TYPES = frozenset(
+        {
+            ExecutionEventType.ORDER_REJECTED,
+            ExecutionEventType.POSITION_OPENED,
+            ExecutionEventType.POSITION_CLOSED,
+        }
+    )
+
     def __init__(
         self,
         fill_model: FillModel,
@@ -40,15 +48,22 @@ class SimulatedExecutionEngine:
         risk_gate: ExecutionRiskGate | None = None,
         config: ValidationExecutionConfig | None = None,
         mode: Literal["validation", "live", "paper", "replay"] = "validation",
+        emit_events: bool = True,
     ) -> None:
         self._fill_model = fill_model
         self._clock = clock
         self._risk_gate = risk_gate or ExecutionRiskGate()
         self._config = config or load_validation_execution_config()
         self._mode = mode
+        self._emit_events = emit_events
         self._position_bars: dict[str, int] = {}
         self._pending_entries: list[_PendingEntry] = []
         self._position_orders: dict[str, str] = {}
+
+    def _filter_events(self, events: list) -> tuple:
+        if self._emit_events:
+            return tuple(events)
+        return tuple(e for e in events if e.event_type in self._SCORE_OUTCOME_TYPES)
 
     async def execute(
         self,
@@ -68,16 +83,18 @@ class SimulatedExecutionEngine:
         quantity = self._position_size(snapshot, signal.entry_price, signal.stop_loss)
         if quantity <= 0:
             return ExecutionResult(
-                events=(
-                    self._execution_failed(
-                        decision.event_time,
-                        processing_time,
-                        correlation_id,
-                        symbol,
-                        timeframe,
-                        error="invalid_position_size",
-                        stage="sizing",
-                    ),
+                events=self._filter_events(
+                    [
+                        self._execution_failed(
+                            decision.event_time,
+                            processing_time,
+                            correlation_id,
+                            symbol,
+                            timeframe,
+                            error="invalid_position_size",
+                            stage="sizing",
+                        )
+                    ]
                 ),
                 transitions=(),
             )
@@ -101,19 +118,20 @@ class SimulatedExecutionEngine:
         transitions: list[StateTransitionEvent] = []
         causation_id: str | None = None
 
-        intent_event = build_envelope(
-            event_family=EventFamily.EXECUTION,
-            event_type=ExecutionEventType.ORDER_INTENT_CREATED,
-            event_time=decision.event_time,
-            processing_time=processing_time,
-            correlation_id=correlation_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            mode=self._mode,
-            payload={"intent": intent.model_dump(mode="json")},
-        )
-        events.append(intent_event)
-        causation_id = intent_event.event_id
+        if self._emit_events:
+            intent_event = build_envelope(
+                event_family=EventFamily.EXECUTION,
+                event_type=ExecutionEventType.ORDER_INTENT_CREATED,
+                event_time=decision.event_time,
+                processing_time=processing_time,
+                correlation_id=correlation_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                mode=self._mode,
+                payload={"intent": intent.model_dump(mode="json")},
+            )
+            events.append(intent_event)
+            causation_id = intent_event.event_id
 
         risk_result = self._risk_gate.check(intent, snapshot)
         if not risk_result.passed:
@@ -130,7 +148,7 @@ class SimulatedExecutionEngine:
                 payload={"reason": risk_result.reason, "stage": "pre_trade"},
             )
             events.append(reject_event)
-            return ExecutionResult(events=tuple(events), transitions=())
+            return ExecutionResult(events=self._filter_events(events), transitions=())
 
         order = Order(
             order_id=f"ord_{uuid.uuid4().hex[:12]}",
@@ -139,39 +157,40 @@ class SimulatedExecutionEngine:
             submitted_at=processing_time,
             venue="simulator",
         )
-        submit_event = build_envelope(
-            event_family=EventFamily.EXECUTION,
-            event_type=ExecutionEventType.ORDER_SUBMITTED,
-            event_time=decision.event_time,
-            processing_time=processing_time,
-            correlation_id=correlation_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            mode=self._mode,
-            causation_id=causation_id,
-            payload={
-                "order": order.model_dump(mode="json"),
-                "venue": "simulator",
-                "decision_id": decision.decision_id,
-            },
-        )
-        events.append(submit_event)
-        causation_id = submit_event.event_id
+        if self._emit_events:
+            submit_event = build_envelope(
+                event_family=EventFamily.EXECUTION,
+                event_type=ExecutionEventType.ORDER_SUBMITTED,
+                event_time=decision.event_time,
+                processing_time=processing_time,
+                correlation_id=correlation_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                mode=self._mode,
+                causation_id=causation_id,
+                payload={
+                    "order": order.model_dump(mode="json"),
+                    "venue": "simulator",
+                    "decision_id": decision.decision_id,
+                },
+            )
+            events.append(submit_event)
+            causation_id = submit_event.event_id
 
-        ack_event = build_envelope(
-            event_family=EventFamily.EXECUTION,
-            event_type=ExecutionEventType.ORDER_ACKNOWLEDGED,
-            event_time=decision.event_time,
-            processing_time=processing_time,
-            correlation_id=correlation_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            mode=self._mode,
-            causation_id=causation_id,
-            payload={"order_id": order.order_id, "venue": "simulator"},
-        )
-        events.append(ack_event)
-        causation_id = ack_event.event_id
+            ack_event = build_envelope(
+                event_family=EventFamily.EXECUTION,
+                event_type=ExecutionEventType.ORDER_ACKNOWLEDGED,
+                event_time=decision.event_time,
+                processing_time=processing_time,
+                correlation_id=correlation_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                mode=self._mode,
+                causation_id=causation_id,
+                payload={"order_id": order.order_id, "venue": "simulator"},
+            )
+            events.append(ack_event)
+            causation_id = ack_event.event_id
 
         position_side: Literal["LONG", "SHORT"] = "LONG" if signal.side == "BUY" else "SHORT"
 
@@ -190,7 +209,7 @@ class SimulatedExecutionEngine:
                     portfolio_id=snapshot.portfolio.portfolio_id,
                 )
             )
-            return ExecutionResult(events=tuple(events), transitions=())
+            return ExecutionResult(events=self._filter_events(events), transitions=())
 
         fill_events, transition = self._open_position(
             order=order,
@@ -212,7 +231,7 @@ class SimulatedExecutionEngine:
         if transition:
             transitions.append(transition)
 
-        return ExecutionResult(events=tuple(events), transitions=tuple(transitions))
+        return ExecutionResult(events=self._filter_events(events), transitions=tuple(transitions))
 
     async def evaluate_bar(
         self,
@@ -284,7 +303,7 @@ class SimulatedExecutionEngine:
             events.extend(close_events)
             transitions.append(transition)
 
-        return ExecutionResult(events=tuple(events), transitions=tuple(transitions))
+        return ExecutionResult(events=self._filter_events(events), transitions=tuple(transitions))
 
     async def _process_pending_entries(
         self,
@@ -328,7 +347,7 @@ class SimulatedExecutionEngine:
                 transitions.append(transition)
 
         self._pending_entries = remaining
-        return ExecutionResult(events=tuple(events), transitions=tuple(transitions))
+        return ExecutionResult(events=self._filter_events(events), transitions=tuple(transitions))
 
     def _open_position(
         self,
@@ -361,21 +380,26 @@ class SimulatedExecutionEngine:
             fill_time=event_time,
         )
 
-        fill_event = build_envelope(
-            event_family=EventFamily.EXECUTION,
-            event_type=ExecutionEventType.FILL_RECEIVED,
-            event_time=event_time,
-            processing_time=processing_time,
-            correlation_id=correlation_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            mode=self._mode,
-            causation_id=causation_id,
-            payload={
-                "fill": fill.model_dump(mode="json"),
-                "fill_model_id": self._fill_model.model_id,
-            },
-        )
+        events: list = []
+        fill_event_id: str | None = None
+        if self._emit_events:
+            fill_event = build_envelope(
+                event_family=EventFamily.EXECUTION,
+                event_type=ExecutionEventType.FILL_RECEIVED,
+                event_time=event_time,
+                processing_time=processing_time,
+                correlation_id=correlation_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                mode=self._mode,
+                causation_id=causation_id,
+                payload={
+                    "fill": fill.model_dump(mode="json"),
+                    "fill_model_id": self._fill_model.model_id,
+                },
+            )
+            events.append(fill_event)
+            fill_event_id = fill_event.event_id
 
         position_id = f"pos_{uuid.uuid4().hex[:12]}"
         position = PositionState(
@@ -400,13 +424,14 @@ class SimulatedExecutionEngine:
             symbol=symbol,
             timeframe=timeframe,
             mode=self._mode,
-            causation_id=fill_event.event_id,
+            causation_id=fill_event_id,
             payload={
                 "position_id": position_id,
                 "entry_fill_id": fill.fill_id,
                 "position": position.model_dump(mode="json"),
             },
         )
+        events.append(open_event)
 
         transition = StateTransitionEvent(
             transition_id=f"trans_{uuid.uuid4().hex[:12]}",
@@ -420,7 +445,7 @@ class SimulatedExecutionEngine:
             event_time=event_time,
             correlation_id=correlation_id,
         )
-        return [fill_event, open_event], transition
+        return events, transition
 
     def _close_position(
         self,
@@ -453,21 +478,26 @@ class SimulatedExecutionEngine:
         else:
             pnl = (position.entry_price - fill_price) * position.quantity - fee
 
-        fill_event = build_envelope(
-            event_family=EventFamily.EXECUTION,
-            event_type=ExecutionEventType.FILL_RECEIVED,
-            event_time=event_time,
-            processing_time=processing_time,
-            correlation_id=correlation_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            mode=self._mode,
-            payload={
-                "fill": fill.model_dump(mode="json"),
-                "fill_model_id": self._fill_model.model_id,
-                "exit": True,
-            },
-        )
+        events: list = []
+        fill_event_id: str | None = None
+        if self._emit_events:
+            fill_event = build_envelope(
+                event_family=EventFamily.EXECUTION,
+                event_type=ExecutionEventType.FILL_RECEIVED,
+                event_time=event_time,
+                processing_time=processing_time,
+                correlation_id=correlation_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                mode=self._mode,
+                payload={
+                    "fill": fill.model_dump(mode="json"),
+                    "fill_model_id": self._fill_model.model_id,
+                    "exit": True,
+                },
+            )
+            events.append(fill_event)
+            fill_event_id = fill_event.event_id
 
         close_event = build_envelope(
             event_family=EventFamily.EXECUTION,
@@ -478,7 +508,7 @@ class SimulatedExecutionEngine:
             symbol=symbol,
             timeframe=timeframe,
             mode=self._mode,
-            causation_id=fill_event.event_id,
+            causation_id=fill_event_id,
             payload={
                 "position_id": position.position_id,
                 "exit_reason": exit_reason,
@@ -493,6 +523,7 @@ class SimulatedExecutionEngine:
                 "bars_held": self._position_bars.get(position.position_id, 0),
             },
         )
+        events.append(close_event)
 
         transition = StateTransitionEvent(
             transition_id=f"trans_{uuid.uuid4().hex[:12]}",
@@ -509,7 +540,7 @@ class SimulatedExecutionEngine:
         )
         self._position_bars.pop(position.position_id, None)
         self._position_orders.pop(position.position_id, None)
-        return [fill_event, close_event], transition
+        return events, transition
 
     def _execution_failed(
         self,

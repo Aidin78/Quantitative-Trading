@@ -91,3 +91,75 @@ async def test_validation_outcome_metrics_include_capital_fields(validation_stac
     if outcome["positions_opened"] > 0:
         assert outcome["total_trades"] > 0
         assert 0.0 <= outcome["win_rate"] <= 1.0
+
+
+def _build_harness(csv_path: Path, real_providers, *, emit_events: bool):
+    df = CsvDataProvider(csv_path)._df
+    start = df["timestamp"].iloc[0].to_pydatetime()
+    end = df["timestamp"].iloc[-1].to_pydatetime()
+    clock = SimulatedClock(event_time=start)
+    provider = CsvDataProvider(csv_path)
+    feature_store = InMemoryFeatureStore()
+    state_store = InMemoryStateStore(portfolio_id="portfolio_default")
+    log_handler = EventLogHandler(families={EventFamily.EXECUTION})
+    bus = InMemoryEventBus(handlers=[log_handler])
+    fill_model = load_default_fill_model()
+    execution_engine = SimulatedExecutionEngine(fill_model, clock, emit_events=emit_events)
+    runtime = PlatformRuntime(
+        data_provider=provider,
+        feature_builder=DefaultFeatureBuilder(store=feature_store),
+        feature_store=feature_store,
+        state_store=state_store,
+        providers=real_providers,
+        decision_engine=DecisionEngine(load_engine_config()),
+        event_bus=bus,
+        clock=clock,
+        portfolio_id="portfolio_default",
+        mode="validation",
+        execution_engine=execution_engine,
+        persist_features=False,
+        emit_events=emit_events,
+    )
+    config = ValidationConfig(
+        symbol="BTC/USDT",
+        timeframe="1h",
+        start=start,
+        end=end,
+    )
+    harness = ValidationHarness(runtime, provider, clock, log_handler, config=config)
+    return harness, log_handler
+
+
+@pytest.mark.asyncio
+async def test_emit_events_false_outcome_parity(csv_path: Path, real_providers) -> None:
+    """Score-only path must match full-envelope outcome metrics for optimization."""
+    full_harness, full_log = _build_harness(csv_path, real_providers, emit_events=True)
+    score_harness, score_log = _build_harness(csv_path, real_providers, emit_events=False)
+
+    full = await full_harness.run(retain_cycles=False)
+    score = await score_harness.run(retain_cycles=False)
+
+    keys = (
+        "optimization_score",
+        "total_trades",
+        "return_pct",
+        "max_drawdown_pct",
+        "sharpe_ratio",
+        "positions_opened",
+        "positions_closed",
+        "ending_equity",
+    )
+    for key in keys:
+        assert full.outcome_metrics[key] == pytest.approx(
+            score.outcome_metrics[key], rel=1e-9, abs=1e-9
+        ), key
+
+    full_families = {e.event_family for e in full_log.events}
+    score_families = {e.event_family for e in score_log.events}
+    assert EventFamily.EXECUTION in full_families or not full_log.events
+    assert score_families <= {EventFamily.EXECUTION}
+    assert not any(
+        e.event_type == ExecutionEventType.ORDER_INTENT_CREATED for e in score_log.events
+    )
+    assert not any(e.event_family == EventFamily.MARKET for e in score.events)
+    assert not any(e.event_family == EventFamily.DECISION for e in score.events)
