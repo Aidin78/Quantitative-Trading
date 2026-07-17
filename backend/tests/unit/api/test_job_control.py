@@ -15,15 +15,18 @@ from src.main import app
 
 @pytest.fixture(autouse=True)
 def _clear_job_stores() -> None:
-    optimization_sweeps._sweeps.clear()
-    optimization_sweeps._tasks.clear()
-    validation_jobs._jobs.clear()
-    validation_jobs._tasks.clear()
+    from src.api.services.job_persistence import InMemoryJobPersistence
+
+    persistence = InMemoryJobPersistence()
+    optimization_sweeps._persistence = persistence
+    validation_jobs._persistence = persistence
+    optimization_sweeps.clear_local()
+    validation_jobs.clear_local()
     yield
-    optimization_sweeps._sweeps.clear()
-    optimization_sweeps._tasks.clear()
-    validation_jobs._jobs.clear()
-    validation_jobs._tasks.clear()
+    optimization_sweeps.clear_local()
+    validation_jobs.clear_local()
+    persistence.clear_namespace("optimization")
+    persistence.clear_namespace("validation")
 
 
 @pytest.fixture

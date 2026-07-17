@@ -213,20 +213,28 @@ async def apply_optimization_best(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     sweep = optimization_sweeps.get(sweep_id)
-    if sweep is None or sweep.result is None:
+    snapshot = (
+        result_to_dict(sweep.result)
+        if sweep is not None and sweep.result is not None
+        else (sweep.result_snapshot if sweep is not None else None)
+    )
+    if sweep is None or snapshot is None:
         raise HTTPException(status_code=404, detail="No completed optimization sweep found")
 
     use_fallback = body.use_fallback
     applied_from = "best"
-    if sweep.result.best_valid and sweep.result.best is not None:
-        params = sweep.result.best.params
-    elif use_fallback and sweep.result.fallback_trial is not None:
-        params = sweep.result.fallback_trial.params
+    best = snapshot.get("best")
+    fallback = snapshot.get("fallback_trial")
+    best_valid = bool(snapshot.get("best_valid"))
+    if best_valid and best is not None:
+        params = best["params"]
+    elif use_fallback and fallback is not None:
+        params = fallback["params"]
         applied_from = "fallback"
     else:
         raise HTTPException(
             status_code=400,
-            detail=sweep.result.selection_message
+            detail=snapshot.get("selection_message")
             or (
                 "No valid best configuration. "
                 "Pass use_fallback=true to apply the closest candidate."
@@ -239,11 +247,7 @@ async def apply_optimization_best(
     await save_revision(db, revision)
     await db.commit()
 
-    trial_payload = (
-        result_to_dict(sweep.result)["best"]
-        if applied_from == "best"
-        else result_to_dict(sweep.result).get("fallback_trial")
-    )
+    trial_payload = best if applied_from == "best" else fallback
 
     return {
         "sweep_id": sweep_id,
@@ -251,8 +255,6 @@ async def apply_optimization_best(
         "applied_params": params,
         "applied_from": applied_from,
         "best": trial_payload,
-        "holdout_start": sweep.result.holdout_start.isoformat()
-        if sweep.result.holdout_start
-        else None,
-        "holdout_end": sweep.result.holdout_end.isoformat() if sweep.result.holdout_end else None,
+        "holdout_start": snapshot.get("holdout_start"),
+        "holdout_end": snapshot.get("holdout_end"),
     }

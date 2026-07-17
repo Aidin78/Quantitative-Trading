@@ -364,6 +364,14 @@ async def export_validation(
             "revision_id": job.result.revision_id,
             "experiment_id": job.result.experiment_id,
         }
+    elif job and job.result_snapshot:
+        data = {
+            "id": job_id,
+            "engine_metrics": job.result_snapshot.get("engine_metrics"),
+            "outcome_metrics": job.result_snapshot.get("outcome_metrics"),
+            "revision_id": job.result_snapshot.get("revision_id"),
+            "experiment_id": job.result_snapshot.get("experiment_id"),
+        }
     else:
         row = await db.get(BacktestRunRow, job_id)
         if row is None:
