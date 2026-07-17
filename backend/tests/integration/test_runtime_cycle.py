@@ -49,7 +49,7 @@ async def test_full_runtime_cycle(runtime: PlatformRuntime) -> None:
     assert result.correlation_id == "integration_cycle"
     assert result.feature_set.feature_set_id
     assert result.snapshot.snapshot_id
-    assert len(result.signals) == 2
+    assert len(result.signals) == sum(1 for p in runtime._providers if p.enabled)
     assert len(result.events) >= 5
 
 

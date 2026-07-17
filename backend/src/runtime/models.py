@@ -12,6 +12,13 @@ from src.core.contracts.state import StateSnapshot
 
 @dataclass(frozen=True)
 class CycleResult:
+    """Outcome of one ``PlatformRuntime.run_cycle``.
+
+    ``snapshot`` is the **decision-time** state: after pre-decision
+    ``evaluate_bar`` (pending fills, SL/TP/timeout) and before same-bar
+    signal exit / ``execute``. It is not a post-trade portfolio snapshot.
+    """
+
     correlation_id: str
     feature_set: FeatureSet
     context: MarketContext

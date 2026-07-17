@@ -26,6 +26,27 @@ from src.state.transitions import StateTransitionEvent
 
 
 class PlatformRuntime:
+    """Orchestrates one market bar from data through decision and optional execution.
+
+    When ``execution_engine`` is set, each ``run_cycle`` follows this bar lifecycle:
+
+    1. **Pre-decision ``evaluate_bar``** — fill pending ``next_open`` entries, then
+       check SL/TP/timeout (increments bars held). Transitions are applied before
+       the decision snapshot.
+    2. **Features / providers / decision** — decision sees the post-exit portfolio.
+    3. **Same-bar signal exit** (approved only) — second ``evaluate_bar`` with
+       ``increment_bars=False`` so bars-held is not double-counted; closes on
+       opposing ``approved_side``.
+    4. **``execute``** — open a new position immediately (``fill_at=close|mid``) or
+       queue for the next bar's pre-decision eval (``fill_at=next_open``).
+
+    OHLC tradeoff: SL/TP use the full bar high/low while the decision uses that
+    bar's close. That is intentionally optimistic vs strict intrabar sequencing
+    (stop may fill "before" the close the signal saw).
+
+    ``CycleResult.snapshot`` is decision-time state (after step 1), not post-execute.
+    """
+
     def __init__(
         self,
         *,
@@ -182,6 +203,7 @@ class PlatformRuntime:
 
         self._maybe_reset_daily_risk(event_time, cycle_id)
 
+        # Decision-time snapshot: after pre-decision evaluate_bar, before execute.
         snapshot = self._state_store.snapshot(self._portfolio_id, correlation_id=cycle_id)
 
         signals: list[StrategySignal] = []

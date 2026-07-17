@@ -227,6 +227,14 @@ class SimulatedExecutionEngine:
         approved_side: Literal["BUY", "SELL"] | None = None,
         increment_bars: bool = True,
     ) -> ExecutionResult:
+        """Evaluate fills and exits for one bar; returns transitions (no direct store writes).
+
+        With ``increment_bars=True`` (pre-decision path): process pending ``next_open``
+        entries, increment bars held, then check SL/TP/timeout against bar H/L/close.
+
+        With ``increment_bars=False`` (same-bar signal-exit path): skip pending fills and
+        bar increment; if ``approved_side`` opposes the open position, exit at close.
+        """
         events: list = []
         transitions: list[StateTransitionEvent] = []
 
