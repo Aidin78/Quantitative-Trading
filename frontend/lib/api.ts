@@ -122,6 +122,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  cancelValidation: (id: string) =>
+    apiFetch<{ id: string; status: string; message?: string }>(
+      `/api/v1/validation/${id}/cancel`,
+      { method: "POST" },
+    ),
   validation: (id: string) =>
     apiFetch<ValidationJob>(`/api/v1/validation/${id}`),
   validationTrades: (id: string) =>
@@ -162,6 +167,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  cancelOptimization: (id: string) =>
+    apiFetch<{ id: string; status: string; message?: string }>(
+      `/api/v1/optimization/${id}/cancel`,
+      { method: "POST" },
+    ),
   optimization: (id: string) =>
     apiFetch<OptimizationSweep>(`/api/v1/optimization/${id}`),
   applyOptimization: (id: string, body?: { use_fallback?: boolean }) =>

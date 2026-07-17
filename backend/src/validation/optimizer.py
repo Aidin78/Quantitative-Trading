@@ -609,6 +609,57 @@ async def _run_trial(
     return score, outcome, revision.revision_id
 
 
+_AGGREGATE_MEAN_KEYS = (
+    "return_pct",
+    "win_rate",
+    "profit_factor",
+    "max_drawdown_pct",
+    "max_drawdown",
+    "sharpe_ratio",
+    "sortino_ratio",
+    "trade_sharpe_ratio",
+    "score",
+    "optimization_score",
+)
+
+
+def _aggregate_fold_outcomes(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
+    """Merge per-fold outcomes for selection gates (sum trades, mean key scalars)."""
+    if not outcomes:
+        return {}
+    if len(outcomes) == 1:
+        return dict(outcomes[0])
+
+    aggregated = dict(outcomes[-1])
+    aggregated["total_trades"] = sum(int(o.get("total_trades", 0)) for o in outcomes)
+    aggregated["positions_opened"] = sum(int(o.get("positions_opened", 0)) for o in outcomes)
+    aggregated["positions_closed"] = sum(int(o.get("positions_closed", 0)) for o in outcomes)
+    aggregated["orders_rejected"] = sum(int(o.get("orders_rejected", 0)) for o in outcomes)
+
+    for key in _AGGREGATE_MEAN_KEYS:
+        values: list[float] = []
+        for outcome in outcomes:
+            raw = outcome.get(key)
+            if raw is None:
+                continue
+            try:
+                parsed = float(raw)
+            except (TypeError, ValueError):
+                continue
+            if math.isfinite(parsed):
+                values.append(parsed)
+        if values:
+            aggregated[key] = sum(values) / len(values)
+
+    # Stability should reflect all folds' months when available.
+    months: list[Any] = []
+    for outcome in outcomes:
+        months.extend(outcome.get("monthly_breakdown") or [])
+    if months:
+        aggregated["monthly_breakdown"] = months
+    return aggregated
+
+
 async def _score_trial_windows(
     *,
     params: dict[str, Any],
@@ -621,7 +672,7 @@ async def _score_trial_windows(
     segment: Literal["train", "test"],
 ) -> tuple[float, dict[str, Any], list[float], float]:
     scores: list[float] = []
-    last_outcome: dict[str, Any] = {}
+    outcomes: list[dict[str, Any]] = []
     for window in windows:
         if segment == "train":
             start, end = window.train_start, window.train_end
@@ -638,14 +689,14 @@ async def _score_trial_windows(
             csv_path=csv_path,
         )
         scores.append(score)
-        last_outcome = outcome
+        outcomes.append(outcome)
     mean_score = sum(scores) / len(scores) if scores else 0.0
     if len(scores) > 1:
         variance = sum((score - mean_score) ** 2 for score in scores) / (len(scores) - 1)
         fold_std = math.sqrt(variance)
     else:
         fold_std = 0.0
-    return mean_score, last_outcome, scores, fold_std
+    return mean_score, _aggregate_fold_outcomes(outcomes), scores, fold_std
 
 
 @dataclass
@@ -709,13 +760,14 @@ async def run_optimization(
     resolved_csv_path = csv_path
     if source == "exchange" and not csv_path:
         settings = get_settings()
+        # Prefetch the full [start, end] range so holdout bars are on disk too.
         resolved_csv_path = str(
             await get_or_download_csv(
                 exchange_id=settings.exchange_id,
                 symbol=symbol,
                 timeframe=timeframe,
-                start=opt_start,
-                end=opt_end,
+                start=start,
+                end=end,
             )
         )
         effective_source = "csv"
@@ -732,8 +784,11 @@ async def run_optimization(
     else:
         wf_windows = []
     if wf_windows:
-        train_start, train_end = wf_windows[0].train_start, wf_windows[0].train_end
-        test_start, test_end = wf_windows[-1].test_start, wf_windows[-1].test_end
+        # Label the full multi-fold span (not just first-train / last-test).
+        train_start = wf_windows[0].train_start
+        train_end = max(window.train_end for window in wf_windows)
+        test_start = min(window.test_start for window in wf_windows)
+        test_end = wf_windows[-1].test_end
     else:
         (train_start, train_end), (test_start, test_end) = split_train_test(
             opt_start, opt_end, train_ratio=train_ratio
@@ -1003,14 +1058,18 @@ async def run_optimization(
         h_return = float(holdout_outcome.get("return_pct", 0))
         holdout_valid = h_trades >= holdout_min_trades and h_return >= min_return_pct
         if best_valid and not holdout_valid:
+            # Keep `best` for inspection, but mark apply-invalid and expose fallback.
             best_valid = False
             holdout_msg = (
                 f"Holdout check failed: {h_trades} trades, {h_return:.2f}% return "
-                f"(need >={holdout_min_trades} trades and >={min_return_pct}% return)."
+                f"(need >={holdout_min_trades} trades and >={min_return_pct}% return). "
+                "Pass use_fallback=true to apply the closest candidate."
             )
             selection_message = (
                 f"{selection_message} {holdout_msg}".strip() if selection_message else holdout_msg
             )
+            if fallback_trial is None and finalists:
+                fallback_trial = max(finalists, key=_trial_test_trades)
 
     return OptimizationResult(
         sweep_id=f"sweep_{uuid.uuid4().hex[:12]}",

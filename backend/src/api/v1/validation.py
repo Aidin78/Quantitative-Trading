@@ -18,7 +18,7 @@ from src.api.services.validation_runner import (
     new_validation_job_id,
     run_validation_job,
 )
-from src.api.services.validation_service import job_response, validation_jobs
+from src.api.services.validation_service import JobCancelled, job_response, validation_jobs
 from src.core.settings import load_app_yaml_config
 from src.db.models import BacktestRunRow, ConfigRevisionRow, SimulatedTradeRow
 from src.db.repositories.backtest import delete_validation_run, delete_validation_runs
@@ -68,6 +68,9 @@ async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
     validation_jobs.update(job)
 
     async def on_progress(event: ValidationProgressEvent) -> None:
+        current = validation_jobs.get(job_id)
+        if current is not None and current.cancel_requested:
+            raise JobCancelled("Validation job cancelled")
         job.phase = event.phase
         job.message = event.message
         job.progress_current = event.current
@@ -92,20 +95,46 @@ async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
         job.status = "completed"
         job.message = "Validation completed."
         VALIDATION_RUNS_TOTAL.labels(status="completed").inc()
+    except (asyncio.CancelledError, JobCancelled):
+        job.status = "cancelled"
+        job.message = "Validation cancelled."
+        job.error = None
+        VALIDATION_RUNS_TOTAL.labels(status="cancelled").inc()
     except Exception as exc:
         job.status = "failed"
         job.error = format_validation_error(exc)
         job.message = job.error
         VALIDATION_RUNS_TOTAL.labels(status="failed").inc()
-    validation_jobs.update(job)
+    finally:
+        validation_jobs.clear_task(job_id)
+        validation_jobs.update(job)
 
 
 @router.post("/run")
 async def start_validation(body: ValidationRunRequest) -> dict:
+    if validation_jobs.has_active():
+        raise HTTPException(
+            status_code=429,
+            detail="A validation job is already running. Cancel it or wait for completion.",
+        )
     job_id = new_validation_job_id()
     validation_jobs.create(job_id, body.model_dump())
-    asyncio.create_task(_execute_job(job_id, body))
+    task = asyncio.create_task(_execute_job(job_id, body))
+    validation_jobs.set_task(job_id, task)
     return {"id": job_id, "status": "pending"}
+
+
+@router.post("/{job_id}/cancel")
+async def cancel_validation(job_id: str) -> dict:
+    job = validation_jobs.request_cancel(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Validation job not found")
+    if job.status not in {"pending", "running", "cancelled"}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot cancel job in status '{job.status}'",
+        )
+    return {"id": job_id, "status": job.status, "message": job.message}
 
 
 @router.post("/walk-forward")

@@ -106,6 +106,13 @@ function OptimizationPageContent() {
     onSuccess: (res) => persistSweepId(res.id),
   });
 
+  const cancelSweep = useMutation({
+    mutationFn: () => api.cancelOptimization(sweepId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["optimization", sweepId] });
+    },
+  });
+
   const apply = useMutation({
     mutationFn: (useFallback: boolean) =>
       api.applyOptimization(sweepId!, { use_fallback: useFallback }),
@@ -117,7 +124,7 @@ function OptimizationPageContent() {
   const statusVariant =
     sweep?.status === "completed"
       ? "success"
-      : sweep?.status === "failed"
+      : sweep?.status === "failed" || sweep?.status === "cancelled"
         ? "danger"
         : "accent";
 
@@ -500,7 +507,17 @@ function OptimizationPageContent() {
                   </Badge>
                 ) : null}
                 {(sweep.status === "pending" || sweep.status === "running") && (
-                  <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                    <button
+                      type="button"
+                      onClick={() => cancelSweep.mutate()}
+                      disabled={cancelSweep.isPending || !sweepId}
+                      className="btn-secondary text-xs"
+                    >
+                      {cancelSweep.isPending ? "Cancelling…" : "Cancel"}
+                    </button>
+                  </>
                 )}
                 {sweep.elapsed_seconds != null ? (
                   <span className="ml-auto text-xs text-muted">

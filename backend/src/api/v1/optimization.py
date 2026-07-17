@@ -16,6 +16,7 @@ from src.api.services.config_service import (
     write_validation_settings,
 )
 from src.api.services.optimization_service import (
+    JobCancelled,
     new_sweep_id,
     optimization_sweeps,
     result_to_dict,
@@ -94,6 +95,9 @@ async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
     space = OptimizationSpace.from_dict(body.space)
 
     async def on_progress(event: ProgressEvent) -> None:
+        current = optimization_sweeps.get(sweep_id)
+        if current is not None and current.cancel_requested:
+            raise JobCancelled("Optimization sweep cancelled")
         sweep.progress_current = event.current
         sweep.progress_total = event.total
         sweep.phase = event.phase
@@ -153,19 +157,31 @@ async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
         result.sweep_id = sweep_id
         sweep.result = result
         sweep.status = "completed"
+    except (asyncio.CancelledError, JobCancelled):
+        sweep.status = "cancelled"
+        sweep.message = "Optimization cancelled."
+        sweep.error = None
     except Exception as exc:
         sweep.status = "failed"
         sweep.error = format_validation_error(exc)
-    optimization_sweeps.update(sweep)
+    finally:
+        optimization_sweeps.clear_task(sweep_id)
+        optimization_sweeps.update(sweep)
 
 
 @router.post("/run")
 async def start_optimization(
     body: OptimizationRunRequest,
 ) -> dict:
+    if optimization_sweeps.has_active():
+        raise HTTPException(
+            status_code=429,
+            detail="An optimization sweep is already running. Cancel it or wait for completion.",
+        )
     sweep_id = new_sweep_id()
     optimization_sweeps.create(sweep_id, body.model_dump())
-    asyncio.create_task(_execute_sweep(sweep_id, body))
+    task = asyncio.create_task(_execute_sweep(sweep_id, body))
+    optimization_sweeps.set_task(sweep_id, task)
     return {"id": sweep_id, "status": "pending"}
 
 
@@ -175,6 +191,19 @@ async def get_optimization(sweep_id: str) -> dict:
     if sweep is None:
         raise HTTPException(status_code=404, detail="Optimization sweep not found")
     return sweep_response(sweep)
+
+
+@router.post("/{sweep_id}/cancel")
+async def cancel_optimization(sweep_id: str) -> dict:
+    sweep = optimization_sweeps.request_cancel(sweep_id)
+    if sweep is None:
+        raise HTTPException(status_code=404, detail="Optimization sweep not found")
+    if sweep.status not in {"pending", "running", "cancelled"}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot cancel sweep in status '{sweep.status}'",
+        )
+    return {"id": sweep_id, "status": sweep.status, "message": sweep.message}
 
 
 @router.post("/{sweep_id}/apply")

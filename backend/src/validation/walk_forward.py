@@ -55,7 +55,12 @@ def build_anchored_walk_forward_windows(
     windows: int = 3,
     train_ratio: float = 0.7,
 ) -> list[WalkForwardWindow]:
-    """Rolling windows with expanding train anchor from ``start``."""
+    """Rolling windows with expanding train anchor from ``start``.
+
+    Later folds intentionally train through earlier test periods (anchored WF).
+    Ranking on mean train score is therefore not fold-independent; use test/holdout
+    gates for selection fairness.
+    """
     if windows < 1:
         raise ValueError("windows must be >= 1")
     if not 0 < train_ratio < 1:

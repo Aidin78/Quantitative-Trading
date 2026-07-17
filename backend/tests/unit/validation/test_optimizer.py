@@ -421,3 +421,193 @@ def test_holdout_evaluated_after_best_selected() -> None:
     assert holdout_calls
     assert holdout_calls[-1][0] == result.holdout_start
     assert holdout_calls[-1][1] == result.holdout_end
+
+
+def test_aggregate_fold_outcomes_sums_trades_and_means_returns() -> None:
+    from src.validation.optimizer import _aggregate_fold_outcomes
+
+    aggregated = _aggregate_fold_outcomes(
+        [
+            {"total_trades": 10, "return_pct": 2.0, "sharpe_ratio": 1.0},
+            {"total_trades": 20, "return_pct": 4.0, "sharpe_ratio": 3.0},
+        ]
+    )
+    assert aggregated["total_trades"] == 30
+    assert aggregated["return_pct"] == pytest.approx(3.0)
+    assert aggregated["sharpe_ratio"] == pytest.approx(2.0)
+
+
+def test_select_best_uses_aggregated_trades_from_folds() -> None:
+    # Two folds with 12 trades each → aggregated 24 meets min_trades=20.
+    trial = TrialResult(
+        trial_id="agg",
+        params={},
+        train_score=10,
+        train_outcome={},
+        test_score=40,
+        test_outcome={"total_trades": 24, "return_pct": 3.0},
+        stability=0.5,
+        fold_scores=[40.0, 40.0],
+        fold_std=0.0,
+    )
+    best = select_best([trial], min_trades=20, min_return_pct=0.0)
+    assert best is not None
+    assert best.trial_id == "agg"
+
+
+def test_exchange_prefetch_covers_full_range_including_holdout() -> None:
+    from datetime import UTC, datetime
+    from pathlib import Path
+    from unittest.mock import AsyncMock, patch
+
+    download_calls: list[tuple[datetime, datetime]] = []
+
+    async def fake_download(*, start, end, **kwargs):
+        download_calls.append((start, end))
+        return Path("cache.csv")
+
+    async def fake_run_trial(**kwargs):
+        return 5.0, {"total_trades": 25, "return_pct": 2.0}, "rev"
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 4, 1, tzinfo=UTC)
+    space = OptimizationSpace(min_confidence=(0.6,), min_risk_reward=(1.2,))
+    trials = generate_trials(space, max_trials=1)
+
+    with (
+        patch(
+            "src.validation.optimizer.get_or_download_csv",
+            new=AsyncMock(side_effect=fake_download),
+        ),
+        patch(
+            "src.validation.optimizer.get_settings",
+            return_value=type("S", (), {"exchange_id": "binance"})(),
+        ),
+        patch(
+            "src.validation.optimizer._run_trial",
+            new=AsyncMock(side_effect=fake_run_trial),
+        ),
+        patch("src.validation.optimizer.generate_trials", return_value=trials),
+        patch("src.validation.optimizer.refine_trials_around", return_value=[]),
+    ):
+        import asyncio
+
+        asyncio.run(
+            run_optimization(
+                symbol="BTC/USDT",
+                timeframe="1h",
+                start=start,
+                end=end,
+                source="exchange",
+                max_trials=1,
+                top_k=1,
+                holdout_ratio=0.2,
+                local_refine=False,
+            )
+        )
+
+    assert download_calls == [(start, end)]
+
+
+def test_holdout_failure_sets_fallback_and_invalid_best() -> None:
+    from datetime import UTC, datetime
+    from unittest.mock import AsyncMock, patch
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 4, 1, tzinfo=UTC)
+    (_, _), holdout = split_holdout(start, end, holdout_ratio=0.2)
+    assert holdout is not None
+    holdout_start, _holdout_end = holdout
+
+    async def fake_run_trial(*, start, end, **kwargs):
+        if start >= holdout_start:
+            return 1.0, {"total_trades": 1, "return_pct": -1.0}, "rev"
+        return 5.0, {"total_trades": 25, "return_pct": 2.0}, "rev"
+
+    space = OptimizationSpace(min_confidence=(0.6,), min_risk_reward=(1.2,))
+    trials = generate_trials(space, max_trials=1)
+
+    with (
+        patch(
+            "src.validation.optimizer._run_trial",
+            new=AsyncMock(side_effect=fake_run_trial),
+        ),
+        patch("src.validation.optimizer.generate_trials", return_value=trials),
+        patch("src.validation.optimizer.refine_trials_around", return_value=[]),
+    ):
+        import asyncio
+
+        result = asyncio.run(
+            run_optimization(
+                symbol="BTC/USDT",
+                timeframe="1h",
+                start=start,
+                end=end,
+                source="csv",
+                max_trials=1,
+                top_k=1,
+                holdout_ratio=0.2,
+                min_trades=20,
+                min_trades_holdout=10,
+                local_refine=False,
+            )
+        )
+
+    assert result.best is not None
+    assert result.best_valid is False
+    assert result.holdout_valid is False
+    assert result.fallback_trial is not None
+    assert result.selection_message is not None
+    assert "Holdout check failed" in result.selection_message
+    assert "use_fallback=true" in result.selection_message
+
+
+def test_walk_forward_result_labels_span_all_folds() -> None:
+    from datetime import UTC, datetime
+    from unittest.mock import AsyncMock, patch
+
+    async def fake_score(**kwargs):
+        return 1.0, {"total_trades": 25, "return_pct": 2.0}, [1.0, 1.0], 0.0
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 4, 1, tzinfo=UTC)
+    space = OptimizationSpace(min_confidence=(0.6,), min_risk_reward=(1.2,))
+    trials = generate_trials(space, max_trials=1)
+
+    with (
+        patch(
+            "src.validation.optimizer._score_trial_windows",
+            new=AsyncMock(side_effect=fake_score),
+        ),
+        patch(
+            "src.validation.optimizer._run_trial",
+            new=AsyncMock(return_value=(1.0, {"total_trades": 25, "return_pct": 2.0}, "rev")),
+        ),
+        patch("src.validation.optimizer.generate_trials", return_value=trials),
+        patch("src.validation.optimizer.refine_trials_around", return_value=[]),
+    ):
+        import asyncio
+
+        from src.validation.walk_forward import build_anchored_walk_forward_windows
+
+        result = asyncio.run(
+            run_optimization(
+                symbol="BTC/USDT",
+                timeframe="1h",
+                start=start,
+                end=end,
+                source="csv",
+                max_trials=1,
+                top_k=1,
+                walk_forward_windows=3,
+                walk_forward_mode="anchored",
+                holdout_ratio=0.0,
+                local_refine=False,
+            )
+        )
+        windows = build_anchored_walk_forward_windows(start, end, windows=3, train_ratio=0.7)
+
+    assert result.train_start == windows[0].train_start
+    assert result.train_end == max(w.train_end for w in windows)
+    assert result.test_start == min(w.test_start for w in windows)
+    assert result.test_end == windows[-1].test_end

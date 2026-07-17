@@ -104,6 +104,13 @@ function ValidationPageContent() {
     onSuccess: (res) => persistJobId(res.id),
   });
 
+  const cancelJob = useMutation({
+    mutationFn: () => api.cancelValidation(jobId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["validation", jobId] });
+    },
+  });
+
   const walkForward = useMutation({
     mutationFn: () =>
       api.walkForward({
@@ -127,7 +134,7 @@ function ValidationPageContent() {
   const statusVariant =
     job?.status === "completed"
       ? "success"
-      : job?.status === "failed"
+      : job?.status === "failed" || job?.status === "cancelled"
         ? "danger"
         : "accent";
 
@@ -339,7 +346,17 @@ function ValidationPageContent() {
                   </Badge>
                 ) : null}
                 {isJobActive && (
-                  <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                    <button
+                      type="button"
+                      onClick={() => cancelJob.mutate()}
+                      disabled={cancelJob.isPending || !jobId}
+                      className="btn-secondary text-xs"
+                    >
+                      {cancelJob.isPending ? "Cancelling…" : "Cancel"}
+                    </button>
+                  </>
                 )}
                 {job.elapsed_seconds != null ? (
                   <span className="ml-auto text-xs text-muted">

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import math
 import uuid
 from dataclasses import dataclass, field
@@ -7,6 +8,10 @@ from datetime import UTC, datetime
 from typing import Any
 
 from src.validation.optimizer import OptimizationResult, TrialResult
+
+
+class JobCancelled(Exception):
+    """Raised cooperatively when a sweep cancel is requested."""
 
 
 @dataclass
@@ -21,6 +26,7 @@ class OptimizationSweep:
     phase: str = ""
     message: str = ""
     live_trials: list[TrialResult] = field(default_factory=list)
+    cancel_requested: bool = False
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
@@ -28,6 +34,7 @@ class OptimizationSweep:
 class OptimizationSweepStore:
     def __init__(self) -> None:
         self._sweeps: dict[str, OptimizationSweep] = {}
+        self._tasks: dict[str, asyncio.Task[None]] = {}
 
     def create(self, sweep_id: str, config: dict[str, Any]) -> OptimizationSweep:
         sweep = OptimizationSweep(id=sweep_id, status="pending", config=config)
@@ -40,6 +47,29 @@ class OptimizationSweepStore:
     def update(self, sweep: OptimizationSweep) -> None:
         sweep.updated_at = datetime.now(UTC)
         self._sweeps[sweep.id] = sweep
+
+    def set_task(self, sweep_id: str, task: asyncio.Task[None]) -> None:
+        self._tasks[sweep_id] = task
+
+    def clear_task(self, sweep_id: str) -> None:
+        self._tasks.pop(sweep_id, None)
+
+    def has_active(self) -> bool:
+        return any(s.status in {"pending", "running"} for s in self._sweeps.values())
+
+    def request_cancel(self, sweep_id: str) -> OptimizationSweep | None:
+        sweep = self._sweeps.get(sweep_id)
+        if sweep is None:
+            return None
+        if sweep.status not in {"pending", "running"}:
+            return sweep
+        sweep.cancel_requested = True
+        sweep.message = "Cancel requested…"
+        self.update(sweep)
+        task = self._tasks.get(sweep_id)
+        if task is not None and not task.done():
+            task.cancel()
+        return sweep
 
 
 optimization_sweeps = OptimizationSweepStore()
