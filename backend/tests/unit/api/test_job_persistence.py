@@ -176,11 +176,51 @@ def test_has_active_sees_persisted_running_job() -> None:
     writer.clear_local()
 
     assert reader.has_active() is True
-    # Hydration of an orphaned running job marks it failed and clears active.
+    # Queue-backed stores preserve active status for the durable worker.
     restored = reader.get("sweep_active")
     assert restored is not None
-    assert restored.status == "failed"
-    assert reader.has_active() is False
+    assert restored.status == "running"
+    assert reader.has_active() is True
+
+
+def test_redis_optimization_preserves_pending_for_worker() -> None:
+    try:
+        import fakeredis
+    except ImportError:
+        pytest.skip("fakeredis not installed")
+
+    persistence = RedisJobPersistence(fakeredis.FakeRedis(decode_responses=True))
+    store = OptimizationSweepStore(persistence=persistence)
+    assert store.uses_job_queue() is True
+    store.create("sweep_queued", {"max_trials": 1, "source": "csv"})
+    store.clear_local()
+    restored = store.get("sweep_queued")
+    assert restored is not None
+    assert restored.status == "pending"
+    assert store.has_active() is True
+
+
+def test_optimization_cancel_without_local_task_persists_flag() -> None:
+    try:
+        import fakeredis
+    except ImportError:
+        pytest.skip("fakeredis not installed")
+
+    persistence = RedisJobPersistence(fakeredis.FakeRedis(decode_responses=True))
+    store = OptimizationSweepStore(persistence=persistence)
+    sweep = store.create("sweep_cancel_flag", {"source": "csv"})
+    sweep.status = "running"
+    store.update(sweep)
+    store.clear_local()
+
+    cancelled = store.request_cancel("sweep_cancel_flag")
+    assert cancelled is not None
+    assert cancelled.cancel_requested is True
+    store.clear_local()
+    reloaded = store.get("sweep_cancel_flag")
+    assert reloaded is not None
+    assert reloaded.cancel_requested is True
+    assert reloaded.status == "running"
 
 
 def test_sweep_created_at_roundtrip_iso() -> None:

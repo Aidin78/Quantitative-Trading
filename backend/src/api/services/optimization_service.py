@@ -46,6 +46,12 @@ class OptimizationSweepStore:
         self._tasks: dict[str, asyncio.Task[None]] = {}
         self._persistence = persistence if persistence is not None else create_job_persistence()
 
+    def uses_job_queue(self) -> bool:
+        return self._persistence.supports_queue()
+
+    def enqueue(self, sweep_id: str) -> None:
+        self._persistence.enqueue(NAMESPACE, sweep_id)
+
     def create(self, sweep_id: str, config: dict[str, Any]) -> OptimizationSweep:
         sweep = OptimizationSweep(id=sweep_id, status="pending", config=config)
         self._sweeps[sweep_id] = sweep
@@ -53,13 +59,27 @@ class OptimizationSweepStore:
         return sweep
 
     def get(self, sweep_id: str) -> OptimizationSweep | None:
+        # Queue-backed sweeps are updated by an external worker — always reload.
+        if self.uses_job_queue():
+            record = self._persistence.load(NAMESPACE, sweep_id)
+            if record is None:
+                return None
+            hydrated = self._hydrate(record, orphan_active=False)
+            local = self._sweeps.get(sweep_id)
+            if local is not None and local.result is not None:
+                hydrated.result = local.result
+            if local is not None and local.live_trials:
+                hydrated.live_trials = local.live_trials
+            self._sweeps[sweep_id] = hydrated
+            return hydrated
+
         sweep = self._sweeps.get(sweep_id)
         if sweep is not None:
             return sweep
         record = self._persistence.load(NAMESPACE, sweep_id)
         if record is None:
             return None
-        hydrated = self._hydrate(record)
+        hydrated = self._hydrate(record, orphan_active=True)
         self._sweeps[sweep_id] = hydrated
         if record.get("status") in ACTIVE_STATUSES and hydrated.status == "failed":
             self._persist(hydrated)
@@ -73,9 +93,11 @@ class OptimizationSweepStore:
             sweep.live_trial_snapshots = [trial_to_dict(t) for t in sweep.live_trials]
         self._sweeps[sweep.id] = sweep
         self._persist(sweep)
+        payload = sweep_response(sweep)
         from src.api.services.job_progress import job_progress
 
-        job_progress.publish(sweep.id, sweep_response(sweep))
+        job_progress.publish(sweep.id, payload)
+        self._persistence.publish_progress(NAMESPACE, payload)
 
     def set_task(self, sweep_id: str, task: asyncio.Task[None]) -> None:
         self._tasks[sweep_id] = task
@@ -84,6 +106,8 @@ class OptimizationSweepStore:
         self._tasks.pop(sweep_id, None)
 
     def has_active(self) -> bool:
+        if self.uses_job_queue():
+            return self._persistence.has_active(NAMESPACE)
         if any(s.status in ACTIVE_STATUSES for s in self._sweeps.values()):
             return True
         return self._persistence.has_active(NAMESPACE)
@@ -133,15 +157,16 @@ class OptimizationSweepStore:
             "live_trial_snapshots": live,
         }
 
-    def _hydrate(self, record: dict[str, Any]) -> OptimizationSweep:
+    def _hydrate(self, record: dict[str, Any], *, orphan_active: bool) -> OptimizationSweep:
         status = str(record.get("status", "failed"))
         error = record.get("error")
         message = str(record.get("message") or "")
-        # Orphaned in-flight jobs after process death cannot continue.
-        if status in ACTIVE_STATUSES:
+        cancel_requested = bool(record.get("cancel_requested"))
+        if orphan_active and status in ACTIVE_STATUSES:
             status = "failed"
             error = error or "Job interrupted by server restart"
             message = message or "Interrupted by server restart."
+            cancel_requested = False
         return OptimizationSweep(
             id=str(record["id"]),
             status=status,
@@ -155,7 +180,7 @@ class OptimizationSweepStore:
             message=message,
             live_trials=[],
             live_trial_snapshots=list(record.get("live_trial_snapshots") or []),
-            cancel_requested=False,
+            cancel_requested=cancel_requested,
             created_at=_parse_dt(record.get("created_at")),
             updated_at=_parse_dt(record.get("updated_at")),
         )

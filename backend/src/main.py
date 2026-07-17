@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.api.auth import get_subject_from_token
-from src.api.services.job_progress_bridge import run_validation_progress_bridge
+from src.api.services.job_progress_bridge import run_job_progress_bridge
 from src.api.v1.router import api_v1_router
 from src.api.websocket.decisions import decision_ws_manager
 from src.core.settings import get_settings, load_app_yaml_config
@@ -29,7 +29,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 async def lifespan(app: FastAPI):
     await init_db(get_async_engine())
     stop_bridge = asyncio.Event()
-    bridge_task = asyncio.create_task(run_validation_progress_bridge(stop_bridge))
+    bridge_task = asyncio.create_task(run_job_progress_bridge(stop_bridge))
     try:
         yield
     finally:

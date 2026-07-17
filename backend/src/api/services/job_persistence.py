@@ -13,6 +13,11 @@ logger = logging.getLogger(__name__)
 ACTIVE_STATUSES = frozenset({"pending", "running"})
 COMPLETED_TTL_SECONDS = 60 * 60 * 24 * 7  # 7 days
 VALIDATION_PROGRESS_CHANNEL = "qtp:jobs:progress:validation"
+OPTIMIZATION_PROGRESS_CHANNEL = "qtp:jobs:progress:optimization"
+
+
+def progress_channel(namespace: str) -> str:
+    return f"qtp:jobs:progress:{namespace}"
 
 
 class JobPersistence(Protocol):
