@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_current_user, get_db
+from src.api.services.job_progress import sse_job_event_stream
 from src.api.services.validation_runner import (
     format_validation_error,
     new_validation_job_id,
@@ -135,6 +136,23 @@ async def cancel_validation(job_id: str) -> dict:
             detail=f"Cannot cancel job in status '{job.status}'",
         )
     return {"id": job_id, "status": job.status, "message": job.message}
+
+
+@router.get("/{job_id}/events")
+async def validation_events(job_id: str) -> StreamingResponse:
+    job = validation_jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Validation job not found")
+    initial = job_response(job)
+    return StreamingResponse(
+        sse_job_event_stream(job_id, initial=initial),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/walk-forward")

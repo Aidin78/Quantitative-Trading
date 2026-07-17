@@ -7,9 +7,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useJobEventSource } from "@/hooks/useJobEventSource";
 import { api, type ValidationJob } from "@/lib/api";
 import {
   clearActiveValidationJobId,
@@ -29,8 +31,15 @@ const ValidationJobContext = createContext<ValidationJobContextValue | null>(
   null,
 );
 
+function isTerminalStatus(status: string | undefined): boolean {
+  return (
+    status === "completed" || status === "failed" || status === "cancelled"
+  );
+}
+
 export function ValidationJobProvider({ children }: { children: ReactNode }) {
   const [jobId, setJobId] = useState<string | null>(null);
+  const streamRef = useRef({ streaming: false, failed: false });
 
   useEffect(() => {
     setJobId(getActiveValidationJobId());
@@ -46,16 +55,28 @@ export function ValidationJobProvider({ children }: { children: ReactNode }) {
     setJobId(null);
   }, []);
 
+  const queryKey = useMemo(() => ["validation", jobId] as const, [jobId]);
+
   const { data: job } = useQuery({
-    queryKey: ["validation", jobId],
+    queryKey,
     queryFn: () => api.validation(jobId!),
     enabled: !!jobId,
     refetchInterval: (q) => {
       const status = q.state.data?.status;
-      if (status === "completed" || status === "failed") return false;
+      if (isTerminalStatus(status)) return false;
+      if (streamRef.current.streaming && !streamRef.current.failed)
+        return false;
       return 2000;
     },
   });
+
+  const { streaming, failed } = useJobEventSource({
+    kind: "validation",
+    id: jobId,
+    enabled: !!jobId && !isTerminalStatus(job?.status),
+    queryKey,
+  });
+  streamRef.current = { streaming, failed };
 
   const isActive = job?.status === "pending" || job?.status === "running";
 

@@ -7,9 +7,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useJobEventSource } from "@/hooks/useJobEventSource";
 import { api, type OptimizationSweep } from "@/lib/api";
 import {
   getActiveOptimizationSweepId,
@@ -26,12 +28,19 @@ type OptimizationSweepContextValue = {
 const OptimizationSweepContext =
   createContext<OptimizationSweepContextValue | null>(null);
 
+function isTerminalStatus(status: string | undefined): boolean {
+  return (
+    status === "completed" || status === "failed" || status === "cancelled"
+  );
+}
+
 export function OptimizationSweepProvider({
   children,
 }: {
   children: ReactNode;
 }) {
   const [sweepId, setSweepId] = useState<string | null>(null);
+  const streamRef = useRef({ streaming: false, failed: false });
 
   useEffect(() => {
     setSweepId(getActiveOptimizationSweepId());
@@ -42,16 +51,28 @@ export function OptimizationSweepProvider({
     setSweepId(id);
   }, []);
 
+  const queryKey = useMemo(() => ["optimization", sweepId] as const, [sweepId]);
+
   const { data: sweep } = useQuery({
-    queryKey: ["optimization", sweepId],
+    queryKey,
     queryFn: () => api.optimization(sweepId!),
     enabled: !!sweepId,
     refetchInterval: (q) => {
       const status = q.state.data?.status;
-      if (status === "completed" || status === "failed") return false;
+      if (isTerminalStatus(status)) return false;
+      if (streamRef.current.streaming && !streamRef.current.failed)
+        return false;
       return 2000;
     },
   });
+
+  const { streaming, failed } = useJobEventSource({
+    kind: "optimization",
+    id: sweepId,
+    enabled: !!sweepId && !isTerminalStatus(sweep?.status),
+    queryKey,
+  });
+  streamRef.current = { streaming, failed };
 
   const isActive = sweep?.status === "pending" || sweep?.status === "running";
 

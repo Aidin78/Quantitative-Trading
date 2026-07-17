@@ -18,6 +18,7 @@ export const optimizationApi = {
     ),
   optimization: (id: string) =>
     apiFetch<OptimizationSweep>(`/api/v1/optimization/${id}`),
+  optimizationEventsPath: (id: string) => `/api/v1/optimization/${id}/events`,
   applyOptimization: (id: string, body?: { use_fallback?: boolean }) =>
     apiFetch<OptimizationApplyResponse>(`/api/v1/optimization/${id}/apply`, {
       method: "POST",

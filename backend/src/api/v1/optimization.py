@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +16,7 @@ from src.api.services.config_service import (
     write_provider_config,
     write_validation_settings,
 )
+from src.api.services.job_progress import sse_job_event_stream
 from src.api.services.optimization_service import (
     JobCancelled,
     new_sweep_id,
@@ -193,6 +195,23 @@ async def get_optimization(sweep_id: str) -> dict:
     if sweep is None:
         raise HTTPException(status_code=404, detail="Optimization sweep not found")
     return sweep_response(sweep)
+
+
+@router.get("/{sweep_id}/events")
+async def optimization_events(sweep_id: str) -> StreamingResponse:
+    sweep = optimization_sweeps.get(sweep_id)
+    if sweep is None:
+        raise HTTPException(status_code=404, detail="Optimization sweep not found")
+    initial = sweep_response(sweep)
+    return StreamingResponse(
+        sse_job_event_stream(sweep_id, initial=initial),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/{sweep_id}/cancel")

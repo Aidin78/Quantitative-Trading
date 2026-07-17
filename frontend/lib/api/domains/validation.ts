@@ -23,6 +23,7 @@ export const validationApi = {
     ),
   validation: (id: string) =>
     apiFetch<ValidationJob>(`/api/v1/validation/${id}`),
+  validationEventsPath: (id: string) => `/api/v1/validation/${id}/events`,
   validationTrades: (id: string) =>
     apiFetch<ValidationTradesResponse>(`/api/v1/validation/${id}/trades`),
   validationRuns: (params?: {

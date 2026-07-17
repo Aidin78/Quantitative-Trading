@@ -73,6 +73,9 @@ class OptimizationSweepStore:
             sweep.live_trial_snapshots = [trial_to_dict(t) for t in sweep.live_trials]
         self._sweeps[sweep.id] = sweep
         self._persist(sweep)
+        from src.api.services.job_progress import job_progress
+
+        job_progress.publish(sweep.id, sweep_response(sweep))
 
     def set_task(self, sweep_id: str, task: asyncio.Task[None]) -> None:
         self._tasks[sweep_id] = task

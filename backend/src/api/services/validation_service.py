@@ -73,6 +73,9 @@ class ValidationJobStore:
             }
         self._jobs[job.id] = job
         self._persist(job)
+        from src.api.services.job_progress import job_progress
+
+        job_progress.publish(job.id, job_response(job))
 
     def set_task(self, job_id: str, task: asyncio.Task[None]) -> None:
         self._tasks[job_id] = task
