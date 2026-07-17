@@ -1,27 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Database, Download, Loader2, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge, Card, EmptyState } from "@/components/ui/Card";
-import { DateRangeFields } from "@/components/ui/DateRangeFields";
-import { CheckboxField, FieldLabel } from "@/components/ui/FieldLabel";
+import { MarketDataCacheCard } from "@/components/market-data/MarketDataCacheCard";
+import { MarketDataDownloadCard } from "@/components/market-data/MarketDataDownloadCard";
+import { MarketDataHowItWorksCard } from "@/components/market-data/MarketDataHowItWorksCard";
 import { api } from "@/lib/api";
-import { FORM_TOOLTIPS } from "@/lib/formTooltips";
 import { dateRangeForPreset } from "@/lib/dateRange";
-
-const MONTH_PRESETS = [
-  { months: 1, label: "1 month" },
-  { months: 3, label: "3 months" },
-  { months: 6, label: "6 months" },
-] as const;
-
-function formatBytes(size: number) {
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export default function MarketDataPage() {
   const queryClient = useQueryClient();
@@ -77,240 +63,37 @@ export default function MarketDataPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card
-          title="Download & Cache"
-          subtitle="One request fetches the full range and saves it on the server"
-        >
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <FieldLabel label="Symbol" tooltip={FORM_TOOLTIPS.symbol} />
-                <input
-                  className="input-field mt-2"
-                  value={symbol}
-                  onChange={(e) => setSymbol(e.target.value)}
-                />
-              </div>
-              <div>
-                <FieldLabel
-                  label="Timeframe"
-                  tooltip={FORM_TOOLTIPS.timeframe}
-                />
-                <select
-                  className="input-field mt-2"
-                  value={timeframe}
-                  onChange={(e) => setTimeframe(e.target.value)}
-                >
-                  <option value="1h">1h</option>
-                  <option value="4h">4h</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <FieldLabel
-                label="Range Mode"
-                tooltip={FORM_TOOLTIPS.rangeMode}
-              />
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className={`btn-secondary px-2.5 py-1 text-xs ${!useCustomRange ? "ring-1 ring-accent" : ""}`}
-                  onClick={() => setUseCustomRange(false)}
-                >
-                  Last N months
-                </button>
-                <button
-                  type="button"
-                  className={`btn-secondary px-2.5 py-1 text-xs ${useCustomRange ? "ring-1 ring-accent" : ""}`}
-                  onClick={() => setUseCustomRange(true)}
-                >
-                  Custom dates
-                </button>
-              </div>
-            </div>
-
-            {!useCustomRange ? (
-              <div>
-                <FieldLabel label="Period" tooltip={FORM_TOOLTIPS.period} />
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {MONTH_PRESETS.map((preset) => (
-                    <button
-                      key={preset.months}
-                      type="button"
-                      className={`btn-secondary px-2.5 py-1 text-xs ${months === preset.months ? "ring-1 ring-accent" : ""}`}
-                      onClick={() => setMonths(preset.months)}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-2 text-xs text-muted">
-                  Downloads from {months} calendar month
-                  {months > 1 ? "s" : ""} ago through today.
-                </p>
-              </div>
-            ) : (
-              <DateRangeFields
-                layout="grid"
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-              />
-            )}
-
-            <CheckboxField
-              label="Force re-download (ignore existing cache file)"
-              tooltip={FORM_TOOLTIPS.forceRedownload}
-              checked={force}
-              onChange={setForce}
-            />
-
-            {download.error ? (
-              <p className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-3 text-sm text-danger">
-                {download.error instanceof Error
-                  ? download.error.message
-                  : "Download failed"}
-              </p>
-            ) : null}
-
-            {lastResult ? (
-              <p className="rounded-lg border border-[var(--border)] bg-[var(--background-elevated)] p-3 text-sm text-foreground">
-                {lastResult}
-              </p>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={() => download.mutate()}
-              disabled={download.isPending}
-              className="btn-primary w-full"
-            >
-              {download.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Database className="h-4 w-4" />
-              )}
-              Download OHLCV to CSV
-            </button>
-          </div>
-        </Card>
-
-        <Card
-          title="How it works"
-          subtitle="Cached files are reused by Validation and Optimizer"
-        >
-          <div className="space-y-3 text-sm text-muted">
-            <p>
-              Pick a symbol and range, then send one request. The backend pulls
-              OHLCV from Binance (paginated) and writes a CSV under{" "}
-              <code className="text-xs text-foreground">
-                backend/data/cache/
-              </code>
-              .
-            </p>
-            <p>
-              When you run Validation or Auto Optimizer with{" "}
-              <strong className="text-foreground">Exchange</strong> as the data
-              source, the same cache file is reused — no repeat download unless
-              you force refresh or change the date range.
-            </p>
-          </div>
-        </Card>
+        <MarketDataDownloadCard
+          symbol={symbol}
+          onSymbolChange={setSymbol}
+          timeframe={timeframe}
+          onTimeframeChange={setTimeframe}
+          useCustomRange={useCustomRange}
+          onUseCustomRangeChange={setUseCustomRange}
+          months={months}
+          onMonthsChange={setMonths}
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          force={force}
+          onForceChange={setForce}
+          downloadError={download.error}
+          lastResult={lastResult}
+          isPending={download.isPending}
+          onDownload={() => download.mutate()}
+        />
+        <MarketDataHowItWorksCard />
       </div>
 
-      <Card title="Cached CSV Files" subtitle="Files already on the server">
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="h-6 w-6 animate-spin text-accent" />
-          </div>
-        ) : isError ? (
-          <div className="space-y-3 py-6 text-center">
-            <p className="text-sm text-danger">
-              {error instanceof Error
-                ? error.message
-                : "Failed to load cache list"}
-            </p>
-            <p className="text-xs text-muted">
-              Make sure the backend is running on port 8000.
-            </p>
-            <button
-              type="button"
-              className="btn-secondary mx-auto text-xs"
-              onClick={() => refetch()}
-              disabled={isFetching}
-            >
-              {isFetching ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3 w-3" />
-              )}
-              Retry
-            </button>
-          </div>
-        ) : !cache?.items.length ? (
-          <EmptyState
-            message="No cached CSV files yet"
-            hint="Download 3 months of BTC/USDT above"
-          />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-left text-xs uppercase text-muted">
-                  <th className="pb-2 pr-3">File</th>
-                  <th className="pb-2 pr-3">Bars</th>
-                  <th className="pb-2 pr-3">Range</th>
-                  <th className="pb-2 pr-3">Size</th>
-                  <th className="pb-2">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cache.items.map((row) => (
-                  <tr
-                    key={row.filename}
-                    className="border-b border-[var(--border)]/50"
-                  >
-                    <td className="py-2 pr-3 font-mono text-xs">
-                      {row.filename}
-                    </td>
-                    <td className="py-2 pr-3">{row.rows.toLocaleString()}</td>
-                    <td className="py-2 pr-3 font-mono text-xs">
-                      {row.first_timestamp?.slice(0, 10) ?? "—"} →{" "}
-                      {row.last_timestamp?.slice(0, 10) ?? "—"}
-                    </td>
-                    <td className="py-2 pr-3 text-xs text-muted">
-                      {formatBytes(row.size_bytes)}
-                    </td>
-                    <td className="py-2">
-                      <button
-                        type="button"
-                        className="btn-secondary text-xs"
-                        onClick={() => api.exportMarketDataCache(row.filename)}
-                      >
-                        <Download className="h-3 w-3" />
-                        Save
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {cache?.items.length ? (
-          <div className="mt-4 flex items-center gap-2 text-xs text-muted">
-            <RefreshCw className="h-3 w-3" />
-            <span>
-              {cache.items.length} file{cache.items.length === 1 ? "" : "s"} in
-              cache
-            </span>
-            <Badge variant="accent">{cache.items[0].filename}</Badge>
-            <span>is the most recent</span>
-          </div>
-        ) : null}
-      </Card>
+      <MarketDataCacheCard
+        items={cache?.items}
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        isFetching={isFetching}
+        onRefetch={() => refetch()}
+      />
     </div>
   );
 }

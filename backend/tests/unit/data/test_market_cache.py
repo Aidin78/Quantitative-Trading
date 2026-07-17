@@ -318,7 +318,7 @@ async def test_empty_file_treated_as_miss(
 
 
 def test_format_validation_error_messages() -> None:
-    from src.api.services.validation_runner import format_validation_error
+    from src.validation.errors import format_validation_error
 
     assert (
         "date range"

@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-from src.validation.optimization_runner import (
-    ProgressCallback,
-    ProgressEvent,
-    run_optimization,
-    split_holdout,
-    split_train_test,
-)
+from src.validation.optimization_progress import ProgressCallback, ProgressEvent
+from src.validation.optimization_runner import run_optimization
 from src.validation.optimization_scoring import (
     OptimizationResult,
     TrialResult,
@@ -28,6 +23,7 @@ from src.validation.optimization_space import (
     has_any_provider_enabled,
     refine_trials_around,
 )
+from src.validation.optimization_windows import split_holdout, split_train_test
 
 __all__ = [
     "PROVIDER_DISCOVERY_SPACE",

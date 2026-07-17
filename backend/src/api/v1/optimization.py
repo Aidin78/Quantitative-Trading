@@ -24,8 +24,8 @@ from src.api.services.optimization_service import (
     result_to_dict,
     sweep_response,
 )
-from src.api.services.validation_runner import format_validation_error
 from src.governance.revision_store import compute_config_revision, save_revision
+from src.validation.errors import format_validation_error
 from src.validation.optimizer import OptimizationSpace, ProgressEvent, run_optimization
 from src.validation.trial_config import (
     build_engine_write_patch,

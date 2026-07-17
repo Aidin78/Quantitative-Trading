@@ -36,7 +36,7 @@ async def _run() -> int:
         await init_db(get_async_engine())
 
     if args.once:
-        from src.api.services.live_runner import run_live_cycle
+        from src.runtime.live_stack import run_live_cycle
 
         await run_live_cycle(
             args.symbol,

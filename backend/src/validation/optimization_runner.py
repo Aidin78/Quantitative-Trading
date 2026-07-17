@@ -3,15 +3,18 @@ from __future__ import annotations
 import asyncio
 import math
 import uuid
-from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Literal
 
-from src.api.services.validation_runner import run_validation_job
 from src.core.settings import get_settings
 from src.data.market_cache import get_or_download_csv
 from src.validation.harness import ValidationProgressCallback
+from src.validation.job_runner import run_validation_job
+from src.validation.optimization_progress import (
+    ProgressCallback,
+    ProgressEvent,
+    emit_progress,
+)
 from src.validation.optimization_scoring import (
     OptimizationResult,
     TrialResult,
@@ -28,6 +31,7 @@ from src.validation.optimization_space import (
     generate_trials_optuna,
     refine_trials_around,
 )
+from src.validation.optimization_windows import split_holdout, split_train_test
 from src.validation.trial_config import (
     build_engine_config_from_trial,
     build_execution_config_from_trial,
@@ -40,38 +44,6 @@ from src.validation.walk_forward import (
     build_anchored_walk_forward_windows,
     build_walk_forward_windows,
 )
-
-
-def split_train_test(
-    start: datetime,
-    end: datetime,
-    *,
-    train_ratio: float,
-) -> tuple[tuple[datetime, datetime], tuple[datetime, datetime]]:
-    if not 0 < train_ratio < 1:
-        raise ValueError("train_ratio must be between 0 and 1")
-    total = end - start
-    if total <= timedelta(0):
-        raise ValueError("end must be after start")
-    train_end = start + timedelta(seconds=total.total_seconds() * train_ratio)
-    return (start, train_end), (train_end, end)
-
-
-def split_holdout(
-    start: datetime,
-    end: datetime,
-    *,
-    holdout_ratio: float,
-) -> tuple[tuple[datetime, datetime], tuple[datetime, datetime] | None]:
-    if holdout_ratio <= 0:
-        return (start, end), None
-    if not 0 < holdout_ratio < 1:
-        raise ValueError("holdout_ratio must be between 0 and 1")
-    total = end - start
-    if total <= timedelta(0):
-        raise ValueError("end must be after start")
-    opt_end = start + timedelta(seconds=total.total_seconds() * (1 - holdout_ratio))
-    return (start, opt_end), (opt_end, end)
 
 
 async def _run_trial(
@@ -146,32 +118,6 @@ async def _score_trial_windows(
     else:
         fold_std = 0.0
     return mean_score, _aggregate_fold_outcomes(outcomes), scores, fold_std
-
-
-@dataclass
-class ProgressEvent:
-    current: int
-    total: int
-    phase: Literal["train", "test", "refine"]
-    stage: Literal["start", "done"]
-    trial: TrialResult | None = None
-    train_count: int = 0
-    test_count: int = 0
-    detail: str = ""
-
-
-ProgressCallback = Callable[[ProgressEvent], Awaitable[None] | None]
-
-
-async def _emit(
-    on_progress: ProgressCallback | None,
-    event: ProgressEvent,
-) -> None:
-    if on_progress is None:
-        return
-    maybe = on_progress(event)
-    if maybe is not None:
-        await maybe
 
 
 async def run_optimization(
@@ -285,7 +231,7 @@ async def run_optimization(
             ) -> None:
                 if on_progress is None or event.phase != "backtest" or event.total <= 0:
                     return
-                await _emit(
+                await emit_progress(
                     on_progress,
                     ProgressEvent(
                         current=_start_step,
@@ -301,7 +247,7 @@ async def run_optimization(
                     ),
                 )
 
-            await _emit(
+            await emit_progress(
                 on_progress,
                 ProgressEvent(
                     current=start_step,
@@ -353,7 +299,7 @@ async def run_optimization(
             async with progress_lock:
                 completed_train += 1
                 done_step = completed_train
-            await _emit(
+            await emit_progress(
                 on_progress,
                 ProgressEvent(
                     current=done_step,
@@ -394,7 +340,7 @@ async def run_optimization(
             max_refine=min(9, max_trials),
         )
         for params in refine_params:
-            await _emit(
+            await emit_progress(
                 on_progress,
                 ProgressEvent(
                     current=step,
@@ -444,7 +390,7 @@ async def run_optimization(
             train_results.append(trial)
             finalists.append(trial)
             step += 1
-            await _emit(
+            await emit_progress(
                 on_progress,
                 ProgressEvent(
                     current=step,
@@ -459,7 +405,7 @@ async def run_optimization(
         finalists = sorted(finalists, key=lambda trial: trial.train_score, reverse=True)[:top_k]
 
     for trial in finalists:
-        await _emit(
+        await emit_progress(
             on_progress,
             ProgressEvent(
                 current=step,
@@ -504,7 +450,7 @@ async def run_optimization(
             min_return_pct=min_return_pct,
         )
         step += 1
-        await _emit(
+        await emit_progress(
             on_progress,
             ProgressEvent(
                 current=step,

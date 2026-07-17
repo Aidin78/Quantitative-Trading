@@ -7,13 +7,13 @@ from typing import Literal
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from src.api.services.live_runner import (
+from src.observability.metrics import LIVE_CYCLES_TOTAL
+from src.runtime.live_stack import (
     LiveStack,
     build_live_stack,
     check_connectivity,
     default_live_jobs,
 )
-from src.observability.metrics import LIVE_CYCLES_TOTAL
 from src.runtime.scheduler import cron_for_timeframe
 
 

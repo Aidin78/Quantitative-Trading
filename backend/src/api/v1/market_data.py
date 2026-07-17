@@ -7,7 +7,6 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from src.api.deps import get_current_user
-from src.api.services.validation_runner import format_validation_error
 from src.core.exceptions import DataProviderError
 from src.core.settings import get_settings, load_app_yaml_config
 from src.data.market_cache import (
@@ -17,6 +16,7 @@ from src.data.market_cache import (
     resolve_cache_file,
     resolve_range,
 )
+from src.validation.errors import format_validation_error
 
 router = APIRouter(
     prefix="/market-data",
