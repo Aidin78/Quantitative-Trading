@@ -5,8 +5,8 @@ import pandas as pd
 import pytest
 
 from src.core.exceptions import InsufficientDataError
+from src.features import indicators as _indicators  # noqa: F401 — registers indicator types
 from src.features.indicators import _atr_series, _supertrend_components, _supertrend_numpy
-from src.features.indicators import base as _indicators  # noqa: F401
 from src.features.indicators.base import get_indicator_class
 from tests.fixtures.ohlcv import make_sample_ohlcv
 

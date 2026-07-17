@@ -4,8 +4,8 @@ import operator
 import re
 from typing import Any
 
+from src.features import indicators as _indicators  # noqa: F401 — registers indicator types
 from src.features.config import FeaturesConfig, FlagDef, IndicatorDef
-from src.features.indicators import base as _indicators_base  # noqa: F401 — registers indicators
 from src.features.indicators.base import get_indicator_class
 
 _COMPARATORS = [
