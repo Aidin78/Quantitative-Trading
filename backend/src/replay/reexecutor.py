@@ -18,6 +18,7 @@ from src.engine.config import (
 )
 from src.engine.decision_engine import DecisionEngine
 from src.events.envelopes import DecisionEventType, MarketEventType, SignalEventType
+from src.features.config import load_features_config
 from src.features.drift import compare_features
 from src.governance.revision_store import compute_config_revision, get_revision
 from src.replay.diff import DecisionDiff, build_decision_diff
@@ -151,14 +152,30 @@ async def re_execute_cycle(
 
 def _detect_feature_drift(
     feature_event: EventEnvelope,
+    *,
+    csv_path: str | None = None,
 ) -> dict:
     stored_indicators = feature_event.payload.get("indicators") or {}
+    stored_flags = feature_event.payload.get("flags") or {}
     stored_hash = feature_event.payload.get("config_hash", "")
     current = compute_config_revision()
+    features_config, features_hash = load_features_config()
 
-    rebuilt = rebuild_indicators(feature_event)
+    # Always rebuild with current disk features config (indicator deltas when
+    # hashes diverge). Optimizer synthetic hashes are out of scope.
+    rebuilt = rebuild_indicators(
+        feature_event,
+        csv_path=csv_path,
+        features_config=features_config,
+        config_hash=features_hash,
+    )
     if rebuilt is not None:
-        drift = compare_features(stored_indicators, rebuilt)
+        drift = compare_features(
+            stored_indicators,
+            rebuilt["indicators"],
+            stored_flags=stored_flags,
+            rebuilt_flags=rebuilt.get("flags") or {},
+        )
     else:
         drift = {
             "detected": False,

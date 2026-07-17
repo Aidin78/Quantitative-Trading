@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from typing import Any
+
 from src.core.contracts.event import EventEnvelope
 from src.data.csv_provider import CsvDataProvider
 from src.features.builder import DefaultFeatureBuilder
+from src.features.config import FeaturesConfig
 from src.validation.lookback import compute_min_lookback_bars
 
 
@@ -27,8 +30,15 @@ def rebuild_indicators(
     feature_event: EventEnvelope,
     *,
     csv_path: str | None = None,
-) -> dict[str, float] | None:
-    """Rebuild indicators from OHLCV at event_time using current features config."""
+    features_config: FeaturesConfig | None = None,
+    config_hash: str | None = None,
+) -> dict[str, Any] | None:
+    """Rebuild indicators/flags from OHLCV at event_time.
+
+    Returns ``{"indicators": ..., "flags": ...}`` or ``None`` if OHLCV/config
+    rebuild is unavailable. Uses ``features_config`` / ``config_hash`` when
+    provided; otherwise loads the current disk features config.
+    """
     path = _resolve_csv_path(csv_path)
     if path is None:
         return None
@@ -45,7 +55,10 @@ def rebuild_indicators(
             limit=limit,
             end=feature_event.event_time,
         )
-        builder = DefaultFeatureBuilder()
+        if features_config is not None and config_hash is not None:
+            builder = DefaultFeatureBuilder(config=features_config, config_hash=config_hash)
+        else:
+            builder = DefaultFeatureBuilder()
         feature_set, _ = builder.build(
             df,
             feature_event.symbol,
@@ -53,6 +66,9 @@ def rebuild_indicators(
             processing_time=feature_event.processing_time,
             persist=False,
         )
-        return feature_set.indicators
+        return {
+            "indicators": feature_set.indicators,
+            "flags": feature_set.flags,
+        }
     except Exception:
         return None

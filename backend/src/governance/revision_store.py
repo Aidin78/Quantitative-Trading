@@ -12,6 +12,7 @@ from src.core.contracts.governance import ConfigRevision
 from src.core.settings import resolve_config_dir
 from src.db.models import ConfigRevisionRow
 from src.execution.config import load_default_fill_model
+from src.features.config import compute_config_hash
 from src.providers.registry import discover_provider_configs
 
 
@@ -46,7 +47,11 @@ def compute_config_revision(
     engine_raw = _load_yaml(base / "engine.yaml")
     features_raw = _load_yaml(base / "features.yaml")
     engine_hash = _file_hash(base / "engine.yaml")
-    features_hash = _file_hash(base / "features.yaml")
+    features_path = base / "features.yaml"
+    if features_path.is_file():
+        features_hash = compute_config_hash(features_path.read_text(encoding="utf-8"))
+    else:
+        features_hash = ""
     providers_hash = _providers_hash(base)
     risk_section = engine_raw.get("engine", {}).get("risk", engine_raw.get("risk", {}))
     risk_hash = hashlib.sha256(yaml.safe_dump(risk_section).encode()).hexdigest()

@@ -3,13 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 
-def compare_features(
+def _compare_maps(
     stored: dict[str, Any],
     rebuilt: dict[str, Any],
     *,
-    tolerance: float = 1e-6,
-) -> dict:
-    """Compare indicator dicts; returns drift report."""
+    tolerance: float,
+) -> list[dict]:
     drifted: list[dict] = []
     all_keys = set(stored) | set(rebuilt)
     for key in sorted(all_keys):
@@ -30,6 +29,27 @@ def compare_features(
                 )
         elif a != b:
             drifted.append({"key": key, "stored": a, "rebuilt": b})
+    return drifted
+
+
+def compare_features(
+    stored: dict[str, Any],
+    rebuilt: dict[str, Any],
+    *,
+    tolerance: float = 1e-6,
+    stored_flags: dict[str, Any] | None = None,
+    rebuilt_flags: dict[str, Any] | None = None,
+) -> dict:
+    """Compare indicator dicts (and optional flags); returns drift report."""
+    drifted = _compare_maps(stored, rebuilt, tolerance=tolerance)
+    if stored_flags is not None or rebuilt_flags is not None:
+        drifted.extend(
+            _compare_maps(
+                stored_flags or {},
+                rebuilt_flags or {},
+                tolerance=tolerance,
+            )
+        )
     return {
         "detected": len(drifted) > 0,
         "drift_count": len(drifted),
