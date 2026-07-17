@@ -15,5 +15,7 @@ frontend/test-results/
 playwright-report/
 backend/ci_e2e.db
 backend/data/cache/
+data/cache/*
+!data/cache/.gitkeep
 *.log
 *.tsbuildinfo

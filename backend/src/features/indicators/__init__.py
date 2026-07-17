@@ -445,6 +445,23 @@ def _structure_bos(
     return 0.0
 
 
+def _market_structure_latest(
+    df: pd.DataFrame,
+    *,
+    pivot_bars: int,
+) -> tuple[float, float]:
+    min_bars = 4 * pivot_bars + 1
+    if len(df) < min_bars:
+        raise InsufficientDataError(
+            f"Insufficient data for market_structure: need at least {min_bars} bars"
+        )
+    t = len(df) - 1
+    highs, lows = _find_confirmed_pivots(df, pivot_bars=pivot_bars, up_to_index=t)
+    bias = _structure_bias(highs, lows)
+    bos = _structure_bos(float(df["close"].iloc[t]), highs, lows)
+    return bias, bos
+
+
 def _market_structure_components(
     df: pd.DataFrame,
     *,
@@ -475,16 +492,15 @@ class MarketStructureIndicator:
     def compute(self, df: pd.DataFrame, params: dict[str, Any]) -> float:
         pivot_bars = int(params.get("pivot_bars", 5))
         component = str(params.get("component", "bias"))
-        bias, bos = _market_structure_components(df, pivot_bars=pivot_bars)
+        bias, bos = _market_structure_latest(df, pivot_bars=pivot_bars)
         min_periods = 4 * pivot_bars + 1
+        if len(df) < min_periods:
+            raise InsufficientDataError(
+                f"Insufficient data for market_structure: need at least {min_periods} bars"
+            )
 
         if component == "bias":
-            series = bias
-            name = "ms_bias"
-        elif component == "bos":
-            series = bos
-            name = "ms_bos"
-        else:
-            raise ValueError(f"Unknown market_structure component: {component}")
-
-        return _last_valid(series, name=name, min_periods=min_periods)
+            return float(bias)
+        if component == "bos":
+            return float(bos)
+        raise ValueError(f"Unknown market_structure component: {component}")

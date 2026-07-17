@@ -77,6 +77,11 @@ def format_validation_error(exc: Exception) -> str:
         if "unsupported exchange" in lowered or "does not have market symbol" in lowered:
             return f"Symbol or exchange not supported: {message}"
         if "failed to download" in lowered or "failed to fetch" in lowered:
+            if "read-only file system" in lowered or "errno 30" in lowered:
+                return (
+                    "Could not save downloaded data to the server cache. "
+                    "If using Docker, ensure ./data is mounted read-write."
+                )
             return (
                 "Could not download historical data from the exchange. "
                 "Check your internet connection and try again."
@@ -201,8 +206,9 @@ async def run_validation_job(
         config=execution_config,
     )
     log_handler = EventLogHandler()
-    handlers: list = [log_handler, WebSocketEventHandler()]
+    handlers: list = [log_handler]
     if persist_db:
+        handlers.append(WebSocketEventHandler())
         handlers.append(DatabaseEventHandler(get_session_factory()))
     bus = InMemoryEventBus(handlers=handlers)
     signal_providers = (
@@ -231,6 +237,7 @@ async def run_validation_job(
         portfolio_id="portfolio_default",
         mode="validation",
         execution_engine=execution_engine,
+        persist_features=persist_db,
     )
     config = ValidationConfig(
         symbol=sym,

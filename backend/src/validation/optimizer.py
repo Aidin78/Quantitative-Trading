@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 from typing import Any, Literal
 
 from src.api.services.validation_runner import run_validation_job
+from src.core.settings import get_settings
+from src.data.market_cache import get_or_download_csv
+from src.validation.harness import ValidationProgressCallback
 from src.validation.trial_config import (
     build_engine_config_from_trial,
     build_execution_config_from_trial,
@@ -581,6 +584,7 @@ async def _run_trial(
     source: Literal["exchange", "csv"],
     initial_capital: float,
     csv_path: str | None,
+    on_validation_progress: ValidationProgressCallback | None = None,
 ) -> tuple[float, dict[str, Any], str]:
     revision = synthetic_revision_from_trial(params)
     features_config = build_features_config_from_trial(params)
@@ -598,6 +602,7 @@ async def _run_trial(
         provider_overrides=build_provider_overrides(params),
         execution_config=build_execution_config_from_trial(params),
         features_config=features_config,
+        on_progress=on_validation_progress,
     )
     outcome = result.outcome_metrics or {}
     score = float(outcome.get("optimization_score", outcome.get("score", 0)))
@@ -652,6 +657,7 @@ class ProgressEvent:
     trial: TrialResult | None = None
     train_count: int = 0
     test_count: int = 0
+    detail: str = ""
 
 
 ProgressCallback = Callable[[ProgressEvent], Awaitable[None] | None]
@@ -699,6 +705,21 @@ async def run_optimization(
         min_trades_holdout if min_trades_holdout is not None else max(1, min_trades // 2)
     )
 
+    effective_source = source
+    resolved_csv_path = csv_path
+    if source == "exchange" and not csv_path:
+        settings = get_settings()
+        resolved_csv_path = str(
+            await get_or_download_csv(
+                exchange_id=settings.exchange_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                start=opt_start,
+                end=opt_end,
+            )
+        )
+        effective_source = "csv"
+
     if walk_forward_windows > 1:
         build_windows = (
             build_anchored_walk_forward_windows
@@ -732,6 +753,31 @@ async def run_optimization(
     train_results: list[TrialResult] = []
 
     for params in trial_params:
+        trial_number = step + 1
+
+        async def validation_progress(
+            event,
+            *,
+            _trial_number: int = trial_number,
+        ) -> None:
+            if on_progress is None or event.phase != "backtest" or event.total <= 0:
+                return
+            await _emit(
+                on_progress,
+                ProgressEvent(
+                    current=step,
+                    total=total_steps,
+                    phase="train",
+                    stage="start",
+                    train_count=n_train,
+                    test_count=n_test,
+                    detail=(
+                        f"Training candidate {_trial_number} of {n_train} "
+                        f"— bar {event.current}/{event.total}"
+                    ),
+                ),
+            )
+
         await _emit(
             on_progress,
             ProgressEvent(
@@ -741,6 +787,7 @@ async def run_optimization(
                 stage="start",
                 train_count=n_train,
                 test_count=n_test,
+                detail=f"Training candidate {trial_number} of {n_train} on in-sample data…",
             ),
         )
         if wf_windows:
@@ -749,9 +796,9 @@ async def run_optimization(
                 symbol=symbol,
                 timeframe=timeframe,
                 windows=wf_windows,
-                source=source,
+                source=effective_source,
                 initial_capital=initial_capital,
-                csv_path=csv_path,
+                csv_path=resolved_csv_path,
                 segment="train",
             )
             revision_id = synthetic_revision_from_trial(params).revision_id
@@ -762,9 +809,10 @@ async def run_optimization(
                 timeframe=timeframe,
                 start=train_start,
                 end=train_end,
-                source=source,
+                source=effective_source,
                 initial_capital=initial_capital,
-                csv_path=csv_path,
+                csv_path=resolved_csv_path,
+                on_validation_progress=validation_progress,
             )
             fold_scores = []
             fold_std = None
@@ -821,9 +869,9 @@ async def run_optimization(
                     symbol=symbol,
                     timeframe=timeframe,
                     windows=wf_windows,
-                    source=source,
+                    source=effective_source,
                     initial_capital=initial_capital,
-                    csv_path=csv_path,
+                    csv_path=resolved_csv_path,
                     segment="train",
                 )
                 revision_id = synthetic_revision_from_trial(params).revision_id
@@ -834,9 +882,9 @@ async def run_optimization(
                     timeframe=timeframe,
                     start=train_start,
                     end=train_end,
-                    source=source,
+                    source=effective_source,
                     initial_capital=initial_capital,
-                    csv_path=csv_path,
+                    csv_path=resolved_csv_path,
                 )
                 fold_scores = []
                 fold_std = None
@@ -885,9 +933,9 @@ async def run_optimization(
                 symbol=symbol,
                 timeframe=timeframe,
                 windows=wf_windows,
-                source=source,
+                source=effective_source,
                 initial_capital=initial_capital,
-                csv_path=csv_path,
+                csv_path=resolved_csv_path,
                 segment="test",
             )
             trial.fold_scores = fold_scores
@@ -899,9 +947,9 @@ async def run_optimization(
                 timeframe=timeframe,
                 start=test_start,
                 end=test_end,
-                source=source,
+                source=effective_source,
                 initial_capital=initial_capital,
-                csv_path=csv_path,
+                csv_path=resolved_csv_path,
             )
         trial.test_score = test_score
         trial.test_outcome = test_outcome
@@ -947,9 +995,9 @@ async def run_optimization(
             timeframe=timeframe,
             start=holdout_start,
             end=holdout_end,
-            source=source,
+            source=effective_source,
             initial_capital=initial_capital,
-            csv_path=csv_path,
+            csv_path=resolved_csv_path,
         )
         h_trades = int(holdout_outcome.get("total_trades", 0))
         h_return = float(holdout_outcome.get("return_pct", 0))

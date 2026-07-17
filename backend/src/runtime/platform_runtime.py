@@ -40,6 +40,7 @@ class PlatformRuntime:
         portfolio_id: str,
         mode: Literal["validation", "live", "paper", "replay"] = "validation",
         execution_engine: ExecutionEngine | None = None,
+        persist_features: bool = True,
     ) -> None:
         self._data_provider = data_provider
         self._feature_store = feature_store
@@ -56,6 +57,7 @@ class PlatformRuntime:
         self._portfolio_id = portfolio_id
         self._mode = mode
         self._execution_engine = execution_engine
+        self._persist_features = persist_features
         self._signals_day: date | None = None
 
     async def run_cycle(
@@ -131,11 +133,12 @@ class PlatformRuntime:
             symbol,
             timeframe,
             processing_time=processing_time,
-            persist=True,
+            persist=self._persist_features,
         )
-        stored_record = self._feature_store.get(feature_set.feature_set_id)
-        if stored_record.market_context != context:
-            raise RuntimeError("FeatureStore record does not match built MarketContext")
+        if self._persist_features:
+            stored_record = self._feature_store.get(feature_set.feature_set_id)
+            if stored_record.market_context != context:
+                raise RuntimeError("FeatureStore record does not match built MarketContext")
 
         feature_event = build_envelope(
             event_family=EventFamily.MARKET,

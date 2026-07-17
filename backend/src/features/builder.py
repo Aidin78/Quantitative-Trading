@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 import pandas as pd
 
@@ -62,8 +63,13 @@ class DefaultFeatureBuilder:
         proc_time = processing_time or datetime.now(UTC)
 
         indicators: dict[str, float] = {}
+        shared: dict[tuple[Any, ...], Any] = {}
         for definition in self._registry.indicators:
-            indicators[definition.name] = self._registry.compute_indicator(definition, normalized)
+            indicators[definition.name] = self._registry.compute_indicator(
+                definition,
+                normalized,
+                shared=shared,
+            )
 
         flags = self._registry.evaluate_flags(indicators)
         close = float(normalized["close"].iloc[-1])

@@ -205,7 +205,7 @@ function OptimizationPageContent() {
             type="button"
             onClick={() => {
               setSweepMode("discovery");
-              setMaxTrials(80);
+              setMaxTrials(40);
               setMinTrades(30);
               setSearchMethod("optuna");
             }}
@@ -267,7 +267,9 @@ function OptimizationPageContent() {
             <li>
               Select{" "}
               <strong className="text-foreground">Provider discovery</strong>{" "}
-              above and run 80 Optuna trials (defaults adjust automatically).
+              above and run 40 Optuna trials (defaults adjust automatically).
+              Each trial takes ~2–4 min on 180d data; bar-level progress appears
+              while training.
             </li>
             <li>
               Review trials — active providers show as chips (EMA, RSI, ADX, …).

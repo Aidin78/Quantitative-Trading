@@ -35,7 +35,7 @@ services:
       AUTH_REQUIRED: ${AUTH_REQUIRED:-false}
     volumes:
       - ./config:/app/config
-      - ./data:/app/data:ro
+      - ./data:/app/data
     depends_on:
       postgres:
         condition: service_healthy
