@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import pytest
 
 from src.core.exceptions import InsufficientDataError
+from src.features.indicators import _atr_series, _supertrend_components, _supertrend_numpy
 from src.features.indicators import base as _indicators  # noqa: F401
 from src.features.indicators.base import get_indicator_class
 from tests.fixtures.ohlcv import make_sample_ohlcv
@@ -71,6 +73,115 @@ def test_supertrend_compute(ohlcv: pd.DataFrame) -> None:
         assert close >= line
     else:
         assert close <= line
+
+
+def _reference_supertrend_numpy(
+    close: np.ndarray,
+    hl2: np.ndarray,
+    atr: np.ndarray,
+    multiplier: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Frozen pre-extract algorithm for full-series parity checks."""
+    n = len(close)
+    basic_ub = hl2 + multiplier * atr
+    basic_lb = hl2 - multiplier * atr
+    final_ub = basic_ub.copy()
+    final_lb = basic_lb.copy()
+
+    for i in range(1, n):
+        bu = basic_ub[i]
+        if bu != bu:
+            continue
+        prev_ub = final_ub[i - 1]
+        if prev_ub == prev_ub and not (bu < prev_ub or close[i - 1] > prev_ub):
+            final_ub[i] = prev_ub
+        else:
+            final_ub[i] = bu
+
+        bl = basic_lb[i]
+        prev_lb = final_lb[i - 1]
+        if prev_lb == prev_lb and not (bl > prev_lb or close[i - 1] < prev_lb):
+            final_lb[i] = prev_lb
+        else:
+            final_lb[i] = bl
+
+    line = np.full(n, np.nan, dtype=float)
+    direction = np.full(n, np.nan, dtype=float)
+    in_uptrend = True
+
+    for i in range(n):
+        ub = final_ub[i]
+        lb = final_lb[i]
+        if ub != ub or lb != lb:
+            continue
+
+        if i == 0:
+            in_uptrend = True
+            line[i] = lb
+            direction[i] = 1.0
+            continue
+
+        if in_uptrend:
+            if close[i] < lb:
+                in_uptrend = False
+                line[i] = ub
+                direction[i] = -1.0
+            else:
+                line[i] = lb
+                direction[i] = 1.0
+        elif close[i] > ub:
+            in_uptrend = True
+            line[i] = lb
+            direction[i] = 1.0
+        else:
+            line[i] = ub
+            direction[i] = -1.0
+
+    return line, direction
+
+
+def test_supertrend_full_series_parity_sample(ohlcv: pd.DataFrame) -> None:
+    period = 10
+    multiplier = 3.0
+    close = ohlcv["close"].to_numpy(dtype=np.float64)
+    hl2 = ((ohlcv["high"] + ohlcv["low"]) / 2).to_numpy(dtype=np.float64)
+    atr = _atr_series(ohlcv, period).to_numpy(dtype=np.float64)
+
+    line, direction = _supertrend_numpy(close, hl2, atr, multiplier)
+    ref_line, ref_direction = _reference_supertrend_numpy(close, hl2, atr, multiplier)
+
+    assert np.allclose(line, ref_line, equal_nan=True)
+    assert np.array_equal(direction, ref_direction, equal_nan=True)
+
+    wrapped_line, wrapped_direction = _supertrend_components(
+        ohlcv, period=period, multiplier=multiplier
+    )
+    assert np.allclose(wrapped_line.to_numpy(), line, equal_nan=True)
+    assert np.array_equal(wrapped_direction.to_numpy(), direction, equal_nan=True)
+
+
+def test_supertrend_full_series_parity_long_with_warmup() -> None:
+    """Longer series exercises ATR NaN warmup + many direction flips."""
+    ohlcv = make_sample_ohlcv(bars=500, seed=99)
+    period = 14
+    multiplier = 2.5
+    close = ohlcv["close"].to_numpy(dtype=np.float64)
+    hl2 = ((ohlcv["high"] + ohlcv["low"]) / 2).to_numpy(dtype=np.float64)
+    atr = _atr_series(ohlcv, period).to_numpy(dtype=np.float64)
+
+    line, direction = _supertrend_numpy(close, hl2, atr, multiplier)
+    ref_line, ref_direction = _reference_supertrend_numpy(close, hl2, atr, multiplier)
+
+    assert np.isnan(atr[: period - 1]).all()
+    assert np.allclose(line, ref_line, equal_nan=True)
+    assert np.array_equal(direction, ref_direction, equal_nan=True)
+    assert set(np.unique(direction[~np.isnan(direction)])).issubset({-1.0, 1.0})
+
+
+def test_supertrend_insufficient_data_raises() -> None:
+    small = make_sample_ohlcv(bars=15)
+    with pytest.raises(InsufficientDataError, match="supertrend"):
+        _supertrend_components(small, period=10, multiplier=3.0)
 
 
 def test_insufficient_data_raises() -> None:

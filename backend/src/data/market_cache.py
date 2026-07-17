@@ -6,6 +6,8 @@ import os
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pandas as pd
+
 from src.core.exceptions import DataProviderError
 from src.core.settings import get_settings, resolve_config_dir
 from src.data.live_provider import LiveProvider
@@ -66,14 +68,59 @@ def cache_path(
     exchange_id: str,
     symbol: str,
     timeframe: str,
+    start: datetime | None = None,
+    end: datetime | None = None,
+) -> Path:
+    """Continuous cache path: one CSV per exchange/symbol/timeframe.
+
+    ``start`` / ``end`` are accepted for call-site compatibility but ignored —
+    coverage is enforced by content, not filename.
+    """
+    del start, end
+    safe_symbol = symbol.replace("/", "-")
+    filename = f"{exchange_id}_{safe_symbol}_{timeframe}.csv"
+    return CACHE_DIR / filename
+
+
+def _parse_timestamp(value: str | datetime | pd.Timestamp) -> datetime:
+    ts = pd.Timestamp(value)
+    if ts.tzinfo is None:
+        ts = ts.tz_localize("UTC")
+    else:
+        ts = ts.tz_convert("UTC")
+    return ts.to_pydatetime()
+
+
+def read_coverage(path: Path) -> tuple[datetime, datetime] | None:
+    """Return (first_ts, last_ts) for a cache CSV, or None if empty/unreadable."""
+    if not path.exists() or path.stat().st_size <= 0:
+        return None
+    summary = csv_summary(path)
+    if not summary["rows"] or not summary["first_timestamp"] or not summary["last_timestamp"]:
+        return None
+    try:
+        first = _parse_timestamp(summary["first_timestamp"])
+        last = _parse_timestamp(summary["last_timestamp"])
+    except (TypeError, ValueError):
+        return None
+    return first, last
+
+
+def _fetch_ohlcv_df(
+    *,
+    exchange_id: str,
+    symbol: str,
+    timeframe: str,
     start: datetime,
     end: datetime,
-) -> Path:
-    safe_symbol = symbol.replace("/", "-")
-    start_key = start.astimezone(UTC).strftime("%Y%m%d")
-    end_key = end.astimezone(UTC).strftime("%Y%m%d")
-    filename = f"{exchange_id}_{safe_symbol}_{timeframe}_{start_key}_{end_key}.csv"
-    return CACHE_DIR / filename
+) -> pd.DataFrame:
+    settings = get_settings()
+    provider = LiveProvider(
+        exchange_id=exchange_id,
+        api_key=settings.exchange_api_key,
+        api_secret=settings.exchange_api_secret,
+    )
+    return provider.fetch_ohlcv_range(symbol, timeframe, start, end)
 
 
 def _download_to_csv(
@@ -85,16 +132,73 @@ def _download_to_csv(
     end: datetime,
     path: Path,
 ) -> Path:
-    settings = get_settings()
-    provider = LiveProvider(
+    """Fetch a range and write it to ``path`` (full replace). Kept for tests/tools."""
+    df = _fetch_ohlcv_df(
         exchange_id=exchange_id,
-        api_key=settings.exchange_api_key,
-        api_secret=settings.exchange_api_secret,
+        symbol=symbol,
+        timeframe=timeframe,
+        start=start,
+        end=end,
     )
-    df = provider.fetch_ohlcv_range(symbol, timeframe, start, end)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(path, index=False)
+    _write_ohlcv_atomic(path, df)
     return path
+
+
+def _read_ohlcv_csv(path: Path) -> pd.DataFrame:
+    df = pd.read_csv(path)
+    if df.empty:
+        return df
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+    return df
+
+
+def _merge_ohlcv(existing: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
+    if existing.empty:
+        combined = new.copy()
+    elif new.empty:
+        combined = existing.copy()
+    else:
+        combined = pd.concat([existing, new], ignore_index=True)
+    if combined.empty:
+        return combined
+    combined["timestamp"] = pd.to_datetime(combined["timestamp"], utc=True)
+    return (
+        combined.drop_duplicates(subset=["timestamp"], keep="last")
+        .sort_values("timestamp")
+        .reset_index(drop=True)
+    )
+
+
+def _write_ohlcv_atomic(path: Path, df: pd.DataFrame) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    df.to_csv(tmp, index=False)
+    tmp.replace(path)
+
+
+def _try_fetch_gap(
+    *,
+    exchange_id: str,
+    symbol: str,
+    timeframe: str,
+    start: datetime,
+    end: datetime,
+) -> pd.DataFrame | None:
+    """Fetch a gap range; return None when the exchange has no bars in that window."""
+    if start > end:
+        return None
+    try:
+        return _fetch_ohlcv_df(
+            exchange_id=exchange_id,
+            symbol=symbol,
+            timeframe=timeframe,
+            start=start,
+            end=end,
+        )
+    except DataProviderError as exc:
+        if "No OHLCV bars" in str(exc):
+            return None
+        raise
 
 
 def csv_summary(path: Path) -> dict:
@@ -180,26 +284,84 @@ async def download_csv(
     end: datetime,
     force: bool = False,
 ) -> tuple[Path, bool]:
+    """Ensure continuous cache covers ``[start, end]``, extending via gap fetches.
+
+    Returns ``(path, refreshed)`` where ``refreshed`` is True when the file was
+    written or updated. ``force=True`` re-fetches the requested range and merges
+    it into the continuous file (new bars win on duplicate timestamps).
+    """
     path = cache_path(
         exchange_id=exchange_id,
         symbol=symbol,
         timeframe=timeframe,
-        start=start,
-        end=end,
     )
-    if path.exists() and path.stat().st_size > 0 and not force:
-        return path, False
+    start_utc = start.astimezone(UTC) if start.tzinfo else start.replace(tzinfo=UTC)
+    end_utc = end.astimezone(UTC) if end.tzinfo else end.replace(tzinfo=UTC)
+
     try:
-        downloaded = await asyncio.to_thread(
-            _download_to_csv,
-            exchange_id=exchange_id,
-            symbol=symbol,
-            timeframe=timeframe,
-            start=start,
-            end=end,
-            path=path,
-        )
-        return downloaded, True
+        coverage = read_coverage(path)
+
+        if not force and coverage is not None:
+            first, last = coverage
+            if first <= start_utc and last >= end_utc:
+                return path, False
+
+        if force or coverage is None:
+            new_df = await asyncio.to_thread(
+                _fetch_ohlcv_df,
+                exchange_id=exchange_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                start=start_utc,
+                end=end_utc,
+            )
+            if coverage is not None and force:
+                existing = await asyncio.to_thread(_read_ohlcv_csv, path)
+                merged = _merge_ohlcv(existing, new_df)
+                await asyncio.to_thread(_write_ohlcv_atomic, path, merged)
+            else:
+                await asyncio.to_thread(_write_ohlcv_atomic, path, new_df)
+            return path, True
+
+        first, last = coverage
+        existing = await asyncio.to_thread(_read_ohlcv_csv, path)
+        frames: list[pd.DataFrame] = [existing]
+        wrote = False
+
+        if start_utc < first:
+            gap = await asyncio.to_thread(
+                _try_fetch_gap,
+                exchange_id=exchange_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                start=start_utc,
+                end=first,
+            )
+            if gap is not None and not gap.empty:
+                frames.append(gap)
+                wrote = True
+
+        if end_utc > last:
+            gap = await asyncio.to_thread(
+                _try_fetch_gap,
+                exchange_id=exchange_id,
+                symbol=symbol,
+                timeframe=timeframe,
+                start=last,
+                end=end_utc,
+            )
+            if gap is not None and not gap.empty:
+                frames.append(gap)
+                wrote = True
+
+        if not wrote:
+            return path, False
+
+        merged = frames[0]
+        for frame in frames[1:]:
+            merged = _merge_ohlcv(merged, frame)
+        await asyncio.to_thread(_write_ohlcv_atomic, path, merged)
+        return path, True
     except DataProviderError:
         raise
     except Exception as exc:
@@ -216,15 +378,6 @@ async def get_or_download_csv(
     start: datetime,
     end: datetime,
 ) -> Path:
-    path = cache_path(
-        exchange_id=exchange_id,
-        symbol=symbol,
-        timeframe=timeframe,
-        start=start,
-        end=end,
-    )
-    if path.exists() and path.stat().st_size > 0:
-        return path
     path, _ = await download_csv(
         exchange_id=exchange_id,
         symbol=symbol,
