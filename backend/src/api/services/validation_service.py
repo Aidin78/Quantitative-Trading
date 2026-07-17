@@ -42,6 +42,12 @@ class ValidationJobStore:
         self._tasks: dict[str, asyncio.Task[None]] = {}
         self._persistence = persistence if persistence is not None else create_job_persistence()
 
+    def uses_job_queue(self) -> bool:
+        return self._persistence.supports_queue()
+
+    def enqueue(self, job_id: str) -> None:
+        self._persistence.enqueue(NAMESPACE, job_id)
+
     def create(self, job_id: str, config: dict) -> ValidationJob:
         job = ValidationJob(id=job_id, status="pending", config=config)
         self._jobs[job_id] = job
@@ -49,13 +55,25 @@ class ValidationJobStore:
         return job
 
     def get(self, job_id: str) -> ValidationJob | None:
+        # Queue-backed jobs are updated by an external worker — always reload.
+        if self.uses_job_queue():
+            record = self._persistence.load(NAMESPACE, job_id)
+            if record is None:
+                return None
+            hydrated = self._hydrate(record, orphan_active=False)
+            local = self._jobs.get(job_id)
+            if local is not None and local.result is not None:
+                hydrated.result = local.result
+            self._jobs[job_id] = hydrated
+            return hydrated
+
         job = self._jobs.get(job_id)
         if job is not None:
             return job
         record = self._persistence.load(NAMESPACE, job_id)
         if record is None:
             return None
-        hydrated = self._hydrate(record)
+        hydrated = self._hydrate(record, orphan_active=True)
         self._jobs[job_id] = hydrated
         if record.get("status") in ACTIVE_STATUSES and hydrated.status == "failed":
             self._persist(hydrated)
@@ -73,9 +91,11 @@ class ValidationJobStore:
             }
         self._jobs[job.id] = job
         self._persist(job)
+        payload = job_response(job)
         from src.api.services.job_progress import job_progress
 
-        job_progress.publish(job.id, job_response(job))
+        job_progress.publish(job.id, payload)
+        self._persistence.publish_progress(NAMESPACE, payload)
 
     def set_task(self, job_id: str, task: asyncio.Task[None]) -> None:
         self._tasks[job_id] = task
@@ -84,6 +104,8 @@ class ValidationJobStore:
         self._tasks.pop(job_id, None)
 
     def has_active(self) -> bool:
+        if self.uses_job_queue():
+            return self._persistence.has_active(NAMESPACE)
         if any(j.status in ACTIVE_STATUSES for j in self._jobs.values()):
             return True
         return self._persistence.has_active(NAMESPACE)
@@ -135,14 +157,16 @@ class ValidationJobStore:
             "result_snapshot": snapshot,
         }
 
-    def _hydrate(self, record: dict[str, Any]) -> ValidationJob:
+    def _hydrate(self, record: dict[str, Any], *, orphan_active: bool) -> ValidationJob:
         status = str(record.get("status", "failed"))
         error = record.get("error")
         message = str(record.get("message") or "")
-        if status in ACTIVE_STATUSES:
+        cancel_requested = bool(record.get("cancel_requested"))
+        if orphan_active and status in ACTIVE_STATUSES:
             status = "failed"
             error = error or "Job interrupted by server restart"
             message = message or "Interrupted by server restart."
+            cancel_requested = False
         return ValidationJob(
             id=str(record["id"]),
             status=status,
@@ -154,7 +178,7 @@ class ValidationJobStore:
             message=message,
             progress_current=int(record.get("progress_current") or 0),
             progress_total=int(record.get("progress_total") or 0),
-            cancel_requested=False,
+            cancel_requested=cancel_requested,
             created_at=_parse_dt(record.get("created_at")),
             updated_at=_parse_dt(record.get("updated_at")),
         )

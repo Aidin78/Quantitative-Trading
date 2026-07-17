@@ -151,7 +151,7 @@ async def test_validation_rejects_second_run_with_429(auth_headers: dict[str, st
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         with patch(
-            "src.api.v1.validation._execute_job",
+            "src.api.v1.validation_routes.jobs._execute_job",
             new=slow_execute,
         ):
             first = await client.post(
@@ -201,7 +201,7 @@ async def test_validation_cancel_sets_cancelled_status(auth_headers: dict[str, s
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         with patch(
-            "src.api.v1.validation._execute_job",
+            "src.api.v1.validation_routes.jobs._execute_job",
             new=slow_execute,
         ):
             started_resp = await client.post(

@@ -107,6 +107,58 @@ def test_validation_store_marks_orphaned_running_as_failed() -> None:
     assert payload["status"] == "failed"
 
 
+def test_redis_enqueue_dequeue_roundtrip() -> None:
+    try:
+        import fakeredis
+    except ImportError:
+        pytest.skip("fakeredis not installed")
+
+    persistence = RedisJobPersistence(fakeredis.FakeRedis(decode_responses=True))
+    persistence.enqueue("validation", "job_q1")
+    assert persistence.blocking_dequeue("validation", timeout=1) == "job_q1"
+    assert persistence.blocking_dequeue("validation", timeout=1) is None
+
+
+def test_redis_validation_preserves_pending_for_worker() -> None:
+    try:
+        import fakeredis
+    except ImportError:
+        pytest.skip("fakeredis not installed")
+
+    persistence = RedisJobPersistence(fakeredis.FakeRedis(decode_responses=True))
+    store = ValidationJobStore(persistence=persistence)
+    assert store.uses_job_queue() is True
+    store.create("job_queued", {"symbol": "BTC/USDT", "source": "csv"})
+    store.clear_local()
+    restored = store.get("job_queued")
+    assert restored is not None
+    assert restored.status == "pending"
+    assert store.has_active() is True
+
+
+def test_cancel_without_local_task_persists_flag() -> None:
+    try:
+        import fakeredis
+    except ImportError:
+        pytest.skip("fakeredis not installed")
+
+    persistence = RedisJobPersistence(fakeredis.FakeRedis(decode_responses=True))
+    store = ValidationJobStore(persistence=persistence)
+    job = store.create("job_cancel_flag", {"source": "csv"})
+    job.status = "running"
+    store.update(job)
+    store.clear_local()
+
+    cancelled = store.request_cancel("job_cancel_flag")
+    assert cancelled is not None
+    assert cancelled.cancel_requested is True
+    store.clear_local()
+    reloaded = store.get("job_cancel_flag")
+    assert reloaded is not None
+    assert reloaded.cancel_requested is True
+    assert reloaded.status == "running"
+
+
 def test_has_active_sees_persisted_running_job() -> None:
     try:
         import fakeredis

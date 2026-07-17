@@ -12,68 +12,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db
 from src.api.services.job_progress import sse_job_event_stream
-from src.api.services.validation_service import JobCancelled, job_response, validation_jobs
+from src.api.services.validation_service import job_response, validation_jobs
 from src.api.v1.validation_routes.router import router
 from src.api.v1.validation_routes.schemas import ValidationRunRequest, WalkForwardRequest
 from src.core.settings import load_app_yaml_config
 from src.db.models import BacktestRunRow, SimulatedTradeRow
 from src.observability.metrics import VALIDATION_RUNS_TOTAL
 from src.validation.errors import format_validation_error
-from src.validation.harness import ValidationProgressEvent
+from src.validation.job_executor import execute_validation_job
 from src.validation.job_runner import new_validation_job_id, run_validation_job
 from src.validation.trades import build_trade_ledger
 from src.validation.walk_forward import build_walk_forward_windows
 
-
-async def _execute_job(job_id: str, body: ValidationRunRequest) -> None:
-    job = validation_jobs.get(job_id)
-    if job is None:
-        return
-    job.status = "running"
-    job.message = "Starting validation job…"
-    validation_jobs.update(job)
-
-    async def on_progress(event: ValidationProgressEvent) -> None:
-        current = validation_jobs.get(job_id)
-        if current is not None and current.cancel_requested:
-            raise JobCancelled("Validation job cancelled")
-        job.phase = event.phase
-        job.message = event.message
-        job.progress_current = event.current
-        job.progress_total = event.total
-        validation_jobs.update(job)
-
-    try:
-        result = await run_validation_job(
-            symbol=body.symbol,
-            timeframe=body.timeframe,
-            start_date=body.start_date,
-            end_date=body.end_date,
-            csv_path=body.csv_path,
-            source=body.source,
-            initial_capital=body.initial_capital,
-            persist_db=True,
-            experiment_id=body.experiment_id,
-            revision_id=body.revision_id,
-            on_progress=on_progress,
-        )
-        job.result = result
-        job.status = "completed"
-        job.message = "Validation completed."
-        VALIDATION_RUNS_TOTAL.labels(status="completed").inc()
-    except (asyncio.CancelledError, JobCancelled):
-        job.status = "cancelled"
-        job.message = "Validation cancelled."
-        job.error = None
-        VALIDATION_RUNS_TOTAL.labels(status="cancelled").inc()
-    except Exception as exc:
-        job.status = "failed"
-        job.error = format_validation_error(exc)
-        job.message = job.error
-        VALIDATION_RUNS_TOTAL.labels(status="failed").inc()
-    finally:
-        validation_jobs.clear_task(job_id)
-        validation_jobs.update(job)
+# Re-export for tests that patch the route-module execution entrypoint.
+_execute_job = execute_validation_job
 
 
 @router.post("/run")
@@ -85,8 +37,11 @@ async def start_validation(body: ValidationRunRequest) -> dict:
         )
     job_id = new_validation_job_id()
     validation_jobs.create(job_id, body.model_dump())
-    task = asyncio.create_task(_execute_job(job_id, body))
-    validation_jobs.set_task(job_id, task)
+    if validation_jobs.uses_job_queue():
+        validation_jobs.enqueue(job_id)
+    else:
+        task = asyncio.create_task(_execute_job(job_id, body))
+        validation_jobs.set_task(job_id, task)
     return {"id": job_id, "status": "pending"}
 
 

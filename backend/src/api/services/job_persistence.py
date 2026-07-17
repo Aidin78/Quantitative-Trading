@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 ACTIVE_STATUSES = frozenset({"pending", "running"})
 COMPLETED_TTL_SECONDS = 60 * 60 * 24 * 7  # 7 days
+VALIDATION_PROGRESS_CHANNEL = "qtp:jobs:progress:validation"
 
 
 class JobPersistence(Protocol):
@@ -22,6 +23,14 @@ class JobPersistence(Protocol):
     def has_active(self, namespace: str) -> bool: ...
 
     def clear_namespace(self, namespace: str) -> None: ...
+
+    def supports_queue(self) -> bool: ...
+
+    def enqueue(self, namespace: str, job_id: str) -> None: ...
+
+    def blocking_dequeue(self, namespace: str, timeout: float) -> str | None: ...
+
+    def publish_progress(self, namespace: str, payload: dict[str, Any]) -> None: ...
 
 
 class InMemoryJobPersistence:
@@ -47,6 +56,18 @@ class InMemoryJobPersistence:
     def clear_namespace(self, namespace: str) -> None:
         self._records.pop(namespace, None)
 
+    def supports_queue(self) -> bool:
+        return False
+
+    def enqueue(self, namespace: str, job_id: str) -> None:
+        raise RuntimeError("In-memory job persistence does not support an external queue")
+
+    def blocking_dequeue(self, namespace: str, timeout: float) -> str | None:
+        return None
+
+    def publish_progress(self, namespace: str, payload: dict[str, Any]) -> None:
+        return
+
 
 class RedisJobPersistence:
     """Redis hash + active set for cross-restart / multi-worker job visibility."""
@@ -59,6 +80,12 @@ class RedisJobPersistence:
 
     def _active_key(self, namespace: str) -> str:
         return f"qtp:jobs:{namespace}:active"
+
+    def _queue_key(self, namespace: str) -> str:
+        return f"qtp:jobs:{namespace}:queue"
+
+    def _progress_channel(self, namespace: str) -> str:
+        return f"qtp:jobs:progress:{namespace}"
 
     def save(self, namespace: str, job_id: str, record: dict[str, Any]) -> None:
         key = self._key(namespace, job_id)
@@ -95,6 +122,25 @@ class RedisJobPersistence:
         keys = list(self._client.scan_iter(match=pattern, count=100))
         if keys:
             self._client.delete(*keys)
+
+    def supports_queue(self) -> bool:
+        return True
+
+    def enqueue(self, namespace: str, job_id: str) -> None:
+        self._client.lpush(self._queue_key(namespace), job_id)
+
+    def blocking_dequeue(self, namespace: str, timeout: float) -> str | None:
+        # redis-py BRPOP timeout is integer seconds; 0 blocks forever.
+        wait = max(1, int(timeout))
+        result = self._client.brpop(self._queue_key(namespace), timeout=wait)
+        if result is None:
+            return None
+        _key, job_id = result
+        return str(job_id)
+
+    def publish_progress(self, namespace: str, payload: dict[str, Any]) -> None:
+        channel = self._progress_channel(namespace)
+        self._client.publish(channel, json.dumps(payload, default=str))
 
 
 def create_job_persistence(*, prefer_redis: bool = True) -> JobPersistence:
