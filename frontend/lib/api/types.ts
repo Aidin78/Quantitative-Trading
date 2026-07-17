@@ -229,6 +229,7 @@ export type OptimizationRequest = {
   local_refine?: boolean;
   search_method?: "grid" | "optuna";
   min_trades_holdout?: number;
+  max_parallel_trials?: number;
 };
 
 export type OptimizationHoldoutMetrics = {

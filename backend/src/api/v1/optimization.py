@@ -58,6 +58,7 @@ class OptimizationRunRequest(BaseModel):
     walk_forward_mode: Literal["fixed", "anchored"] = "anchored"
     local_refine: bool = True
     search_method: Literal["grid", "optuna"] = "grid"
+    max_parallel_trials: int = Field(default=1, ge=1, le=8)
 
 
 class OptimizationApplyRequest(BaseModel):
@@ -152,6 +153,7 @@ async def _execute_sweep(sweep_id: str, body: OptimizationRunRequest) -> None:
             local_refine=body.local_refine,
             search_method=body.search_method,
             min_trades_holdout=min_trades_holdout,
+            max_parallel_trials=body.max_parallel_trials,
             on_progress=on_progress,
         )
         result.sweep_id = sweep_id

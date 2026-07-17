@@ -611,3 +611,164 @@ def test_walk_forward_result_labels_span_all_folds() -> None:
     assert result.train_end == max(w.train_end for w in windows)
     assert result.test_start == min(w.test_start for w in windows)
     assert result.test_end == windows[-1].test_end
+
+
+def test_train_phase_default_is_sequential() -> None:
+    """max_parallel_trials=1 keeps at most one train trial in flight."""
+    import asyncio
+    from datetime import UTC, datetime
+    from unittest.mock import patch
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 4, 1, tzinfo=UTC)
+    (opt_start, opt_end), _ = split_holdout(start, end, holdout_ratio=0.0)
+    (train_start, train_end), _ = split_train_test(opt_start, opt_end, train_ratio=0.7)
+
+    active = 0
+    max_active = 0
+    train_calls = 0
+
+    async def fake_run_trial(*, start, end, **kwargs):
+        nonlocal active, max_active, train_calls
+        if start == train_start and end == train_end:
+            train_calls += 1
+            active += 1
+            max_active = max(max_active, active)
+            await asyncio.sleep(0.02)
+            active -= 1
+            return (float(train_calls), {"total_trades": 25, "return_pct": 2.0}, "rev")
+        return (1.0, {"total_trades": 25, "return_pct": 2.0}, "rev")
+
+    space = OptimizationSpace(min_confidence=(0.6, 0.7), min_risk_reward=(1.2, 1.5))
+    trials = generate_trials(space, max_trials=3, seed=1)
+
+    with (
+        patch("src.validation.optimization_runner._run_trial", new=fake_run_trial),
+        patch("src.validation.optimization_runner.generate_trials", return_value=trials),
+        patch("src.validation.optimization_runner.refine_trials_around", return_value=[]),
+    ):
+        result = asyncio.run(
+            run_optimization(
+                symbol="BTC/USDT",
+                timeframe="1h",
+                start=start,
+                end=end,
+                source="csv",
+                max_trials=3,
+                top_k=1,
+                holdout_ratio=0.0,
+                local_refine=False,
+                max_parallel_trials=1,
+            )
+        )
+
+    assert train_calls == 3
+    assert max_active == 1
+    assert len(result.trials) >= 1
+
+
+def test_train_phase_parallel_trials_overlap() -> None:
+    """max_parallel_trials=2 allows concurrent train _run_trial calls."""
+    import asyncio
+    from datetime import UTC, datetime
+    from unittest.mock import patch
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 4, 1, tzinfo=UTC)
+    (opt_start, opt_end), _ = split_holdout(start, end, holdout_ratio=0.0)
+    (train_start, train_end), _ = split_train_test(opt_start, opt_end, train_ratio=0.7)
+
+    active = 0
+    max_active = 0
+    train_calls = 0
+
+    async def fake_run_trial(*, start, end, **kwargs):
+        nonlocal active, max_active, train_calls
+        if start == train_start and end == train_end:
+            train_calls += 1
+            active += 1
+            max_active = max(max_active, active)
+            await asyncio.sleep(0.05)
+            active -= 1
+            return (float(train_calls), {"total_trades": 25, "return_pct": 2.0}, "rev")
+        return (1.0, {"total_trades": 25, "return_pct": 2.0}, "rev")
+
+    space = OptimizationSpace(min_confidence=(0.6, 0.7), min_risk_reward=(1.2, 1.5))
+    trials = generate_trials(space, max_trials=4, seed=1)
+
+    with (
+        patch("src.validation.optimization_runner._run_trial", new=fake_run_trial),
+        patch("src.validation.optimization_runner.generate_trials", return_value=trials),
+        patch("src.validation.optimization_runner.refine_trials_around", return_value=[]),
+    ):
+        result = asyncio.run(
+            run_optimization(
+                symbol="BTC/USDT",
+                timeframe="1h",
+                start=start,
+                end=end,
+                source="csv",
+                max_trials=4,
+                top_k=2,
+                holdout_ratio=0.0,
+                local_refine=False,
+                max_parallel_trials=2,
+            )
+        )
+
+    assert train_calls == 4
+    assert max_active >= 2
+    assert len(result.trials) >= 1
+
+
+def test_train_phase_cancel_cancels_sibling_tasks() -> None:
+    """A failing train trial cancels in-flight siblings and re-raises."""
+    import asyncio
+    from datetime import UTC, datetime
+    from unittest.mock import patch
+
+    started = 0
+    finished = 0
+
+    async def fake_run_trial(**kwargs):
+        nonlocal started, finished
+        started += 1
+        my_id = started
+        try:
+            if my_id == 1:
+                await asyncio.sleep(0.02)
+                raise asyncio.CancelledError()
+            await asyncio.sleep(1.0)
+            finished += 1
+            return (1.0, {"total_trades": 25, "return_pct": 2.0}, "rev")
+        except asyncio.CancelledError:
+            raise
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 4, 1, tzinfo=UTC)
+    space = OptimizationSpace(min_confidence=(0.6, 0.7), min_risk_reward=(1.2, 1.5))
+    trials = generate_trials(space, max_trials=3, seed=1)
+
+    with (
+        patch("src.validation.optimization_runner._run_trial", new=fake_run_trial),
+        patch("src.validation.optimization_runner.generate_trials", return_value=trials),
+        patch("src.validation.optimization_runner.refine_trials_around", return_value=[]),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        asyncio.run(
+            run_optimization(
+                symbol="BTC/USDT",
+                timeframe="1h",
+                start=start,
+                end=end,
+                source="csv",
+                max_trials=3,
+                top_k=1,
+                holdout_ratio=0.0,
+                local_refine=False,
+                max_parallel_trials=2,
+            )
+        )
+
+    assert started >= 2
+    assert finished == 0

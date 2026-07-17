@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import math
 import uuid
 from collections.abc import Awaitable, Callable
@@ -195,14 +196,22 @@ async def run_optimization(
     local_refine: bool = True,
     search_method: Literal["grid", "optuna"] = "grid",
     min_trades_holdout: int | None = None,
+    max_parallel_trials: int = 1,
     on_progress: ProgressCallback | None = None,
 ) -> OptimizationResult:
+    """Run a parameter sweep.
+
+    Train-phase trials may run concurrently when ``max_parallel_trials`` > 1
+    (asyncio semaphore; not ProcessPool). Test/refine/holdout stay sequential.
+    Default ``max_parallel_trials=1`` preserves the historical sequential loop.
+    """
     opt_space = space or OptimizationSpace()
     (opt_start, opt_end), holdout = split_holdout(start, end, holdout_ratio=holdout_ratio)
     holdout_start, holdout_end = holdout if holdout else (None, None)
     holdout_min_trades = (
         min_trades_holdout if min_trades_holdout is not None else max(1, min_trades // 2)
     )
+    parallel = max(1, int(max_parallel_trials))
 
     effective_source = source
     resolved_csv_path = csv_path
@@ -255,94 +264,126 @@ async def run_optimization(
     step = 0
     train_results: list[TrialResult] = []
 
-    for params in trial_params:
-        trial_number = step + 1
+    semaphore = asyncio.Semaphore(parallel)
+    progress_lock = asyncio.Lock()
+    completed_train = 0
+    indexed_results: list[TrialResult | None] = [None] * n_train
 
-        async def validation_progress(
-            event,
-            *,
-            _trial_number: int = trial_number,
-        ) -> None:
-            if on_progress is None or event.phase != "backtest" or event.total <= 0:
-                return
+    async def _train_one(index: int, params: dict[str, Any]) -> TrialResult:
+        nonlocal completed_train
+        trial_number = index + 1
+
+        async with semaphore:
+            async with progress_lock:
+                start_step = completed_train
+
+            async def validation_progress(
+                event,
+                *,
+                _trial_number: int = trial_number,
+                _start_step: int = start_step,
+            ) -> None:
+                if on_progress is None or event.phase != "backtest" or event.total <= 0:
+                    return
+                await _emit(
+                    on_progress,
+                    ProgressEvent(
+                        current=_start_step,
+                        total=total_steps,
+                        phase="train",
+                        stage="start",
+                        train_count=n_train,
+                        test_count=n_test,
+                        detail=(
+                            f"Training candidate {_trial_number} of {n_train} "
+                            f"— bar {event.current}/{event.total}"
+                        ),
+                    ),
+                )
+
             await _emit(
                 on_progress,
                 ProgressEvent(
-                    current=step,
+                    current=start_step,
                     total=total_steps,
                     phase="train",
                     stage="start",
                     train_count=n_train,
                     test_count=n_test,
                     detail=(
-                        f"Training candidate {_trial_number} of {n_train} "
-                        f"— bar {event.current}/{event.total}"
+                        f"Training candidate {trial_number} of {n_train} " "on in-sample data…"
                     ),
                 ),
             )
-
-        await _emit(
-            on_progress,
-            ProgressEvent(
-                current=step,
-                total=total_steps,
-                phase="train",
-                stage="start",
-                train_count=n_train,
-                test_count=n_test,
-                detail=f"Training candidate {trial_number} of {n_train} on in-sample data…",
-            ),
-        )
-        if wf_windows:
-            train_score, train_outcome, fold_scores, fold_std = await _score_trial_windows(
+            if wf_windows:
+                train_score, train_outcome, fold_scores, fold_std = await _score_trial_windows(
+                    params=params,
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    windows=wf_windows,
+                    source=effective_source,
+                    initial_capital=initial_capital,
+                    csv_path=resolved_csv_path,
+                    segment="train",
+                )
+                revision_id = synthetic_revision_from_trial(params).revision_id
+            else:
+                train_score, train_outcome, revision_id = await _run_trial(
+                    params=params,
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    start=train_start,
+                    end=train_end,
+                    source=effective_source,
+                    initial_capital=initial_capital,
+                    csv_path=resolved_csv_path,
+                    on_validation_progress=validation_progress,
+                )
+                fold_scores = []
+                fold_std = None
+            trial = TrialResult(
+                trial_id=f"trial_{uuid.uuid4().hex[:8]}",
                 params=params,
-                symbol=symbol,
-                timeframe=timeframe,
-                windows=wf_windows,
-                source=effective_source,
-                initial_capital=initial_capital,
-                csv_path=resolved_csv_path,
-                segment="train",
+                train_score=train_score,
+                train_outcome=train_outcome,
+                revision_id=revision_id,
+                fold_scores=fold_scores,
+                fold_std=fold_std,
             )
-            revision_id = synthetic_revision_from_trial(params).revision_id
-        else:
-            train_score, train_outcome, revision_id = await _run_trial(
-                params=params,
-                symbol=symbol,
-                timeframe=timeframe,
-                start=train_start,
-                end=train_end,
-                source=effective_source,
-                initial_capital=initial_capital,
-                csv_path=resolved_csv_path,
-                on_validation_progress=validation_progress,
+            async with progress_lock:
+                completed_train += 1
+                done_step = completed_train
+            await _emit(
+                on_progress,
+                ProgressEvent(
+                    current=done_step,
+                    total=total_steps,
+                    phase="train",
+                    stage="done",
+                    trial=trial,
+                    train_count=n_train,
+                    test_count=n_test,
+                ),
             )
-            fold_scores = []
-            fold_std = None
-        trial = TrialResult(
-            trial_id=f"trial_{uuid.uuid4().hex[:8]}",
-            params=params,
-            train_score=train_score,
-            train_outcome=train_outcome,
-            revision_id=revision_id,
-            fold_scores=fold_scores,
-            fold_std=fold_std,
-        )
-        train_results.append(trial)
-        step += 1
-        await _emit(
-            on_progress,
-            ProgressEvent(
-                current=step,
-                total=total_steps,
-                phase="train",
-                stage="done",
-                trial=trial,
-                train_count=n_train,
-                test_count=n_test,
-            ),
-        )
+            return trial
 
+    if n_train:
+        tasks = [
+            asyncio.create_task(_train_one(index, params))
+            for index, params in enumerate(trial_params)
+        ]
+        try:
+            results = await asyncio.gather(*tasks)
+        except BaseException:
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            raise
+        for index, trial in enumerate(results):
+            indexed_results[index] = trial
+        train_results = [trial for trial in indexed_results if trial is not None]
+        step = completed_train
     ranked = sorted(train_results, key=lambda trial: trial.train_score, reverse=True)
     finalists = ranked[: min(top_k, len(ranked))]
 
