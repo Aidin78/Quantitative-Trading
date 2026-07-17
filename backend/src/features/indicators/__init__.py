@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from src.core.exceptions import InsufficientDataError
@@ -53,19 +54,7 @@ class AtrIndicator:
             raise InsufficientDataError(
                 f"Insufficient data for atr: need at least {period + 1} bars"
             )
-        high = df["high"]
-        low = df["low"]
-        close = df["close"]
-        prev_close = close.shift(1)
-        tr = pd.concat(
-            [
-                high - low,
-                (high - prev_close).abs(),
-                (low - prev_close).abs(),
-            ],
-            axis=1,
-        ).max(axis=1)
-        atr = tr.ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
+        atr = _atr_series(df, period)
         return _last_valid(atr, name="atr", min_periods=period)
 
 
@@ -135,20 +124,30 @@ class BollingerIndicator:
         period = int(params.get("period", 20))
         std_mult = float(params.get("std", 2))
         band = str(params.get("band", "middle"))
-        if len(df) < period:
-            raise InsufficientDataError(
-                f"Insufficient data for bollinger: need at least {period} bars"
-            )
-        close = df["close"]
-        middle = close.rolling(window=period).mean()
-        std = close.rolling(window=period).std()
+        upper, middle, lower = _bollinger_components(df, period=period, std_mult=std_mult)
         if band == "upper":
-            series = middle + std_mult * std
+            series = upper
         elif band == "lower":
-            series = middle - std_mult * std
+            series = lower
         else:
             series = middle
         return _last_valid(series, name=f"bollinger_{band}", min_periods=period)
+
+
+def _bollinger_components(
+    df: pd.DataFrame,
+    *,
+    period: int,
+    std_mult: float,
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    if len(df) < period:
+        raise InsufficientDataError(f"Insufficient data for bollinger: need at least {period} bars")
+    close = df["close"]
+    middle = close.rolling(window=period).mean()
+    std = close.rolling(window=period).std()
+    upper = middle + std_mult * std
+    lower = middle - std_mult * std
+    return upper, middle, lower
 
 
 def _adx_components(
@@ -250,7 +249,7 @@ def _supertrend_components(
             f"Insufficient data for supertrend: need at least {min_bars} bars"
         )
 
-    close = df["close"].to_numpy(dtype=float)
+    close = df["close"].to_numpy(dtype=float, copy=False)
     hl2 = ((df["high"] + df["low"]) / 2).to_numpy(dtype=float)
     atr = _atr_series(df, period).to_numpy(dtype=float)
     n = len(df)
@@ -261,54 +260,53 @@ def _supertrend_components(
     final_lb = basic_lb.copy()
 
     for i in range(1, n):
-        if not pd.notna(basic_ub[i]):
+        bu = basic_ub[i]
+        if bu != bu:  # NaN
             continue
-        if pd.notna(final_ub[i - 1]) and (
-            basic_ub[i] < final_ub[i - 1] or close[i - 1] > final_ub[i - 1]
-        ):
-            final_ub[i] = basic_ub[i]
-        elif pd.notna(final_ub[i - 1]):
-            final_ub[i] = final_ub[i - 1]
+        prev_ub = final_ub[i - 1]
+        if prev_ub == prev_ub and not (bu < prev_ub or close[i - 1] > prev_ub):
+            final_ub[i] = prev_ub
         else:
-            final_ub[i] = basic_ub[i]
+            final_ub[i] = bu
 
-        if pd.notna(final_lb[i - 1]) and (
-            basic_lb[i] > final_lb[i - 1] or close[i - 1] < final_lb[i - 1]
-        ):
-            final_lb[i] = basic_lb[i]
-        elif pd.notna(final_lb[i - 1]):
-            final_lb[i] = final_lb[i - 1]
+        bl = basic_lb[i]
+        prev_lb = final_lb[i - 1]
+        if prev_lb == prev_lb and not (bl > prev_lb or close[i - 1] < prev_lb):
+            final_lb[i] = prev_lb
         else:
-            final_lb[i] = basic_lb[i]
+            final_lb[i] = bl
 
-    line = [float("nan")] * n
-    direction = [float("nan")] * n
+    line = np.full(n, np.nan, dtype=float)
+    direction = np.full(n, np.nan, dtype=float)
     in_uptrend = True
 
     for i in range(n):
-        if not pd.notna(final_ub[i]) or not pd.notna(final_lb[i]):
+        ub = final_ub[i]
+        lb = final_lb[i]
+        if ub != ub or lb != lb:
             continue
 
         if i == 0:
             in_uptrend = True
-            line[i] = final_lb[i]
+            line[i] = lb
             direction[i] = 1.0
             continue
 
         if in_uptrend:
-            line[i] = final_lb[i]
-            direction[i] = 1.0
-            if close[i] < final_lb[i]:
+            if close[i] < lb:
                 in_uptrend = False
-                line[i] = final_ub[i]
+                line[i] = ub
                 direction[i] = -1.0
-        else:
-            line[i] = final_ub[i]
-            direction[i] = -1.0
-            if close[i] > final_ub[i]:
-                in_uptrend = True
-                line[i] = final_lb[i]
+            else:
+                line[i] = lb
                 direction[i] = 1.0
+        elif close[i] > ub:
+            in_uptrend = True
+            line[i] = lb
+            direction[i] = 1.0
+        else:
+            line[i] = ub
+            direction[i] = -1.0
 
     return pd.Series(line, index=df.index), pd.Series(direction, index=df.index)
 
@@ -462,42 +460,12 @@ def _market_structure_latest(
     return bias, bos
 
 
-def _market_structure_components(
-    df: pd.DataFrame,
-    *,
-    pivot_bars: int,
-) -> tuple[pd.Series, pd.Series]:
-    min_bars = 4 * pivot_bars + 1
-    if len(df) < min_bars:
-        raise InsufficientDataError(
-            f"Insufficient data for market_structure: need at least {min_bars} bars"
-        )
-
-    n = len(df)
-    bias_values = [float("nan")] * n
-    bos_values = [float("nan")] * n
-    close_series = df["close"]
-
-    for t in range(min_bars - 1, n):
-        highs, lows = _find_confirmed_pivots(df, pivot_bars=pivot_bars, up_to_index=t)
-        bias_values[t] = _structure_bias(highs, lows)
-        bos_values[t] = _structure_bos(float(close_series.iloc[t]), highs, lows)
-
-    index = df.index
-    return pd.Series(bias_values, index=index), pd.Series(bos_values, index=index)
-
-
 @register_indicator("market_structure")
 class MarketStructureIndicator:
     def compute(self, df: pd.DataFrame, params: dict[str, Any]) -> float:
         pivot_bars = int(params.get("pivot_bars", 5))
         component = str(params.get("component", "bias"))
         bias, bos = _market_structure_latest(df, pivot_bars=pivot_bars)
-        min_periods = 4 * pivot_bars + 1
-        if len(df) < min_periods:
-            raise InsufficientDataError(
-                f"Insufficient data for market_structure: need at least {min_periods} bars"
-            )
 
         if component == "bias":
             return float(bias)

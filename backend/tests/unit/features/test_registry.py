@@ -40,6 +40,22 @@ def test_registry_compute_all_indicators() -> None:
     assert set(values) == {d.name for d in registry.indicators}
 
 
+def test_registry_shared_cache_matches_uncached() -> None:
+    config, _ = load_features_config()
+    registry = FeatureRegistry(config)
+    df = make_sample_ohlcv(bars=120)
+    shared: dict = {}
+    cached = {d.name: registry.compute_indicator(d, df, shared=shared) for d in registry.indicators}
+    uncached = {d.name: registry.compute_indicator(d, df) for d in registry.indicators}
+    assert set(cached) == set(uncached)
+    for name in cached:
+        assert cached[name] == pytest.approx(uncached[name], rel=1e-9, abs=1e-9)
+    # Multi-component indicators should hit the shared cache more than once.
+    assert any(key[0] == "macd" for key in shared)
+    assert any(key[0] == "supertrend" for key in shared)
+    assert any(key[0] == "adx" for key in shared)
+
+
 def test_registry_rejects_invalid_flag_expr() -> None:
     from src.features.config import FeaturesConfig, FlagDef
 

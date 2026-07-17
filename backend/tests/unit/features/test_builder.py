@@ -105,10 +105,10 @@ def test_rsi_computed_once_per_build(
     calls: list[str] = []
     original = builder._registry.compute_indicator
 
-    def tracked(definition, df):  # noqa: ANN001
+    def tracked(definition, df, **kwargs):  # noqa: ANN001
         if definition.name == "rsi_14":
             calls.append(definition.name)
-        return original(definition, df)
+        return original(definition, df, **kwargs)
 
     monkeypatch.setattr(builder._registry, "compute_indicator", tracked)
     builder.build(ohlcv_df, "BTC/USDT", "1h", persist=False)
