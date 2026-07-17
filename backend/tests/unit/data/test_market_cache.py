@@ -172,3 +172,26 @@ def test_format_validation_error_messages() -> None:
         ).lower()
     )
     assert "sample csv" in format_validation_error(ValueError("No bars in range")).lower()
+
+
+def test_resolve_cache_dir_uses_config_parent(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    monkeypatch.delenv("DATA_DIR", raising=False)
+    monkeypatch.setattr(market_cache, "resolve_config_dir", lambda: config_dir)
+
+    assert market_cache.resolve_cache_dir() == tmp_path / "data" / "cache"
+
+
+def test_resolve_cache_dir_prefers_data_dir_env(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    data_dir = tmp_path / "custom-data"
+    data_dir.mkdir()
+    monkeypatch.setenv("DATA_DIR", str(data_dir))
+
+    assert market_cache.resolve_cache_dir() == data_dir / "cache"

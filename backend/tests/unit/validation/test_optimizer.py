@@ -203,18 +203,18 @@ def test_train_phase_uses_train_segment_not_test() -> None:
 
     with (
         patch(
-            "src.validation.optimizer._score_trial_windows",
+            "src.validation.optimization_runner._score_trial_windows",
             new=AsyncMock(side_effect=fake_score),
         ),
         patch(
-            "src.validation.optimizer._run_trial",
+            "src.validation.optimization_runner._run_trial",
             new=AsyncMock(return_value=(1.0, {"total_trades": 25, "return_pct": 2.0}, "rev")),
         ),
         patch(
-            "src.validation.optimizer.generate_trials",
+            "src.validation.optimization_runner.generate_trials",
             return_value=trials,
         ),
-        patch("src.validation.optimizer.refine_trials_around", return_value=[]),
+        patch("src.validation.optimization_runner.refine_trials_around", return_value=[]),
     ):
         import asyncio
 
@@ -393,11 +393,11 @@ def test_holdout_evaluated_after_best_selected() -> None:
 
     with (
         patch(
-            "src.validation.optimizer._run_trial",
+            "src.validation.optimization_runner._run_trial",
             new=AsyncMock(side_effect=fake_run_trial),
         ),
-        patch("src.validation.optimizer.generate_trials", return_value=trials),
-        patch("src.validation.optimizer.refine_trials_around", return_value=[]),
+        patch("src.validation.optimization_runner.generate_trials", return_value=trials),
+        patch("src.validation.optimization_runner.refine_trials_around", return_value=[]),
     ):
         import asyncio
 
@@ -476,19 +476,19 @@ def test_exchange_prefetch_covers_full_range_including_holdout() -> None:
 
     with (
         patch(
-            "src.validation.optimizer.get_or_download_csv",
+            "src.validation.optimization_runner.get_or_download_csv",
             new=AsyncMock(side_effect=fake_download),
         ),
         patch(
-            "src.validation.optimizer.get_settings",
+            "src.validation.optimization_runner.get_settings",
             return_value=type("S", (), {"exchange_id": "binance"})(),
         ),
         patch(
-            "src.validation.optimizer._run_trial",
+            "src.validation.optimization_runner._run_trial",
             new=AsyncMock(side_effect=fake_run_trial),
         ),
-        patch("src.validation.optimizer.generate_trials", return_value=trials),
-        patch("src.validation.optimizer.refine_trials_around", return_value=[]),
+        patch("src.validation.optimization_runner.generate_trials", return_value=trials),
+        patch("src.validation.optimization_runner.refine_trials_around", return_value=[]),
     ):
         import asyncio
 
@@ -529,11 +529,11 @@ def test_holdout_failure_sets_fallback_and_invalid_best() -> None:
 
     with (
         patch(
-            "src.validation.optimizer._run_trial",
+            "src.validation.optimization_runner._run_trial",
             new=AsyncMock(side_effect=fake_run_trial),
         ),
-        patch("src.validation.optimizer.generate_trials", return_value=trials),
-        patch("src.validation.optimizer.refine_trials_around", return_value=[]),
+        patch("src.validation.optimization_runner.generate_trials", return_value=trials),
+        patch("src.validation.optimization_runner.refine_trials_around", return_value=[]),
     ):
         import asyncio
 
@@ -576,15 +576,15 @@ def test_walk_forward_result_labels_span_all_folds() -> None:
 
     with (
         patch(
-            "src.validation.optimizer._score_trial_windows",
+            "src.validation.optimization_runner._score_trial_windows",
             new=AsyncMock(side_effect=fake_score),
         ),
         patch(
-            "src.validation.optimizer._run_trial",
+            "src.validation.optimization_runner._run_trial",
             new=AsyncMock(return_value=(1.0, {"total_trades": 25, "return_pct": 2.0}, "rev")),
         ),
-        patch("src.validation.optimizer.generate_trials", return_value=trials),
-        patch("src.validation.optimizer.refine_trials_around", return_value=[]),
+        patch("src.validation.optimization_runner.generate_trials", return_value=trials),
+        patch("src.validation.optimization_runner.refine_trials_around", return_value=[]),
     ):
         import asyncio
 

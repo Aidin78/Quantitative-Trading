@@ -2,14 +2,36 @@ from __future__ import annotations
 
 import asyncio
 import calendar
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
 from src.core.exceptions import DataProviderError
-from src.core.settings import get_settings
+from src.core.settings import get_settings, resolve_config_dir
 from src.data.live_provider import LiveProvider
 
-CACHE_DIR = Path(__file__).resolve().parents[2] / "data" / "cache"
+
+def resolve_cache_dir() -> Path:
+    """Resolve OHLCV cache directory (shared by Poetry and Docker).
+
+    Priority:
+    1. ``DATA_DIR`` env → ``{DATA_DIR}/cache``
+    2. Sibling of config dir → ``{resolve_config_dir().parent}/data/cache``
+    """
+    backend_root = Path(__file__).resolve().parents[2]
+
+    def _normalize(path: Path) -> Path:
+        if path.is_absolute():
+            return path.resolve()
+        return (backend_root / path).resolve()
+
+    if data_dir := os.environ.get("DATA_DIR"):
+        return _normalize(Path(data_dir)) / "cache"
+    return resolve_config_dir().parent / "data" / "cache"
+
+
+# Mutable module attribute so tests can monkeypatch; production uses resolve_cache_dir().
+CACHE_DIR = resolve_cache_dir()
 
 
 def subtract_months(dt: datetime, months: int) -> datetime:
