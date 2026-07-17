@@ -31,20 +31,8 @@ class CsvDataProvider:
         end: datetime,
     ) -> list[datetime]:
         self._validate_symbol_timeframe(symbol, timeframe)
-        df = self._df.copy()
-        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-        start_ts = pd.Timestamp(start)
-        end_ts = pd.Timestamp(end)
-        if start_ts.tzinfo is None:
-            start_ts = start_ts.tz_localize("UTC")
-        else:
-            start_ts = start_ts.tz_convert("UTC")
-        if end_ts.tzinfo is None:
-            end_ts = end_ts.tz_localize("UTC")
-        else:
-            end_ts = end_ts.tz_convert("UTC")
-        mask = (df["timestamp"] >= start_ts) & (df["timestamp"] <= end_ts)
-        return [ts.to_pydatetime() for ts in df.loc[mask, "timestamp"]]
+        left, right = self._range_slice(start, end)
+        return [ts.to_pydatetime() for ts in self._df["timestamp"].iloc[left:right]]
 
     def get_ohlcv(
         self,
@@ -54,22 +42,8 @@ class CsvDataProvider:
         end: datetime,
     ) -> pd.DataFrame:
         self._validate_symbol_timeframe(symbol, timeframe)
-        df = self._df.copy()
-        if "timestamp" in df.columns:
-            df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-            start_ts = pd.Timestamp(start)
-            end_ts = pd.Timestamp(end)
-            if start_ts.tzinfo is None:
-                start_ts = start_ts.tz_localize("UTC")
-            else:
-                start_ts = start_ts.tz_convert("UTC")
-            if end_ts.tzinfo is None:
-                end_ts = end_ts.tz_localize("UTC")
-            else:
-                end_ts = end_ts.tz_convert("UTC")
-            mask = (df["timestamp"] >= start_ts) & (df["timestamp"] <= end_ts)
-            return df.loc[mask].reset_index(drop=True)
-        return df
+        left, right = self._range_slice(start, end)
+        return self._df.iloc[left:right].reset_index(drop=True)
 
     def get_latest(
         self,
@@ -82,24 +56,36 @@ class CsvDataProvider:
         self._validate_symbol_timeframe(symbol, timeframe)
         if self._df.empty:
             raise DataProviderError("CSV OHLCV data is empty")
-        df = self._df.copy()
-        if end is not None and "timestamp" in df.columns:
-            df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-            end_ts = pd.Timestamp(end)
-            if end_ts.tzinfo is None:
-                end_ts = end_ts.tz_localize("UTC")
-            else:
-                end_ts = end_ts.tz_convert("UTC")
-            df = df[df["timestamp"] <= end_ts]
-            if df.empty:
+        if end is not None:
+            end_ts = self._to_utc_ts(end)
+            idx = int(self._df["timestamp"].searchsorted(end_ts, side="right"))
+            if idx == 0:
                 raise DataProviderError("No OHLCV rows on or before end time")
-        return df.tail(limit).reset_index(drop=True)
+            start_idx = max(0, idx - limit)
+            return self._df.iloc[start_idx:idx].reset_index(drop=True)
+        if limit >= len(self._df):
+            return self._df.reset_index(drop=True)
+        return self._df.iloc[-limit:].reset_index(drop=True)
+
+    def _range_slice(self, start: datetime, end: datetime) -> tuple[int, int]:
+        start_ts = self._to_utc_ts(start)
+        end_ts = self._to_utc_ts(end)
+        left = int(self._df["timestamp"].searchsorted(start_ts, side="left"))
+        right = int(self._df["timestamp"].searchsorted(end_ts, side="right"))
+        return left, right
 
     def _validate_symbol_timeframe(self, symbol: str, timeframe: str) -> None:
         if symbol != self._symbol:
             raise DataProviderError(f"CSV provider only supports symbol {self._symbol}")
         if timeframe != self._timeframe:
             raise DataProviderError(f"CSV provider only supports timeframe {self._timeframe}")
+
+    @staticmethod
+    def _to_utc_ts(value: datetime) -> pd.Timestamp:
+        ts = pd.Timestamp(value)
+        if ts.tzinfo is None:
+            return ts.tz_localize("UTC")
+        return ts.tz_convert("UTC")
 
     @staticmethod
     def _load(path: Path) -> pd.DataFrame:
@@ -110,4 +96,5 @@ class CsvDataProvider:
         missing = required - set(df.columns)
         if missing:
             raise DataProviderError(f"CSV missing columns: {sorted(missing)}")
+        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
         return df.sort_values("timestamp").reset_index(drop=True)

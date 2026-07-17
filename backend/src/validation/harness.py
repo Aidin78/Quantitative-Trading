@@ -83,10 +83,15 @@ class ValidationHarness:
         self,
         *,
         on_progress: ValidationProgressCallback | None = None,
+        retain_cycles: bool = True,
     ) -> ValidationResult:
         import uuid
 
-        from src.validation.metrics import compute_engine_metrics, compute_outcome_metrics
+        from src.validation.metrics import (
+            EngineMetricsAccumulator,
+            compute_engine_metrics,
+            compute_outcome_metrics,
+        )
 
         run_id = f"run_{uuid.uuid4().hex[:12]}"
         self._event_log.clear()
@@ -116,6 +121,7 @@ class ValidationHarness:
             ),
         )
         cycles: list[CycleResult] = []
+        engine_acc = EngineMetricsAccumulator()
         for i, bar_time in enumerate(bar_times):
             self._clock.set_event_time(bar_time)
             self._clock.set_processing_time(bar_time + timedelta(seconds=2))
@@ -126,7 +132,10 @@ class ValidationHarness:
                 revision_id=self._revision_id,
                 experiment_id=self._experiment_id,
             )
-            cycles.append(result)
+            if retain_cycles:
+                cycles.append(result)
+            else:
+                engine_acc.observe(result)
             if i % 10 == 0 or i == total_bars - 1:
                 await _emit(
                     on_progress,
@@ -166,12 +175,15 @@ class ValidationHarness:
         events = self._event_log.events
         portfolio_id = self._runtime._portfolio_id  # noqa: SLF001
         ending_equity = self._runtime._state_store.get_portfolio(portfolio_id).equity  # noqa: SLF001
+        engine_metrics = (
+            compute_engine_metrics(cycles, events) if retain_cycles else engine_acc.finalize(events)
+        )
         return ValidationResult(
             run_id=run_id,
             config=self._config,
             cycles=cycles,
             events=events,
-            engine_metrics=compute_engine_metrics(cycles, events),
+            engine_metrics=engine_metrics,
             outcome_metrics=compute_outcome_metrics(
                 events,
                 initial_capital=self._config.initial_capital,

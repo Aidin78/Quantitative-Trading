@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
+from src.core.contracts.event import EventFamily
 from src.core.exceptions import DataProviderError
 from src.core.settings import get_settings, load_app_yaml_config, resolve_config_dir
 from src.data.csv_provider import CsvDataProvider
@@ -205,7 +206,9 @@ async def run_validation_job(
         clock,
         config=execution_config,
     )
-    log_handler = EventLogHandler()
+    log_handler = EventLogHandler(
+        families=None if persist_db else {EventFamily.EXECUTION},
+    )
     handlers: list = [log_handler]
     if persist_db:
         handlers.append(WebSocketEventHandler())
@@ -295,7 +298,7 @@ async def run_validation_job(
         revision_id=rev_id,
         experiment_id=exp_id,
     )
-    result = await harness.run(on_progress=on_progress)
+    result = await harness.run(on_progress=on_progress, retain_cycles=persist_db)
     result.experiment_run_id = experiment_run_id
 
     if persist_db:

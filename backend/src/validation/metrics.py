@@ -219,24 +219,56 @@ def compute_engine_metrics(
     cycles: list[CycleResult],
     events: list[EventEnvelope],
 ) -> dict:
-    total = len(cycles)
-    approved = sum(1 for c in cycles if c.decision.is_approved)
-    rejected = total - approved
-
-    rejection_reasons: Counter[str] = Counter()
-    rejection_stages: Counter[str] = Counter()
-    provider_hits: Counter[str] = Counter()
-
+    acc = EngineMetricsAccumulator()
     for cycle in cycles:
-        if cycle.decision.is_approved and cycle.decision.final_signal:
-            for pid in cycle.decision.final_signal.contributing_providers:
-                provider_hits[pid] += 1
-        elif not cycle.decision.is_approved:
-            reason = cycle.decision.result.rejection_reason or "unknown"
-            stage = cycle.decision.result.rejection_stage or "unknown"
-            rejection_reasons[reason] += 1
-            rejection_stages[stage] += 1
+        acc.observe(cycle)
+    return acc.finalize(events)
 
+
+class EngineMetricsAccumulator:
+    """Incremental engine metrics so optimization runs need not retain CycleResult trees."""
+
+    def __init__(self) -> None:
+        self.total = 0
+        self.approved = 0
+        self.rejection_reasons: Counter[str] = Counter()
+        self.rejection_stages: Counter[str] = Counter()
+        self.provider_hits: Counter[str] = Counter()
+
+    def observe(self, cycle: CycleResult) -> None:
+        self.total += 1
+        if cycle.decision.is_approved:
+            self.approved += 1
+            if cycle.decision.final_signal:
+                for pid in cycle.decision.final_signal.contributing_providers:
+                    self.provider_hits[pid] += 1
+            return
+        reason = cycle.decision.result.rejection_reason or "unknown"
+        stage = cycle.decision.result.rejection_stage or "unknown"
+        self.rejection_reasons[reason] += 1
+        self.rejection_stages[stage] += 1
+
+    def finalize(self, events: list[EventEnvelope]) -> dict:
+        return _finalize_engine_metrics(
+            total=self.total,
+            approved=self.approved,
+            rejection_reasons=self.rejection_reasons,
+            rejection_stages=self.rejection_stages,
+            provider_hits=self.provider_hits,
+            events=events,
+        )
+
+
+def _finalize_engine_metrics(
+    *,
+    total: int,
+    approved: int,
+    rejection_reasons: Counter[str],
+    rejection_stages: Counter[str],
+    provider_hits: Counter[str],
+    events: list[EventEnvelope],
+) -> dict:
+    rejected = total - approved
     decision_events = [e for e in events if e.event_family == EventFamily.DECISION]
     with_snapshot = sum(
         1

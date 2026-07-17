@@ -4,7 +4,11 @@ import pytest
 
 from src.core.contracts.event import EventFamily
 from src.runtime.models import CycleResult
-from src.validation.metrics import compute_engine_metrics, compute_outcome_metrics
+from src.validation.metrics import (
+    EngineMetricsAccumulator,
+    compute_engine_metrics,
+    compute_outcome_metrics,
+)
 from tests.mocks.fixtures import make_context, make_snapshot, utc_now
 
 
@@ -74,6 +78,14 @@ def test_approval_rate() -> None:
     assert metrics["approval_rate"] == 0.5
     assert metrics["approved"] == 1
     assert metrics["rejected"] == 1
+
+
+def test_engine_metrics_accumulator_matches_batch() -> None:
+    cycles = [_minimal_cycle(approved=True), _minimal_cycle(approved=False)]
+    acc = EngineMetricsAccumulator()
+    for cycle in cycles:
+        acc.observe(cycle)
+    assert acc.finalize([]) == compute_engine_metrics(cycles, [])
 
 
 def test_outcome_metrics_from_closed_positions() -> None:

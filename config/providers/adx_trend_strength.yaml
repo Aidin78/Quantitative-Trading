@@ -1,6 +1,6 @@
 provider_id: adx_trend_strength
 version: v1
-enabled: false
+enabled: true
 weight: 1.0
 params:
   min_confidence: 0.6

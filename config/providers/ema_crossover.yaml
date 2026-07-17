@@ -1,6 +1,6 @@
 provider_id: ema_crossover
 version: v1
-enabled: true
+enabled: false
 weight: 1.0
 params:
   min_confidence: 0.6

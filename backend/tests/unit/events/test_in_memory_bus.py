@@ -31,7 +31,36 @@ async def test_in_memory_bus_dispatches_to_handlers() -> None:
 
 
 @pytest.mark.asyncio
-async def test_publish_many() -> None:
+async def test_event_log_filters_by_family() -> None:
+    log_handler = EventLogHandler(families={EventFamily.EXECUTION})
+    bus = InMemoryEventBus(handlers=[log_handler])
+    now = utc_now()
+    market = build_envelope(
+        event_family=EventFamily.MARKET,
+        event_type=MarketEventType.CANDLE_RECEIVED,
+        event_time=now,
+        processing_time=now,
+        correlation_id="cycle_filter",
+        symbol="BTC/USDT",
+        timeframe="1h",
+        mode="validation",
+        payload={},
+    )
+    execution = build_envelope(
+        event_family=EventFamily.EXECUTION,
+        event_type="position_closed",
+        event_time=now,
+        processing_time=now,
+        correlation_id="cycle_filter",
+        symbol="BTC/USDT",
+        timeframe="1h",
+        mode="validation",
+        payload={"pnl": 1.0},
+    )
+    await bus.publish_many([market, execution])
+    assert len(log_handler.events) == 1
+    assert log_handler.events[0].event_family == EventFamily.EXECUTION
+
     bus = InMemoryEventBus()
     now = utc_now()
     events = [

@@ -36,3 +36,22 @@ def test_get_latest_respects_end_time(csv_path: Path) -> None:
     end = datetime(2026, 1, 2, 12, 0, 0, tzinfo=UTC)
     df = provider.get_latest("BTC/USDT", "1h", limit=200, end=end)
     assert df["timestamp"].max() <= end
+
+
+def test_get_latest_does_not_mutate_source(csv_path: Path) -> None:
+    provider = CsvDataProvider(csv_path)
+    before = len(provider._df)
+    _ = provider.get_latest("BTC/USDT", "1h", limit=10)
+    assert len(provider._df) == before
+
+
+def test_timestamps_uses_normalized_index(csv_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    provider = CsvDataProvider(csv_path)
+    start = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+    end = datetime(2026, 1, 2, 0, 0, 0, tzinfo=UTC)
+    stamps = provider.timestamps("BTC/USDT", "1h", start, end)
+    assert stamps
+    assert all(start <= ts <= end for ts in stamps)
+    assert stamps == sorted(stamps)
