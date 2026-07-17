@@ -15,6 +15,7 @@ from src.api.services.job_persistence import (
 from src.validation.optimizer import OptimizationResult, TrialResult
 
 NAMESPACE = "optimization"
+ACTIVE_LIVE_TRIAL_CAP = 20
 
 
 class JobCancelled(Exception):
@@ -93,7 +94,11 @@ class OptimizationSweepStore:
             sweep.live_trial_snapshots = [trial_to_dict(t) for t in sweep.live_trials]
         self._sweeps[sweep.id] = sweep
         self._persist(sweep)
-        payload = sweep_response(sweep)
+        payload = (
+            sweep_progress_response(sweep)
+            if sweep.status in ACTIVE_STATUSES
+            else sweep_response(sweep)
+        )
         from src.api.services.job_progress import job_progress
 
         job_progress.publish(sweep.id, payload)
@@ -141,6 +146,8 @@ class OptimizationSweepStore:
         live = sweep.live_trial_snapshots
         if not live and sweep.live_trials:
             live = [trial_to_dict(t) for t in sweep.live_trials]
+        if sweep.status in ACTIVE_STATUSES and live:
+            live = live[-ACTIVE_LIVE_TRIAL_CAP:]
         return {
             "id": sweep.id,
             "status": sweep.status,
@@ -296,6 +303,26 @@ def result_to_dict(result: OptimizationResult) -> dict[str, Any]:
             else None
         ),
     }
+
+
+def sweep_progress_response(sweep: OptimizationSweep) -> dict[str, Any]:
+    """Slim SSE/pubsub payload for in-flight sweeps (no growing trials list)."""
+    elapsed = (sweep.updated_at - sweep.created_at).total_seconds()
+    payload: dict[str, Any] = {
+        "id": sweep.id,
+        "status": sweep.status,
+        "config": sweep.config,
+        "phase": sweep.phase,
+        "message": sweep.message,
+        "elapsed_seconds": round(elapsed, 1),
+        "progress": {
+            "current": sweep.progress_current,
+            "total": sweep.progress_total,
+        },
+    }
+    if sweep.error:
+        payload["error"] = sweep.error
+    return payload
 
 
 def sweep_response(sweep: OptimizationSweep) -> dict[str, Any]:

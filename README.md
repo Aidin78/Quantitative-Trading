@@ -83,11 +83,15 @@ docker compose up -d --build
 داشبورد: [http://localhost:3000](http://localhost:3000) · API: [http://localhost:8000](http://localhost:8000)
 
 ```bash
-docker compose logs -f backend frontend   # لاگ‌ها
+docker compose logs -f backend frontend validation-worker optimization-worker
 docker compose down                       # توقف
 ```
 
 > اگر `npm run dev` لوکال دارید، اول آن را متوقف کنید (پورت 3000 مشترک است).
+>
+> با Redis، jobهای validation/optimization توسط workerها اجرا می‌شوند
+> (`validation-worker` و `optimization-worker` در compose بالا می‌آیند).
+> بدون Redis، API همان `asyncio.create_task` داخل‌پردازه‌ای را نگه می‌دارد.
 
 ### روش توسعه — backend/frontend جدا (اختیاری)
 
@@ -101,6 +105,10 @@ cd backend
 poetry install
 poetry run pytest
 poetry run uvicorn src.main:app --reload --port 8000
+
+# Durable job workers (required when Redis is available)
+poetry run python scripts/run_validation_worker.py
+poetry run python scripts/run_optimization_worker.py
 
 # Frontend dashboard
 cd ../frontend

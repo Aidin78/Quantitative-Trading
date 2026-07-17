@@ -55,6 +55,42 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  validation-worker:
+    build: ./backend
+    command: ["python", "scripts/run_validation_worker.py"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://trading:${DB_PASSWORD:-changeme}@postgres:5432/trading
+      REDIS_URL: redis://redis:6379/0
+      CONFIG_DIR: /app/config
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  optimization-worker:
+    build: ./backend
+    command: ["python", "scripts/run_optimization_worker.py"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://trading:${DB_PASSWORD:-changeme}@postgres:5432/trading
+      REDIS_URL: redis://redis:6379/0
+      CONFIG_DIR: /app/config
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./frontend

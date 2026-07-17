@@ -9,6 +9,7 @@ RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi --no-root
 
 COPY src ./src
+COPY scripts ./scripts
 COPY README.md ./
 
 RUN poetry install --no-interaction --no-ansi --only-root

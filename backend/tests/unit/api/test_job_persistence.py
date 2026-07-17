@@ -10,8 +10,10 @@ from src.api.services.job_persistence import (
     create_job_persistence,
 )
 from src.api.services.optimization_service import (
+    ACTIVE_LIVE_TRIAL_CAP,
     OptimizationSweep,
     OptimizationSweepStore,
+    sweep_progress_response,
     sweep_response,
 )
 from src.api.services.validation_service import ValidationJobStore, job_response
@@ -237,3 +239,52 @@ def test_sweep_created_at_roundtrip_iso() -> None:
     restored = store.get("sweep_ts")
     assert restored is not None
     assert restored.created_at == datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
+
+
+def test_active_serialize_caps_live_trial_snapshots() -> None:
+    persistence = InMemoryJobPersistence()
+    store = OptimizationSweepStore(persistence=persistence)
+    sweep = store.create("sweep_cap", {"source": "csv"})
+    sweep.status = "running"
+    sweep.live_trial_snapshots = [
+        {"trial_id": f"t{i}", "params": {}} for i in range(ACTIVE_LIVE_TRIAL_CAP + 15)
+    ]
+    store.update(sweep)
+    record = persistence.load("optimization", "sweep_cap")
+    assert record is not None
+    assert len(record["live_trial_snapshots"]) == ACTIVE_LIVE_TRIAL_CAP
+    assert record["live_trial_snapshots"][0]["trial_id"] == "t15"
+    assert record["live_trial_snapshots"][-1]["trial_id"] == f"t{ACTIVE_LIVE_TRIAL_CAP + 14}"
+
+
+def test_completed_serialize_keeps_full_live_trials() -> None:
+    persistence = InMemoryJobPersistence()
+    store = OptimizationSweepStore(persistence=persistence)
+    sweep = store.create("sweep_full", {"source": "csv"})
+    sweep.status = "completed"
+    sweep.live_trial_snapshots = [
+        {"trial_id": f"t{i}", "params": {}} for i in range(ACTIVE_LIVE_TRIAL_CAP + 5)
+    ]
+    store.update(sweep)
+    record = persistence.load("optimization", "sweep_full")
+    assert record is not None
+    assert len(record["live_trial_snapshots"]) == ACTIVE_LIVE_TRIAL_CAP + 5
+
+
+def test_progress_response_omits_trials() -> None:
+    sweep = OptimizationSweep(
+        id="sweep_slim",
+        status="running",
+        config={"source": "csv"},
+        phase="train",
+        message="Training…",
+        progress_current=3,
+        progress_total=10,
+        live_trial_snapshots=[{"trial_id": "t1", "params": {}}],
+    )
+    slim = sweep_progress_response(sweep)
+    assert "trials" not in slim
+    assert slim["phase"] == "train"
+    assert slim["progress"]["current"] == 3
+    full = sweep_response(sweep)
+    assert full["trials"][0]["trial_id"] == "t1"

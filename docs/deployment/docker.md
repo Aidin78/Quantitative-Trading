@@ -28,6 +28,25 @@ services:
       - ./config:/app/config
     restart: unless-stopped
 
+  # Durable workers (same image; Redis queue required)
+  validation-worker:
+    build: ./backend
+    command: ["python", "scripts/run_validation_worker.py"]
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  optimization-worker:
+    build: ./backend
+    command: ["python", "scripts/run_optimization_worker.py"]
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
   frontend:
     build: ./frontend
     ports:
