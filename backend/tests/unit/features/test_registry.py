@@ -10,7 +10,7 @@ from tests.fixtures.ohlcv import make_sample_ohlcv
 def test_load_features_config() -> None:
     load_features_config.cache_clear()
     config, config_hash = load_features_config()
-    assert config.version == "v1"
+    assert config.version == "v2"
     assert len(config.indicators) >= 9
     assert config.flags[0].name == "ema_cross_bullish"
     assert len(config_hash) == 64
@@ -23,6 +23,8 @@ def test_registry_evaluates_flags() -> None:
     indicators = {
         "ema_12": 100.0,
         "ema_26": 90.0,
+        "ema_cross": 1.0,
+        "zero": 0.0,
         "macd": 0.0025,
         "macd_signal": 0.0018,
     }

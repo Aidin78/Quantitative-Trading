@@ -42,7 +42,7 @@ def test_builder_snapshot_stable_output(
     assert fs1.indicators == fs2.indicators
     assert fs1.flags == fs2.flags
     assert ctx1 == ctx2
-    assert fs1.feature_version == "v1"
+    assert fs1.feature_version == "v2"
     assert len(fs1.config_hash) == 64
     assert fs1.close == pytest.approx(float(ohlcv_df["close"].iloc[-1]), rel=1e-6)
     assert "rsi_14" in fs1.indicators
@@ -70,12 +70,15 @@ def test_market_context_derived_from_builder_not_manual(
 
     if fs.indicators["ema_12"] > fs.indicators["ema_26"]:
         assert ctx.trend == "UP"
-        assert fs.flags["ema_cross_bullish"] is True
     elif fs.indicators["ema_12"] < fs.indicators["ema_26"]:
         assert ctx.trend == "DOWN"
-        assert fs.flags["ema_cross_bullish"] is False
     else:
         assert ctx.trend == "SIDEWAYS"
+
+    # ema_cross_bullish/bearish are crossover *events* (rare), not the ema_12/ema_26
+    # state — so they don't need to align with ctx.trend on every bar.
+    assert fs.flags["ema_cross_bullish"] == (fs.indicators["ema_cross"] > 0)
+    assert fs.flags["ema_cross_bearish"] == (fs.indicators["ema_cross"] < 0)
 
     assert ctx.atr == pytest.approx(fs.indicators["atr_14"])
     expected_atr_pct = fs.indicators["atr_14"] / fs.close * 100

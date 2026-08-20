@@ -6,6 +6,7 @@ from src.features.indicators._helpers import _atr_series, _last_valid
 from src.features.indicators.adx import AdxIndicator, _adx_components
 from src.features.indicators.atr import AtrIndicator
 from src.features.indicators.bollinger import BollingerIndicator, _bollinger_components
+from src.features.indicators.constant import ConstantIndicator
 from src.features.indicators.ema import EmaIndicator
 from src.features.indicators.ema_cross import EmaCrossIndicator
 from src.features.indicators.macd import MacdIndicator, _macd_components
@@ -25,6 +26,7 @@ __all__ = [
     "AdxIndicator",
     "AtrIndicator",
     "BollingerIndicator",
+    "ConstantIndicator",
     "EmaCrossIndicator",
     "EmaIndicator",
     "MacdIndicator",

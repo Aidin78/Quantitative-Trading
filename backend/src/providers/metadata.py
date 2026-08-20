@@ -57,8 +57,8 @@ PROVIDER_METADATA: dict[str, ProviderMetadata] = {
     "ema_crossover": ProviderMetadata(
         summary="EMA fast/slow cross with optional trend filter.",
         rules=(
-            "BUY when ema_cross_bullish flag is set (ema_12 > ema_26).",
-            "SELL when ema_cross_bearish flag is set (ema_12 < ema_26).",
+            "BUY when ema_cross_bullish flag is set (ema_12 crosses above ema_26).",
+            "SELL when ema_cross_bearish flag is set (ema_12 crosses below ema_26).",
             "Confidence scales with EMA spread relative to ATR.",
             "If require_trend: block BUY in DOWN trend and SELL in UP trend.",
             "Below min_confidence → HOLD.",
