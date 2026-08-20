@@ -13,6 +13,7 @@ from src.validation.optimizer import (
     refine_trials_around,
     run_optimization,
     select_best,
+    space_requires_family_filter,
     split_holdout,
     split_train_test,
 )
@@ -112,7 +113,7 @@ def test_composite_score_rejects_low_trades() -> None:
         trial_id="t1",
         params={},
         train_score=10,
-        train_outcome={},
+        train_outcome={"return_pct": 1.0},
         test_score=50,
         test_outcome={"total_trades": 5, "return_pct": 5.0},
         stability=0.8,
@@ -120,17 +121,67 @@ def test_composite_score_rejects_low_trades() -> None:
     assert composite_score(trial, min_trades=20) == float("-inf")
 
 
+def test_composite_score_rejects_negative_train_return() -> None:
+    trial = TrialResult(
+        trial_id="lucky_test",
+        params={},
+        train_score=-40,
+        train_outcome={"return_pct": -19.0, "total_trades": 100},
+        test_score=50,
+        test_outcome={"total_trades": 30, "return_pct": 2.8},
+        stability=0.5,
+    )
+    assert composite_score(trial, min_trades=20, min_return_pct=0.0) == float("-inf")
+
+
+def test_composite_score_accepts_non_negative_train() -> None:
+    trial = TrialResult(
+        trial_id="stable",
+        params={},
+        train_score=10,
+        train_outcome={"return_pct": 1.5, "total_trades": 40},
+        test_score=40,
+        test_outcome={"total_trades": 30, "return_pct": 4.0},
+        stability=0.7,
+    )
+    assert composite_score(trial, min_trades=20, min_return_pct=0.0) > float("-inf")
+
+
 def test_select_best_returns_none_when_all_fail_guardrails() -> None:
     trial = TrialResult(
         trial_id="weak",
         params={"min_agreeing_providers": 2},
         train_score=10,
-        train_outcome={},
+        train_outcome={"return_pct": 0.0},
         test_score=-20,
         test_outcome={"total_trades": 0, "return_pct": 0},
         stability=0,
     )
     assert select_best([trial], min_trades=20, min_return_pct=0.0) is None
+
+
+def test_select_best_skips_negative_train_despite_good_test() -> None:
+    lucky = TrialResult(
+        trial_id="lucky",
+        params={},
+        train_score=-20,
+        train_outcome={"return_pct": -10.0},
+        test_score=60,
+        test_outcome={"total_trades": 40, "return_pct": 5.0},
+        stability=0.8,
+    )
+    stable = TrialResult(
+        trial_id="stable",
+        params={},
+        train_score=10,
+        train_outcome={"return_pct": 1.0},
+        test_score=30,
+        test_outcome={"total_trades": 25, "return_pct": 2.0},
+        stability=0.6,
+    )
+    best = select_best([lucky, stable], min_trades=20, min_return_pct=0.0)
+    assert best is not None
+    assert best.trial_id == "stable"
 
 
 def test_build_selection_message_mentions_agreeing_providers() -> None:
@@ -140,7 +191,7 @@ def test_build_selection_message_mentions_agreeing_providers() -> None:
         trial_id="t1",
         params={"min_agreeing_providers": 2},
         train_score=0,
-        train_outcome={},
+        train_outcome={"return_pct": -5.0},
         test_score=-20,
         test_outcome={"total_trades": 0, "return_pct": 0},
     )
@@ -149,8 +200,10 @@ def test_build_selection_message_mentions_agreeing_providers() -> None:
         min_trades=20,
         min_return_pct=0.0,
     )
-    assert "2 agreeing providers" in message
+    assert "2+ agreeing providers" in message
     assert "max seen: 0" in message
+    assert "lost money on train" in message
+    assert "EMA and RSI" not in message
 
 
 def test_select_best_uses_composite_score() -> None:
@@ -158,7 +211,7 @@ def test_select_best_uses_composite_score() -> None:
         trial_id="good",
         params={},
         train_score=10,
-        train_outcome={},
+        train_outcome={"return_pct": 1.0},
         test_score=40,
         test_outcome={"total_trades": 30, "return_pct": 4.0},
         stability=0.7,
@@ -167,7 +220,7 @@ def test_select_best_uses_composite_score() -> None:
         trial_id="flashy",
         params={},
         train_score=20,
-        train_outcome={},
+        train_outcome={"return_pct": 2.0},
         test_score=60,
         test_outcome={"total_trades": 8, "return_pct": 10.0},
         stability=0.2,
@@ -374,6 +427,102 @@ def test_generate_trials_optuna_skips_all_disabled() -> None:
     trials = generate_trials_optuna(space, max_trials=8, seed=7)
     assert len(trials) == 8
     assert all(has_any_provider_enabled(trial) for trial in trials)
+
+
+def test_has_compatible_provider_family() -> None:
+    from src.validation.optimizer import has_compatible_provider_family
+
+    trend_only = {
+        key: 0
+        for key in (
+            "ema_enabled",
+            "rsi_enabled",
+            "macd_enabled",
+            "adx_enabled",
+            "bb_enabled",
+            "st_enabled",
+            "vol_enabled",
+            "ms_enabled",
+        )
+    }
+    trend_only["ema_enabled"] = 1
+    trend_only["macd_enabled"] = 1
+    assert has_compatible_provider_family(trend_only) is True
+
+    mixed = dict(trend_only)
+    mixed["bb_enabled"] = 1
+    assert has_compatible_provider_family(mixed) is False
+
+    reversion_plus_flow = dict(trend_only)
+    reversion_plus_flow["ema_enabled"] = 0
+    reversion_plus_flow["macd_enabled"] = 0
+    reversion_plus_flow["bb_enabled"] = 1
+    reversion_plus_flow["vol_enabled"] = 1
+    assert has_compatible_provider_family(reversion_plus_flow) is True
+
+
+def test_generate_trials_rejects_trend_reversion_mix() -> None:
+    from src.validation.optimizer import has_compatible_provider_family, is_valid_provider_trial
+
+    space = _discovery_space()
+    trials = generate_trials(space, max_trials=40, seed=3)
+    assert trials
+    assert all(is_valid_provider_trial(trial, require_compatible_family=True) for trial in trials)
+    assert all(has_compatible_provider_family(trial) for trial in trials)
+
+
+def test_provider_discovery_constrained_freezes_non_keep() -> None:
+    space = OptimizationSpace.provider_discovery_constrained(
+        keep_shortlist=["ema_enabled", "macd_enabled"],
+    )
+    assert space.ema_enabled == (0, 1)
+    assert space.macd_enabled == (0, 1)
+    assert space.bb_enabled == (0,)
+    assert space.rsi_enabled == (0,)
+    assert space.min_agreeing_providers == (1, 2)
+
+
+def test_bb_solo_tuning_space_only_enables_bb() -> None:
+    space = OptimizationSpace.bb_solo_tuning()
+    assert space.bb_enabled == (1,)
+    for key in (
+        "ema_enabled",
+        "rsi_enabled",
+        "macd_enabled",
+        "adx_enabled",
+        "st_enabled",
+        "vol_enabled",
+        "ms_enabled",
+    ):
+        assert getattr(space, key) == (0,)
+    assert space.min_agreeing_providers == (1,)
+    assert space.bb_period == (14, 20, 26)
+    assert space.bb_std == (1.5, 2.0, 2.5)
+    assert space.bb_max_adx == (0, 20, 25, 30)
+    assert space_requires_family_filter(space) is False
+
+
+def test_bb_solo_tuning_trials_are_bb_only() -> None:
+    space = OptimizationSpace.bb_solo_tuning()
+    grid = generate_trials(space, max_trials=20, seed=11)
+    optuna_trials = generate_trials_optuna(space, max_trials=12, seed=11)
+    for trials in (grid, optuna_trials):
+        assert trials
+        for trial in trials:
+            assert int(trial["bb_enabled"]) == 1
+            assert all(
+                int(trial[key]) == 0
+                for key in (
+                    "ema_enabled",
+                    "rsi_enabled",
+                    "macd_enabled",
+                    "adx_enabled",
+                    "st_enabled",
+                    "vol_enabled",
+                    "ms_enabled",
+                )
+            )
+            assert int(trial["min_agreeing_providers"]) == 1
 
 
 def test_holdout_evaluated_after_best_selected() -> None:

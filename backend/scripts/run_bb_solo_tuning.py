@@ -1,65 +1,57 @@
 #!/usr/bin/env python3
-"""Run a provider-discovery optimization sweep (Optuna, on/off flags)."""
+"""Optuna sweep: Bollinger-solo threshold/exit tuning on Pass2-style windows."""
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 _BACKEND = Path(__file__).resolve().parents[1]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
-from src.validation.optimizer import (  # noqa: E402
-    OptimizationSpace,
-    enabled_provider_labels,
-    run_optimization,
-)
-from src.validation.provider_edge_scorecard import load_keep_shortlist  # noqa: E402
+from src.api.services.optimization_service import result_to_dict  # noqa: E402
+from src.validation.optimizer import OptimizationSpace, run_optimization  # noqa: E402
+from src.validation.provider_edge_scorecard import evaluate_params_scorecard  # noqa: E402
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Provider discovery optimization sweep")
+    parser = argparse.ArgumentParser(description="Bollinger solo threshold tuning")
     parser.add_argument("--symbol", default="BTC/USDT")
     parser.add_argument("--timeframe", default="1h")
-    parser.add_argument("--start", default="2026-01-01")
-    parser.add_argument("--end", default="2026-01-05")
-    parser.add_argument("--max-trials", type=int, default=80)
+    parser.add_argument("--start", default="2025-01-01")
+    parser.add_argument("--end", default="2026-07-18")
+    parser.add_argument("--max-trials", type=int, default=60)
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--train-ratio", type=float, default=0.7)
     parser.add_argument("--holdout-ratio", type=float, default=0.2)
-    parser.add_argument("--min-trades", type=int, default=30)
+    parser.add_argument("--min-trades", type=int, default=15)
     parser.add_argument("--csv-path", default=None)
     parser.add_argument(
         "--source",
         choices=["exchange", "csv"],
         default="exchange",
-        help="OHLCV source (exchange preferred; csv falls back to fixtures)",
     )
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument(
-        "--max-parallel-trials",
-        type=int,
-        default=4,
-        help="Concurrent train trials (asyncio semaphore)",
-    )
+    parser.add_argument("--max-parallel-trials", type=int, default=4)
     parser.add_argument(
         "--sample-only",
         action="store_true",
-        help="Only sample trial params (no backtests); low memory",
+        help="Only sample trial params (no backtests)",
     )
     parser.add_argument(
-        "--scorecard",
-        default=str(_BACKEND / "data" / "provider_edge_scorecard.json"),
-        help="Scorecard JSON for keep_shortlist freeze (ignored if missing/empty)",
-    )
-    parser.add_argument(
-        "--unconstrained",
+        "--skip-rescore",
         action="store_true",
-        help="Use legacy provider_discovery space (agree 1-3, no shortlist freeze)",
+        help="Skip post-sweep scorecard verdict on best params",
+    )
+    parser.add_argument(
+        "--out",
+        default=str(_BACKEND / "data" / "bb_solo_tuning_result.json"),
     )
     return parser.parse_args()
 
@@ -74,32 +66,7 @@ def _resolve_csv(path: str | None) -> str | None:
     return None
 
 
-def _resolve_space(args: argparse.Namespace) -> OptimizationSpace:
-    if args.unconstrained:
-        return OptimizationSpace.provider_discovery()
-    keep: list[str] = []
-    scorecard_path = Path(args.scorecard)
-    if scorecard_path.is_file():
-        keep = load_keep_shortlist(scorecard_path)
-        if keep:
-            print(f"Using keep_shortlist from {scorecard_path}: {keep}", flush=True)
-        else:
-            print(
-                f"Scorecard at {scorecard_path} has empty keep_shortlist; "
-                "searching all providers under family filter.",
-                flush=True,
-            )
-    else:
-        print(
-            f"No scorecard at {scorecard_path}; " "searching all providers under family filter.",
-            flush=True,
-        )
-    return OptimizationSpace.provider_discovery_constrained(
-        keep_shortlist=keep or None,
-    )
-
-
-def _print_best(result) -> None:
+def _print_best(result: Any) -> None:
     best = result.best
     if best is None:
         print("No eligible best trial (check min_trades / return guardrails).")
@@ -108,21 +75,34 @@ def _print_best(result) -> None:
             print("Using fallback trial instead.")
         else:
             return
-    labels = enabled_provider_labels(best.params)
-    agree = best.params.get("min_agreeing_providers", "?")
-    print("\n=== Best provider combo ===")
-    print(f"Providers: {', '.join(labels) if labels else '(none)'}")
-    print(f"min_agreeing_providers: {agree}")
-    print(f"composite_score: {best.composite_score}")
-    print(f"test_score: {best.test_score}")
-    print(f"test_return_pct: {best.test_outcome.get('return_pct') if best.test_outcome else None}")
-    print(f"test_trades: {best.test_outcome.get('total_trades') if best.test_outcome else None}")
+    p = best.params
+    print("\n=== Best BB solo params ===")
     print(f"trial_id: {best.trial_id}")
+    print(f"composite_score: {best.composite_score}")
+    print(
+        f"bb_period={p.get('bb_period')} bb_std={p.get('bb_std')} "
+        f"bb_max_adx={p.get('bb_max_adx')} bb_avoid_high_vol={p.get('bb_avoid_high_vol')}"
+    )
+    print(
+        f"min_confidence={p.get('min_confidence')} "
+        f"sl={p.get('sl_atr_mult')} tp={p.get('tp_atr_mult')} "
+        f"max_bars={p.get('max_bars_in_trade')} min_atr_pct={p.get('min_atr_pct')}"
+    )
+    train = best.train_outcome or {}
+    test = best.test_outcome or {}
+    print(
+        f"train: ret={train.get('return_pct')} trades={train.get('total_trades')} "
+        f"score={best.train_score}"
+    )
+    print(
+        f"test: ret={test.get('return_pct')} trades={test.get('total_trades')} "
+        f"score={best.test_score}"
+    )
 
 
 async def _run() -> int:
     args = _parse_args()
-    space = _resolve_space(args)
+    space = OptimizationSpace.bb_solo_tuning()
     start = datetime.fromisoformat(args.start).replace(tzinfo=UTC)
     end = datetime.fromisoformat(args.end).replace(tzinfo=UTC)
 
@@ -130,11 +110,13 @@ async def _run() -> int:
         from src.validation.optimizer import generate_trials_optuna
 
         trials = generate_trials_optuna(space, max_trials=args.max_trials, seed=args.seed)
-        print(f"Sampled {len(trials)} discovery trials (no backtest).")
+        print(f"Sampled {len(trials)} BB solo trials (no backtest).")
         for index, params in enumerate(trials[:5], start=1):
-            labels = enabled_provider_labels(params)
-            labels_text = ", ".join(labels) if labels else "(none)"
-            print(f"  {index}. {labels_text} " f"(agree>={params.get('min_agreeing_providers')})")
+            print(
+                f"  {index}. period={params.get('bb_period')} std={params.get('bb_std')} "
+                f"max_adx={params.get('bb_max_adx')} conf={params.get('min_confidence')} "
+                f"sl={params.get('sl_atr_mult')} tp={params.get('tp_atr_mult')}"
+            )
         if len(trials) > 5:
             print(f"  ... and {len(trials) - 5} more")
         return 0
@@ -143,15 +125,15 @@ async def _run() -> int:
     if args.source == "csv" and not csv_path:
         print("No CSV path/fixture found; pass --csv-path or use --source exchange")
         return 1
+
     print(
-        f"Running discovery: {args.symbol} {args.timeframe} "
+        f"Running BB solo tuning: {args.symbol} {args.timeframe} "
         f"{args.start}->{args.end} source={args.source} trials={args.max_trials}",
         flush=True,
     )
 
     async def on_progress(event) -> None:  # noqa: ANN001
         detail = getattr(event, "detail", "") or ""
-        # Avoid flooding the console on every bar tick.
         if event.stage == "done" or "bar" not in detail:
             print(
                 f"[{event.phase}/{event.stage}] {event.current}/{event.total} {detail}",
@@ -201,14 +183,33 @@ async def _run() -> int:
             flush=True,
         )
     _print_best(result)
-    # Persist machine-readable summary for apply step
-    out = _BACKEND / "data" / "discovery_last_result.json"
+
+    payload: dict[str, Any] = result_to_dict(result)
+    candidate = result.best if result.best_valid and result.best is not None else None
+    if candidate is None and result.fallback_trial is not None:
+        candidate = result.fallback_trial
+
+    if not args.skip_rescore and candidate is not None:
+        print("\n=== Scorecard rescore of best params ===", flush=True)
+        rescore = await evaluate_params_scorecard(
+            candidate.params,
+            start=start,
+            end=end,
+            symbol=args.symbol,
+            timeframe=args.timeframe,
+            holdout_ratio=args.holdout_ratio,
+            train_ratio=args.train_ratio,
+        )
+        payload["scorecard_rescore"] = rescore
+        print(f"scorecard_verdict={rescore.get('verdict')}", flush=True)
+    elif args.skip_rescore:
+        print("Skipping scorecard rescore (--skip-rescore).", flush=True)
+    else:
+        print("No candidate params to rescore.", flush=True)
+
+    out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    import json
-
-    from src.api.services.optimization_service import result_to_dict
-
-    out.write_text(json.dumps(result_to_dict(result), default=str, indent=2), encoding="utf-8")
+    out.write_text(json.dumps(payload, default=str, indent=2), encoding="utf-8")
     print(f"Wrote {out}", flush=True)
     return 0
 

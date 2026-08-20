@@ -59,11 +59,14 @@ export const BASELINE_TUNING_SPACE: Record<string, (number | string)[]> = {
   ms_require_trend: [0],
 };
 
-/** Search which providers are on/off; other params fixed at defaults. */
+/** Search which providers are on/off; other params fixed at defaults.
+ * Mirrors backend PROVIDER_DISCOVERY_CONSTRAINED_SPACE (agree 1–2).
+ * Trend+reversion mixes are filtered server-side.
+ */
 export const PROVIDER_DISCOVERY_SPACE: Record<string, (number | string)[]> = {
   min_confidence: [0.65],
   min_risk_reward: [1.2],
-  min_agreeing_providers: [1, 2, 3],
+  min_agreeing_providers: [1, 2],
   sl_atr_mult: [1.5],
   tp_atr_mult: [3.0],
   max_bars_in_trade: [24],

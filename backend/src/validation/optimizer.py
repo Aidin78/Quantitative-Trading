@@ -13,6 +13,8 @@ from src.validation.optimization_scoring import (
     select_best,
 )
 from src.validation.optimization_space import (
+    BB_SOLO_TUNING_SPACE,
+    PROVIDER_DISCOVERY_CONSTRAINED_SPACE,
     PROVIDER_DISCOVERY_SPACE,
     PROVIDER_ENABLED_KEYS,
     TRIAL_PARAM_KEYS,
@@ -21,11 +23,16 @@ from src.validation.optimization_space import (
     generate_trials,
     generate_trials_optuna,
     has_any_provider_enabled,
+    has_compatible_provider_family,
+    is_valid_provider_trial,
     refine_trials_around,
+    space_requires_family_filter,
 )
 from src.validation.optimization_windows import split_holdout, split_train_test
 
 __all__ = [
+    "BB_SOLO_TUNING_SPACE",
+    "PROVIDER_DISCOVERY_CONSTRAINED_SPACE",
     "PROVIDER_DISCOVERY_SPACE",
     "PROVIDER_ENABLED_KEYS",
     "TRIAL_PARAM_KEYS",
@@ -43,9 +50,12 @@ __all__ = [
     "generate_trials",
     "generate_trials_optuna",
     "has_any_provider_enabled",
+    "has_compatible_provider_family",
+    "is_valid_provider_trial",
     "refine_trials_around",
     "run_optimization",
     "select_best",
+    "space_requires_family_filter",
     "split_holdout",
     "split_train_test",
 ]

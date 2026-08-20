@@ -69,7 +69,10 @@ def composite_score(
         return float("-inf")
     trades = int(trial.test_outcome.get("total_trades", 0))
     return_pct = float(trial.test_outcome.get("return_pct", 0))
+    train_return_pct = float((trial.train_outcome or {}).get("return_pct", 0))
     if trades < min_trades or return_pct < min_return_pct:
+        return float("-inf")
+    if train_return_pct < min_return_pct:
         return float("-inf")
     test_score = trial.test_score if trial.test_score is not None else float("-inf")
     stability = trial.stability or 0.0
@@ -155,6 +158,11 @@ def build_selection_message(
     agreeing_two = sum(
         1 for trial in finalists if int(trial.params.get("min_agreeing_providers", 1)) >= 2
     )
+    negative_train = sum(
+        1
+        for trial in finalists
+        if float((trial.train_outcome or {}).get("return_pct", 0)) < min_return_pct
+    )
     hints: list[str] = [
         f"No trial reached {min_trades} test trades (max seen: {max_trades}).",
     ]
@@ -162,12 +170,17 @@ def build_selection_message(
         hints.append(f"Minimum return filter: {min_return_pct}%.")
     if agreeing_two:
         hints.append(
-            f"{agreeing_two} finalist(s) require 2 agreeing providers — "
-            "EMA and RSI must agree on the same side, which often yields zero trades."
+            f"{agreeing_two} finalist(s) require 2+ agreeing providers — "
+            "high agreement often chokes trade count to near zero."
+        )
+    if negative_train:
+        hints.append(
+            f"{negative_train} finalist(s) lost money on train — "
+            "composite score now requires non-negative train return."
         )
     hints.append(
-        "Try: min_agreeing_providers=1, session_preset=all, longer date range, "
-        "or WF windows=1 for shorter histories."
+        "Try: min_agreeing_providers=1, family-constrained discovery "
+        "(no trend+reversion mix), longer date range, or a provider edge scorecard first."
     )
     return " ".join(hints)
 

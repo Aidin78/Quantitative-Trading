@@ -21,7 +21,7 @@ def _ema_confidence(
     spread = ema_fast - ema_slow
     atr = max(context.atr, 1e-9)
     spread_ratio = abs(spread) / atr
-    return min(0.95, max(0.55, 0.55 + 0.12 * spread_ratio))
+    return min(0.95, max(0.55, 0.55 + 0.5 * spread_ratio))
 
 
 class EmaCrossoverProvider(BaseSignalProvider):

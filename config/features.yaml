@@ -9,6 +9,9 @@ indicators:
   - name: ema_26
     type: ema
     params: { period: 26 }
+  - name: ema_cross
+    type: ema_cross
+    params: { fast: 12, slow: 26 }
   - name: atr_14
     type: atr
     params: { period: 14 }

@@ -27,7 +27,7 @@ def _bb_confidence(
         penetration = max(0.0, (close - upper) / band_width)
     else:
         return 0.5
-    return _clamp(0.55 + 0.4 * penetration, 0.55, 0.95)
+    return _clamp(0.55 + 1.2 * penetration, 0.55, 0.95)
 
 
 class BollingerReversionProvider(BaseSignalProvider):

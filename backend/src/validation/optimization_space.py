@@ -73,9 +73,46 @@ PROVIDER_ENABLED_KEYS = (
     "ms_enabled",
 )
 
+TREND_FAMILY_KEYS = (
+    "ema_enabled",
+    "macd_enabled",
+    "adx_enabled",
+    "st_enabled",
+    "ms_enabled",
+)
+REVERSION_FAMILY_KEYS = (
+    "bb_enabled",
+    "rsi_enabled",
+)
+
 
 def has_any_provider_enabled(params: dict[str, Any]) -> bool:
     return any(int(params.get(key, 0)) for key in PROVIDER_ENABLED_KEYS)
+
+
+def has_compatible_provider_family(params: dict[str, Any]) -> bool:
+    """Reject combos that mix trend and mean-reversion paradigms (VOL may join either)."""
+    has_trend = any(int(params.get(key, 0)) for key in TREND_FAMILY_KEYS)
+    has_reversion = any(int(params.get(key, 0)) for key in REVERSION_FAMILY_KEYS)
+    return not (has_trend and has_reversion)
+
+
+def is_valid_provider_trial(
+    params: dict[str, Any],
+    *,
+    require_compatible_family: bool = False,
+) -> bool:
+    if not has_any_provider_enabled(params):
+        return False
+    if require_compatible_family and not has_compatible_provider_family(params):
+        return False
+    return True
+
+
+def space_requires_family_filter(space: OptimizationSpace) -> bool:
+    """Discovery-like spaces toggle multiple providers; enforce paradigm separation."""
+    togglable = sum(1 for key in PROVIDER_ENABLED_KEYS if len(getattr(space, key)) > 1)
+    return togglable >= 2
 
 
 @dataclass(frozen=True)
@@ -156,6 +193,26 @@ class OptimizationSpace:
         """Search space: each provider on/off, other params fixed."""
         return cls.from_dict(PROVIDER_DISCOVERY_SPACE)
 
+    @classmethod
+    def provider_discovery_constrained(
+        cls,
+        *,
+        keep_shortlist: list[str] | None = None,
+    ) -> OptimizationSpace:
+        """Family-aware discovery: agree in {1,2}; optional scorecard shortlist freeze."""
+        space = dict(PROVIDER_DISCOVERY_CONSTRAINED_SPACE)
+        if keep_shortlist:
+            keep = {key for key in keep_shortlist if key in PROVIDER_ENABLED_KEYS}
+            if keep:
+                for key in PROVIDER_ENABLED_KEYS:
+                    space[key] = [0, 1] if key in keep else [0]
+        return cls.from_dict(space)
+
+    @classmethod
+    def bb_solo_tuning(cls) -> OptimizationSpace:
+        """BB-only threshold/exit search; all other providers fixed off."""
+        return cls.from_dict(BB_SOLO_TUNING_SPACE)
+
 
 PROVIDER_DISCOVERY_SPACE: dict[str, list[Any]] = {
     "min_confidence": [0.65],
@@ -214,6 +271,35 @@ PROVIDER_DISCOVERY_SPACE: dict[str, list[Any]] = {
     "ms_require_trend": [0],
 }
 
+# Constrained discovery: drop agree=3; family filter applied at trial generation.
+PROVIDER_DISCOVERY_CONSTRAINED_SPACE: dict[str, list[Any]] = {
+    **PROVIDER_DISCOVERY_SPACE,
+    "min_agreeing_providers": [1, 2],
+}
+
+# Bollinger solo: tune bands / filters / exits; no provider on/off search.
+BB_SOLO_TUNING_SPACE: dict[str, list[Any]] = {
+    **PROVIDER_DISCOVERY_SPACE,
+    "min_confidence": [0.55, 0.6, 0.65, 0.7, 0.78],
+    "min_agreeing_providers": [1],
+    "sl_atr_mult": [1.0, 1.5, 2.0],
+    "tp_atr_mult": [2.0, 3.0, 4.0],
+    "max_bars_in_trade": [12, 24, 48],
+    "min_atr_pct": [0.1, 0.3, 0.5],
+    "ema_enabled": [0],
+    "rsi_enabled": [0],
+    "macd_enabled": [0],
+    "adx_enabled": [0],
+    "bb_enabled": [1],
+    "bb_period": [14, 20, 26],
+    "bb_std": [1.5, 2.0, 2.5],
+    "bb_avoid_high_vol": [0, 1],
+    "bb_max_adx": [0, 20, 25, 30],
+    "st_enabled": [0],
+    "vol_enabled": [0],
+    "ms_enabled": [0],
+}
+
 
 _PROVIDER_CHIP_LABELS = {
     "ema_enabled": "EMA",
@@ -236,12 +322,22 @@ def generate_trials(
     *,
     max_trials: int = 40,
     seed: int | None = None,
+    require_compatible_family: bool | None = None,
 ) -> list[dict[str, Any]]:
+    enforce_family = (
+        space_requires_family_filter(space)
+        if require_compatible_family is None
+        else require_compatible_family
+    )
     values = [space.as_dict()[key] for key in TRIAL_PARAM_KEYS]
     all_combos = [
         dict(zip(TRIAL_PARAM_KEYS, combo, strict=True)) for combo in itertools.product(*values)
     ]
-    all_combos = [combo for combo in all_combos if has_any_provider_enabled(combo)]
+    all_combos = [
+        combo
+        for combo in all_combos
+        if is_valid_provider_trial(combo, require_compatible_family=enforce_family)
+    ]
     if not all_combos:
         raise ValueError("Optimization space has no valid provider combinations")
     if len(all_combos) <= max_trials:
@@ -293,9 +389,15 @@ def generate_trials_optuna(
     *,
     max_trials: int = 40,
     seed: int | None = None,
+    require_compatible_family: bool | None = None,
 ) -> list[dict[str, Any]]:
     import optuna
 
+    enforce_family = (
+        space_requires_family_filter(space)
+        if require_compatible_family is None
+        else require_compatible_family
+    )
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     sampler: optuna.samplers.BaseSampler
     if seed is not None:
@@ -311,7 +413,7 @@ def generate_trials_optuna(
         attempts += 1
         trial = study.ask()
         params = _suggest_params_from_optuna_trial(trial, space)
-        if not has_any_provider_enabled(params):
+        if not is_valid_provider_trial(params, require_compatible_family=enforce_family):
             continue
         key = tuple(sorted(params.items()))
         if key in seen:

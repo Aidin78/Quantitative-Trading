@@ -7,6 +7,7 @@ from src.features.indicators.adx import AdxIndicator, _adx_components
 from src.features.indicators.atr import AtrIndicator
 from src.features.indicators.bollinger import BollingerIndicator, _bollinger_components
 from src.features.indicators.ema import EmaIndicator
+from src.features.indicators.ema_cross import EmaCrossIndicator
 from src.features.indicators.macd import MacdIndicator, _macd_components
 from src.features.indicators.market_structure import (
     MarketStructureIndicator,
@@ -24,6 +25,7 @@ __all__ = [
     "AdxIndicator",
     "AtrIndicator",
     "BollingerIndicator",
+    "EmaCrossIndicator",
     "EmaIndicator",
     "MacdIndicator",
     "MarketStructureIndicator",

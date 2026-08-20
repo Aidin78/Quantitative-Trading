@@ -22,7 +22,7 @@ def _macd_confidence(
     atr_safe = max(atr, 1e-9)
     hist_strength = abs(histogram) / atr_safe
     slope_strength = abs(histogram_slope) / atr_safe
-    return _clamp(0.55 + 0.08 * hist_strength + 0.12 * slope_strength, 0.55, 0.95)
+    return _clamp(0.55 + 0.35 * hist_strength + 0.5 * slope_strength, 0.55, 0.95)
 
 
 class MacdMomentumProvider(BaseSignalProvider):
