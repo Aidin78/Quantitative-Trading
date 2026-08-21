@@ -83,6 +83,7 @@ class Settings(BaseSettings):
     environment: Literal["development", "staging", "production"] = "development"
     auth_required: bool = False
     require_champion_candidate: bool = False
+    anthropic_api_key: str = ""
 
 
 def resolve_config_dir(settings: Settings | None = None) -> Path:

@@ -5,6 +5,10 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_current_user, get_db
+from src.api.services.hypothesis_generation_service import (
+    hypothesis_generation_jobs,
+    start_hypothesis_generation,
+)
 from src.governance.hypothesis_store import (
     create_hypothesis,
     get_hypothesis,
@@ -39,6 +43,10 @@ class HypothesisResolveRequest(BaseModel):
 class SimilarHypothesesRequest(BaseModel):
     proposed_change: str
     min_overlap: float = 0.5
+
+
+class HypothesisGenerateRequest(BaseModel):
+    run_id: str
 
 
 @router.get("")
@@ -81,6 +89,33 @@ async def search_hypotheses_route(
     return {
         "items": [h.model_dump(mode="json") for h in items],
         "total": len(items),
+    }
+
+
+@router.post("/generate")
+async def generate_hypothesis_route(body: HypothesisGenerateRequest) -> dict:
+    """Kicks off a background job that reads the given backtest run's
+    failure_summary and drafts a hypothesis with Claude (created_by="llm").
+    Never runs automatically -- only in response to this explicit call.
+    Poll GET /hypotheses/generate/{job_id} for status; the resulting
+    hypothesis is a normal draft (status="open") that still goes through the
+    same human review / experiment path as any other hypothesis.
+    """
+    job = start_hypothesis_generation(body.run_id)
+    return {"job_id": job.id, "status": job.status}
+
+
+@router.get("/generate/{job_id}")
+async def get_hypothesis_generation_job_route(job_id: str) -> dict:
+    job = hypothesis_generation_jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Generation job not found")
+    return {
+        "job_id": job.id,
+        "run_id": job.run_id,
+        "status": job.status,
+        "hypothesis_id": job.hypothesis_id,
+        "error": job.error,
     }
 
 
