@@ -100,8 +100,9 @@ async def test_feature_build_before_providers(
     monkeypatch: pytest.MonkeyPatch, runtime: PlatformRuntime
 ) -> None:
     order: list[str] = []
+    enabled_provider = next(p for p in runtime._providers if p.enabled)
     original_build = runtime._feature_builder.build
-    original_analyze = runtime._providers[0].analyze
+    original_analyze = enabled_provider.analyze
 
     def tracked_build(*args, **kwargs):  # noqa: ANN002, ANN003
         order.append("build")
@@ -112,7 +113,7 @@ async def test_feature_build_before_providers(
         return original_analyze(*args, **kwargs)
 
     monkeypatch.setattr(runtime._feature_builder, "build", tracked_build)
-    monkeypatch.setattr(runtime._providers[0], "analyze", tracked_analyze)
+    monkeypatch.setattr(enabled_provider, "analyze", tracked_analyze)
     await runtime.run_cycle("BTC/USDT", "1h")
     assert order.index("build") < order.index("analyze")
 

@@ -465,7 +465,7 @@ async def test_optimization_api_apply(api_client, auth_headers, monkeypatch) -> 
             best_valid=True,
         )
 
-    monkeypatch.setattr("src.api.v1.optimization.run_optimization", fast_run)
+    monkeypatch.setattr("src.validation.optimization_job_executor.run_optimization", fast_run)
     monkeypatch.setattr(
         "src.api.v1.optimization.write_engine_config",
         lambda patch: {"patched": True},

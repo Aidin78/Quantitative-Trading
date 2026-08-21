@@ -41,6 +41,46 @@ async def test_stop_while_run_cycle_in_progress() -> None:
 
 
 @pytest.mark.asyncio
+async def test_concurrent_run_cycles_do_not_interleave() -> None:
+    """Two scheduled jobs racing on the shared state store must run serially.
+
+    Without _cycle_lock, run_cycle releases its lock before awaiting the
+    runtime cycle, letting two jobs interleave their snapshot -> decide ->
+    apply_transition sequence against InMemoryStateStore (which has no
+    concurrency control of its own) — a lost-update race.
+    """
+    manager = LiveRuntimeManager()
+    active_cycles = 0
+    max_concurrent = 0
+    gate = asyncio.Event()
+
+    async def fake_platform_run_cycle(*_args, **_kwargs):
+        nonlocal active_cycles, max_concurrent
+        active_cycles += 1
+        max_concurrent = max(max_concurrent, active_cycles)
+        if active_cycles == 1:
+            # First cycle waits for the second to attempt to start, proving
+            # the second one is blocked out rather than interleaving.
+            await asyncio.sleep(0.05)
+        else:
+            gate.set()
+        active_cycles -= 1
+        return _FakeCycleResult()
+
+    await manager.start(mode="paper", jobs=[("BTC/USDT", "1h"), ("ETH/USDT", "1h")])
+    assert manager._stack is not None  # noqa: SLF001
+    manager._stack.runtime.run_cycle = fake_platform_run_cycle  # type: ignore[method-assign]
+
+    await asyncio.gather(
+        manager.run_cycle("BTC/USDT", "1h"),
+        manager.run_cycle("ETH/USDT", "1h"),
+    )
+
+    assert max_concurrent == 1
+    await manager.stop()
+
+
+@pytest.mark.asyncio
 async def test_set_mode_does_not_deadlock_when_running(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

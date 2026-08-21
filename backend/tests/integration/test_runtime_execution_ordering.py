@@ -370,6 +370,42 @@ async def test_harness_style_liquidation_closes_at_last_close() -> None:
 
 
 @pytest.mark.asyncio
+async def test_mark_to_market_reflects_unrealized_pnl_before_decision_snapshot() -> None:
+    """daily_drawdown_pct must move on an adverse price move even with no close.
+
+    Regression for the gap where the risk gate only ever saw realized PnL:
+    it could never reject a new signal while a big losing position was still
+    open, because equity/drawdown were frozen until that position closed.
+    """
+    open_i = WARMUP
+    hold_i = WARMUP + 1
+    # entry close = 100 + (WARMUP % 7) * 0.4 = 101.2 -> stop_loss = 101.2*0.95 ≈ 96.14.
+    # Keep the hold bar's low above that so the stop is not hit, while the
+    # close still lands meaningfully below entry (a real unrealized loss).
+    overrides = {
+        hold_i: {"open": 100.0, "high": 100.5, "low": 97.0, "close": 98.0, "volume": 10.0},
+    }
+    df = _synthetic_bars(n=WARMUP + 2, overrides=overrides)
+    runtime, _execution, _decision, clock = _build_runtime(df, ["BUY", None])
+
+    open_result = await _run_at(runtime, clock, _ts(df, open_i), correlation_id="open")
+    assert open_result.decision.is_approved
+    portfolio_before = runtime._state_store.get_portfolio("portfolio_order")
+    assert len(portfolio_before.open_positions) == 1
+    entry_price = portfolio_before.open_positions[0].entry_price
+    assert entry_price > 98.0
+
+    hold_result = await _run_at(runtime, clock, _ts(df, hold_i), correlation_id="hold")
+
+    # Position must still be open (no stop hit) — the decision-time snapshot
+    # must already reflect the unrealized loss, not just realized PnL from a close.
+    assert len(hold_result.snapshot.portfolio.open_positions) == 1
+    assert hold_result.snapshot.portfolio.open_positions[0].unrealized_pnl < 0
+    assert hold_result.snapshot.portfolio.equity < portfolio_before.equity
+    assert hold_result.snapshot.risk.daily_drawdown_pct > 0
+
+
+@pytest.mark.asyncio
 async def test_cycle_result_snapshot_is_decision_time_not_post_execute() -> None:
     open_i = WARMUP
     df = _synthetic_bars(n=WARMUP + 1)

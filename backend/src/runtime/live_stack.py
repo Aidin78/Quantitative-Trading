@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Literal
 
@@ -92,10 +93,14 @@ def default_live_jobs() -> list[tuple[str, str]]:
 async def check_connectivity(
     mode: Literal["paper", "live"],
     provider: LiveProvider,
+    *,
+    alert_pinger: Callable[[], Awaitable[bool]] | None = None,
 ) -> tuple[bool, bool]:
-    from src.events.handlers.telegram_handler import TelegramEventHandler
+    """Check exchange connectivity and, if provided, an alert-channel pinger.
 
+    ``runtime/`` must stay decoupled from concrete event-handler adapters —
+    callers inject ``alert_pinger`` instead.
+    """
     exchange_ok = provider.ping()
-    telegram = TelegramEventHandler()
-    alerts_ok = await telegram.ping() if telegram.is_configured() else False
+    alerts_ok = await alert_pinger() if alert_pinger is not None else False
     return exchange_ok, alerts_ok

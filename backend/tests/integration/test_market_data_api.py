@@ -51,11 +51,8 @@ async def test_market_data_download_and_list_cache(
     start = datetime(2026, 4, 1, tzinfo=UTC)
     end = datetime(2026, 7, 1, tzinfo=UTC)
 
-    def _download(**kwargs: object) -> Path:
-        path = kwargs["path"]
-        assert isinstance(path, Path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame(
+    def _fetch(**kwargs: object) -> pd.DataFrame:
+        return pd.DataFrame(
             {
                 "timestamp": [start, end],
                 "open": [1.0, 1.1],
@@ -64,10 +61,9 @@ async def test_market_data_download_and_list_cache(
                 "close": [1.5, 1.6],
                 "volume": [10.0, 11.0],
             }
-        ).to_csv(path, index=False)
-        return path
+        )
 
-    monkeypatch.setattr(market_cache, "_download_to_csv", _download)
+    monkeypatch.setattr(market_cache, "_fetch_ohlcv_df", _fetch)
 
     resp = await api_client.post(
         "/api/v1/market-data/download",
@@ -83,7 +79,7 @@ async def test_market_data_download_and_list_cache(
     body = resp.json()
     assert body["rows"] == 2
     assert body["refreshed"] is True
-    assert body["filename"].startswith("binance_BTC-USDT_1h_")
+    assert body["filename"] == "binance_BTC-USDT_1h.csv"
 
     list_resp = await api_client.get("/api/v1/market-data/cache", headers=auth_headers)
     assert list_resp.status_code == 200

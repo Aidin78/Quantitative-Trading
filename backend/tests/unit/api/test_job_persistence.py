@@ -121,6 +121,53 @@ def test_redis_enqueue_dequeue_roundtrip() -> None:
     assert persistence.blocking_dequeue("validation", timeout=1) is None
 
 
+def test_redis_dequeue_without_ack_is_requeued_after_lease_expires() -> None:
+    """Simulates a worker crash: dequeued-but-unacked jobs must not be lost."""
+    try:
+        import fakeredis
+    except ImportError:
+        pytest.skip("fakeredis not installed")
+
+    client = fakeredis.FakeRedis(decode_responses=True)
+    persistence = RedisJobPersistence(client)
+    persistence.enqueue("validation", "job_crash")
+
+    # Worker A dequeues but crashes before acking.
+    assert persistence.blocking_dequeue("validation", timeout=1) == "job_crash"
+    assert persistence.blocking_dequeue("validation", timeout=1) is None  # queue now empty
+
+    # Lease hasn't expired yet — reaping now must not reclaim it.
+    assert persistence.requeue_stale("validation") == []
+
+    # Simulate lease expiry by deleting the lease key directly (equivalent to TTL elapsing).
+    client.delete("qtp:jobs:validation:lease:job_crash")
+
+    requeued = persistence.requeue_stale("validation")
+    assert requeued == ["job_crash"]
+
+    # Worker B can now pick it up.
+    assert persistence.blocking_dequeue("validation", timeout=1) == "job_crash"
+    persistence.ack("validation", "job_crash")
+    assert persistence.requeue_stale("validation") == []
+
+
+def test_redis_ack_prevents_requeue() -> None:
+    try:
+        import fakeredis
+    except ImportError:
+        pytest.skip("fakeredis not installed")
+
+    client = fakeredis.FakeRedis(decode_responses=True)
+    persistence = RedisJobPersistence(client)
+    persistence.enqueue("validation", "job_ok")
+    assert persistence.blocking_dequeue("validation", timeout=1) == "job_ok"
+
+    persistence.ack("validation", "job_ok")
+
+    client.delete("qtp:jobs:validation:lease:job_ok")
+    assert persistence.requeue_stale("validation") == []
+
+
 def test_redis_validation_preserves_pending_for_worker() -> None:
     try:
         import fakeredis

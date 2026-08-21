@@ -136,8 +136,13 @@ class LiveProvider:
         last_error: Exception | None = None
         for attempt in range(3):
             try:
-                ohlcv = self._exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+                # Fetch one extra bar: the exchange's last row is typically the
+                # still-forming candle, which must be excluded so live feature/
+                # signal computation only ever sees fully-closed bars — matching
+                # CsvDataProvider, which never returns a partial bar.
+                ohlcv = self._exchange.fetch_ohlcv(symbol, timeframe, limit=limit + 1)
                 df = self._to_dataframe(ohlcv)
+                df = self._drop_forming_candle(df, timeframe)
                 if end is not None:
                     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
                     end_ts = pd.Timestamp(end)
@@ -158,6 +163,24 @@ class LiveProvider:
                 last_error = exc
                 time.sleep(1)
         raise DataProviderError(f"Failed to fetch OHLCV for {symbol}: {last_error}") from last_error
+
+    def _drop_forming_candle(self, df: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+        """Drop the trailing candle if it has not closed yet.
+
+        ccxt's ``fetch_ohlcv`` includes the currently-forming bar as the last
+        row on most exchanges. Backtest (``CsvDataProvider``) only ever sees
+        fully-closed historical bars, so leaving a partial bar in here would
+        make live feature/signal computation diverge from validation.
+        """
+        if df.empty:
+            return df
+        timeframe_seconds = int(self._exchange.parse_timeframe(timeframe))
+        last_open = pd.Timestamp(df["timestamp"].iloc[-1])
+        close_time = last_open + pd.Timedelta(seconds=timeframe_seconds)
+        now = pd.Timestamp.now(tz="UTC")
+        if close_time > now:
+            return df.iloc[:-1].reset_index(drop=True)
+        return df
 
     @staticmethod
     def _to_dataframe(ohlcv: list) -> pd.DataFrame:

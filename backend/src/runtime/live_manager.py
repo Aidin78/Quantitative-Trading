@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Literal
@@ -64,15 +65,29 @@ class LiveRuntimeState:
 class LiveRuntimeManager:
     """Singleton manager for live/paper scheduler and runtime stack."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        alert_pinger: Callable[[], Awaitable[bool]] | None = None,
+    ) -> None:
         self._state = LiveRuntimeState()
         self._scheduler: AsyncIOScheduler | None = None
         self._stack: LiveStack | None = None
         self._lock = asyncio.Lock()
+        # Serializes run_cycle bodies against each other (so two scheduled jobs
+        # can never interleave their snapshot -> decide -> apply_transition
+        # sequence against the shared state store), independent of _lock so
+        # stop()/set_mode() are never blocked by an in-flight cycle.
+        self._cycle_lock = asyncio.Lock()
+        self._alert_pinger = alert_pinger
 
     @property
     def state(self) -> LiveRuntimeState:
         return self._state
+
+    def set_alert_pinger(self, pinger: Callable[[], Awaitable[bool]] | None) -> None:
+        """Inject the alert-channel connectivity checker (see api/services/live_service.py)."""
+        self._alert_pinger = pinger
 
     def status_dict(self) -> dict:
         return {
@@ -189,46 +204,56 @@ class LiveRuntimeManager:
         return result
 
     async def run_cycle(self, symbol: str, timeframe: str) -> None:
-        async with self._lock:
-            if self._state.status != "running":
-                return
-            mode = self._state.mode
-            revision_id = self._state.revision_id
-            experiment_id = self._state.experiment_id
-            if self._stack is None:
-                await self._rebuild_stack(mode)
-            stack = self._stack
-
-        if stack is None:
-            return
-
-        try:
-            ts = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
-            corr = f"live_{symbol.replace('/', '')}_{timeframe}_{ts}"
-            result = await stack.runtime.run_cycle(
-                symbol,
-                timeframe,
-                correlation_id=corr,
-                revision_id=revision_id,
-                experiment_id=experiment_id,
-            )
+        # _cycle_lock serializes the whole cycle body — including the runtime's
+        # snapshot -> decide -> apply_transition sequence — against other
+        # scheduled jobs. All jobs share one InMemoryStateStore/portfolio_id,
+        # which has no concurrency control of its own; without this, two jobs
+        # interleaving on the event loop could race a read-modify-write on
+        # portfolio/risk state. Held separately from _lock so an in-flight
+        # cycle never blocks stop()/set_mode().
+        async with self._cycle_lock:
             async with self._lock:
                 if self._state.status != "running":
                     return
-                self._state.last_run_at = datetime.now(UTC)
-                self._state.last_error = None
-                LIVE_CYCLES_TOTAL.labels(mode=self._state.mode).inc()
-                if result.decision.is_approved:
-                    self._state.last_signal_at = datetime.now(UTC)
-        except Exception as exc:
-            async with self._lock:
-                if self._state.status == "running":
-                    self._state.last_error = str(exc)
-            raise
+                mode = self._state.mode
+                revision_id = self._state.revision_id
+                experiment_id = self._state.experiment_id
+                if self._stack is None:
+                    await self._rebuild_stack(mode)
+                stack = self._stack
+
+            if stack is None:
+                return
+
+            try:
+                ts = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+                corr = f"live_{symbol.replace('/', '')}_{timeframe}_{ts}"
+                result = await stack.runtime.run_cycle(
+                    symbol,
+                    timeframe,
+                    correlation_id=corr,
+                    revision_id=revision_id,
+                    experiment_id=experiment_id,
+                )
+                async with self._lock:
+                    if self._state.status != "running":
+                        return
+                    self._state.last_run_at = datetime.now(UTC)
+                    self._state.last_error = None
+                    LIVE_CYCLES_TOTAL.labels(mode=self._state.mode).inc()
+                    if result.decision.is_approved:
+                        self._state.last_signal_at = datetime.now(UTC)
+            except Exception as exc:
+                async with self._lock:
+                    if self._state.status == "running":
+                        self._state.last_error = str(exc)
+                raise
 
     async def _rebuild_stack(self, mode: Literal["paper", "live"]) -> None:
         self._stack = await build_live_stack(mode)
-        exchange_ok, alerts_ok = await check_connectivity(mode, self._stack.provider)
+        exchange_ok, alerts_ok = await check_connectivity(
+            mode, self._stack.provider, alert_pinger=self._alert_pinger
+        )
         self._state.exchange_connected = exchange_ok
         self._state.alerts_connected = alerts_ok
 

@@ -14,6 +14,7 @@ class StateTransitionEvent(BaseModel, frozen=True):
         "position_closed",
         "risk_updated",
         "portfolio_updated",
+        "mark_to_market",
     ]
     payload: dict[str, Any] = Field(default_factory=dict)
     event_time: datetime

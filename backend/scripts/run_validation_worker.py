@@ -34,6 +34,9 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+_REAP_INTERVAL_SECONDS = 60.0
+
+
 async def _run_loop(*, poll_timeout: float, stop_event: asyncio.Event) -> None:
     persistence = validation_jobs._persistence
     if not isinstance(persistence, RedisJobPersistence):
@@ -47,7 +50,15 @@ async def _run_loop(*, poll_timeout: float, stop_event: asyncio.Event) -> None:
         validation_jobs._persistence = persistence
 
     logger.info("Validation worker listening on queue namespace=%s", NAMESPACE)
+    last_reap = 0.0
     while not stop_event.is_set():
+        now = asyncio.get_event_loop().time()
+        if now - last_reap >= _REAP_INTERVAL_SECONDS:
+            requeued = await asyncio.to_thread(persistence.requeue_stale, NAMESPACE)
+            if requeued:
+                logger.warning("Requeued stale job_ids=%s (worker likely crashed)", requeued)
+            last_reap = now
+
         job_id = await asyncio.to_thread(
             persistence.blocking_dequeue,
             NAMESPACE,
@@ -55,21 +66,24 @@ async def _run_loop(*, poll_timeout: float, stop_event: asyncio.Event) -> None:
         )
         if job_id is None:
             continue
-        job = validation_jobs.get(job_id)
-        if job is None:
-            logger.warning("Dequeued unknown job_id=%s; skipping", job_id)
-            continue
-        if job.status not in {"pending", "running"}:
-            logger.info("Skipping job_id=%s status=%s", job_id, job.status)
-            continue
-        if job.cancel_requested:
-            job.status = "cancelled"
-            job.message = "Validation cancelled."
-            job.error = None
-            validation_jobs.update(job)
-            continue
-        logger.info("Executing validation job_id=%s", job_id)
-        await execute_validation_job(job_id, job.config)
+        try:
+            job = validation_jobs.get(job_id)
+            if job is None:
+                logger.warning("Dequeued unknown job_id=%s; skipping", job_id)
+                continue
+            if job.status not in {"pending", "running"}:
+                logger.info("Skipping job_id=%s status=%s", job_id, job.status)
+                continue
+            if job.cancel_requested:
+                job.status = "cancelled"
+                job.message = "Validation cancelled."
+                job.error = None
+                validation_jobs.update(job)
+                continue
+            logger.info("Executing validation job_id=%s", job_id)
+            await execute_validation_job(job_id, job.config)
+        finally:
+            await asyncio.to_thread(persistence.ack, NAMESPACE, job_id)
 
 
 async def _main() -> int:

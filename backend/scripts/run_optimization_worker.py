@@ -34,6 +34,9 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+_REAP_INTERVAL_SECONDS = 60.0
+
+
 async def _run_loop(*, poll_timeout: float, stop_event: asyncio.Event) -> None:
     persistence = optimization_sweeps._persistence
     if not isinstance(persistence, RedisJobPersistence):
@@ -46,7 +49,15 @@ async def _run_loop(*, poll_timeout: float, stop_event: asyncio.Event) -> None:
         optimization_sweeps._persistence = persistence
 
     logger.info("Optimization worker listening on queue namespace=%s", NAMESPACE)
+    last_reap = 0.0
     while not stop_event.is_set():
+        now = asyncio.get_event_loop().time()
+        if now - last_reap >= _REAP_INTERVAL_SECONDS:
+            requeued = await asyncio.to_thread(persistence.requeue_stale, NAMESPACE)
+            if requeued:
+                logger.warning("Requeued stale sweep_ids=%s (worker likely crashed)", requeued)
+            last_reap = now
+
         sweep_id = await asyncio.to_thread(
             persistence.blocking_dequeue,
             NAMESPACE,
@@ -54,21 +65,24 @@ async def _run_loop(*, poll_timeout: float, stop_event: asyncio.Event) -> None:
         )
         if sweep_id is None:
             continue
-        sweep = optimization_sweeps.get(sweep_id)
-        if sweep is None:
-            logger.warning("Dequeued unknown sweep_id=%s; skipping", sweep_id)
-            continue
-        if sweep.status not in {"pending", "running"}:
-            logger.info("Skipping sweep_id=%s status=%s", sweep_id, sweep.status)
-            continue
-        if sweep.cancel_requested:
-            sweep.status = "cancelled"
-            sweep.message = "Optimization cancelled."
-            sweep.error = None
-            optimization_sweeps.update(sweep)
-            continue
-        logger.info("Executing optimization sweep_id=%s", sweep_id)
-        await execute_optimization_sweep(sweep_id, sweep.config)
+        try:
+            sweep = optimization_sweeps.get(sweep_id)
+            if sweep is None:
+                logger.warning("Dequeued unknown sweep_id=%s; skipping", sweep_id)
+                continue
+            if sweep.status not in {"pending", "running"}:
+                logger.info("Skipping sweep_id=%s status=%s", sweep_id, sweep.status)
+                continue
+            if sweep.cancel_requested:
+                sweep.status = "cancelled"
+                sweep.message = "Optimization cancelled."
+                sweep.error = None
+                optimization_sweeps.update(sweep)
+                continue
+            logger.info("Executing optimization sweep_id=%s", sweep_id)
+            await execute_optimization_sweep(sweep_id, sweep.config)
+        finally:
+            await asyncio.to_thread(persistence.ack, NAMESPACE, sweep_id)
 
 
 async def _main() -> int:

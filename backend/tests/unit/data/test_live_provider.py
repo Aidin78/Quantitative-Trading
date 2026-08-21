@@ -15,6 +15,9 @@ class _MockExchange:
     def load_markets(self) -> dict:
         return {"BTC/USDT": {}}
 
+    def parse_timeframe(self, timeframe: str) -> int:
+        return 3600
+
     def fetch_ohlcv(
         self, symbol: str, timeframe: str, limit: int = 200, since: int | None = None
     ) -> list:
@@ -26,6 +29,28 @@ class _MockExchange:
             rows.append([ts, price, price + 1, price - 1, price + 0.5, 10.0])
         if since is not None:
             rows = [row for row in rows if row[0] >= since]
+        return rows
+
+
+class _LiveClockMockExchange:
+    """Exchange whose last returned candle has not closed yet (simulates a live feed)."""
+
+    rateLimit = 1000
+
+    def parse_timeframe(self, timeframe: str) -> int:
+        return 3600
+
+    def fetch_ohlcv(
+        self, symbol: str, timeframe: str, limit: int = 200, since: int | None = None
+    ) -> list:
+        now = pd.Timestamp.now(tz="UTC")
+        current_bar_start = now.floor("h")
+        rows = []
+        for i in range(limit):
+            bar_start = current_bar_start - pd.Timedelta(hours=limit - 1 - i)
+            ts = int(bar_start.timestamp() * 1000)
+            price = 100.0 + i
+            rows.append([ts, price, price + 1, price - 1, price + 0.5, 10.0])
         return rows
 
 
@@ -59,6 +84,17 @@ def test_live_provider_get_latest(monkeypatch: pytest.MonkeyPatch) -> None:
     assert isinstance(df, pd.DataFrame)
     assert list(df.columns) == ["timestamp", "open", "high", "low", "close", "volume"]
     assert len(df) == 5
+
+
+def test_live_provider_get_latest_excludes_forming_candle() -> None:
+    """The exchange's still-forming (unclosed) bar must never reach FeatureBuilder."""
+    provider = LiveProvider(exchange_id="binance")
+    provider._exchange = _LiveClockMockExchange()  # noqa: SLF001
+    df = provider.get_latest("BTC/USDT", "1h", limit=5)
+    now = pd.Timestamp.now(tz="UTC")
+    assert len(df) == 5
+    for ts in df["timestamp"]:
+        assert ts + pd.Timedelta(hours=1) <= now
 
 
 def test_live_provider_ping(monkeypatch: pytest.MonkeyPatch) -> None:

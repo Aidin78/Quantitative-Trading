@@ -126,6 +126,7 @@ class PlatformRuntime:
         self._emit_candle_received(ctx)
         feature_set, context = self._build_features(ctx)
         self._maybe_reset_daily_risk(ctx.event_time, ctx.cycle_id)
+        self._mark_to_market(ctx)
         # Decision-time snapshot: after pre-decision evaluate_bar, before execute.
         snapshot = self._state_store.snapshot(self._portfolio_id, correlation_id=ctx.cycle_id)
         signals = self._collect_provider_signals(ctx, feature_set, context)
@@ -498,6 +499,26 @@ class PlatformRuntime:
         for transition in exec_result.transitions:
             self._state_store.apply_transition(transition)
         ctx.execution_events.extend(exec_result.events)
+
+    def _mark_to_market(self, ctx: _CycleCtx) -> None:
+        """Revalue any open position at this bar's close before the decision snapshot.
+
+        Keeps ``daily_drawdown_pct`` reflecting unrealized PnL on open
+        positions, not just realized PnL from closes — see State-Risk
+        Contract notes in ``state/store.py::_apply_mark_to_market``.
+        """
+        portfolio = self._state_store.get_portfolio(self._portfolio_id)
+        if not portfolio.open_positions:
+            return
+        transition = StateTransitionEvent(
+            transition_id=f"trans_{uuid.uuid4().hex[:12]}",
+            portfolio_id=self._portfolio_id,
+            transition_type="mark_to_market",
+            payload={"prices": {ctx.symbol: ctx.bar["close"]}},
+            event_time=ctx.event_time,
+            correlation_id=ctx.cycle_id,
+        )
+        self._state_store.apply_transition(transition)
 
     def _maybe_reset_daily_risk(self, event_time: datetime, cycle_id: str) -> None:
         current_day = event_time.date()

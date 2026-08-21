@@ -94,6 +94,8 @@ class InMemoryStateStore:
             self._apply_portfolio_updated(event)
         elif event.transition_type == "risk_updated":
             self._apply_risk_updated(event)
+        elif event.transition_type == "mark_to_market":
+            self._apply_mark_to_market(event)
         else:
             raise ValueError(f"Unknown transition_type: {event.transition_type}")
 
@@ -166,6 +168,62 @@ class InMemoryStateStore:
                 "daily_drawdown_pct": drawdown_pct,
                 "open_exposure_pct": max(0.0, self._risk.open_exposure_pct - exposure_drop),
                 "consecutive_losses": consecutive,
+                "version": self._risk.version + 1,
+                "as_of_event_time": event.event_time,
+            }
+        )
+
+    def _apply_mark_to_market(self, event: StateTransitionEvent) -> None:
+        """Revalue open positions at current close and recompute drawdown from that equity.
+
+        Without this, ``daily_drawdown_pct`` only moves on realized (closed)
+        PnL, so the risk gate cannot see a large adverse move on a position
+        that is still open — the exact gap ``max_daily_drawdown_pct`` exists
+        to guard against. Cash and realized_pnl are untouched; only equity
+        (cash + unrealized) and each position's unrealized_pnl are updated.
+        """
+        prices: dict[str, float] = event.payload["prices"]
+        positions = self._portfolio.open_positions
+        if not positions:
+            new_equity = self._portfolio.cash
+        else:
+            revalued = []
+            market_value_total = 0.0
+            for position in positions:
+                price = prices.get(position.symbol)
+                notional = position.entry_price * position.quantity
+                if price is None:
+                    revalued.append(position)
+                    market_value_total += notional + position.unrealized_pnl
+                    continue
+                if position.side == "LONG":
+                    pnl = (price - position.entry_price) * position.quantity
+                else:
+                    pnl = (position.entry_price - price) * position.quantity
+                revalued.append(position.model_copy(update={"unrealized_pnl": pnl}))
+                market_value_total += notional + pnl
+            positions = tuple(revalued)
+            # cash already excludes the capital locked into open positions (deducted
+            # at open); equity = cash + each position's current market value.
+            new_equity = self._portfolio.cash + market_value_total
+
+        start_equity = self._risk.daily_start_equity or new_equity
+        drawdown_pct = (
+            max(0.0, (start_equity - new_equity) / start_equity * 100) if start_equity else 0.0
+        )
+
+        self._portfolio = self._portfolio.model_copy(
+            update={
+                "equity": new_equity,
+                "open_positions": positions,
+                "version": self._portfolio.version + 1,
+                "as_of_event_time": event.event_time,
+                "as_of_processing_time": event.event_time,
+            }
+        )
+        self._risk = self._risk.model_copy(
+            update={
+                "daily_drawdown_pct": drawdown_pct,
                 "version": self._risk.version + 1,
                 "as_of_event_time": event.event_time,
             }
