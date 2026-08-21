@@ -28,8 +28,35 @@ def format_report(result: ValidationResult) -> str:
         f"Max drawdown: {om.get('max_drawdown', 0):.2f}",
         f"Sharpe ratio: {om.get('sharpe_ratio', 0):.2f}",
         f"Total PnL: {om.get('total_pnl', 0):.2f}",
+        "",
+        "=== Failure Analysis ===",
+        *_format_failure_summary(om.get("failure_summary", {})),
     ]
     return "\n".join(lines)
+
+
+def _format_failure_summary(summary: dict) -> list[str]:
+    total_losses = summary.get("total_losses", 0)
+    if not total_losses:
+        return ["No losing trades to analyze."]
+
+    lines = [f"{total_losses} losing trades attributed across regimes:"]
+    for regime, share in sorted(
+        summary.get("loss_share_by_regime", {}).items(), key=lambda kv: -kv[1]
+    ):
+        lines.append(f"  {share:.0%} occurred during {regime} regime")
+
+    low_conf_share = summary.get("low_confidence_loss_share", 0)
+    if low_conf_share:
+        lines.append(f"  {low_conf_share:.0%} of losses came from low-confidence signals (<0.70)")
+
+    lines.append(f"Average loss: {summary.get('avg_loss', 0):.2f}")
+    lines.append(f"Average win: {summary.get('avg_win', 0):.2f}")
+
+    unattributed = summary.get("unattributed_trades", 0)
+    if unattributed:
+        lines.append(f"({unattributed} trades could not be attributed to an entry regime)")
+    return lines
 
 
 def write_report(result: ValidationResult, output: Path) -> None:

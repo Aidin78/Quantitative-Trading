@@ -303,6 +303,51 @@ def compute_optimization_score(outcome: dict) -> float:
     return score
 
 
+def summarize_failures(outcome: dict) -> dict:
+    """Turn regime_analysis + diagnostics into the loss-attribution summary a
+    researcher reads first: which regimes/confidence bands losses concentrate
+    in, and the win/loss asymmetry. Pure post-processing of already-computed
+    metrics — no new data source, so it stays correct wherever outcome is used.
+    """
+    regime = outcome.get("regime_analysis", {})
+    by_regime = regime.get("by_regime", {})
+    by_confidence = regime.get("by_confidence_band", {})
+
+    total_losses = sum(bucket.get("losses", 0) for bucket in by_regime.values())
+    loss_share_by_regime = {
+        key: round(bucket.get("losses", 0) / total_losses, 4)
+        for key, bucket in by_regime.items()
+        if total_losses > 0 and bucket.get("losses", 0) > 0
+    }
+
+    low_confidence_losses = sum(
+        bucket.get("losses", 0)
+        for band, bucket in by_confidence.items()
+        if band in ("below_0.60", "0.60-0.69")
+    )
+    total_confidence_losses = sum(bucket.get("losses", 0) for bucket in by_confidence.values())
+    low_confidence_loss_share = (
+        round(low_confidence_losses / total_confidence_losses, 4)
+        if total_confidence_losses > 0
+        else 0.0
+    )
+
+    wins_total = sum(bucket.get("gross_profit", 0) for bucket in by_regime.values())
+    win_count = sum(bucket.get("wins", 0) for bucket in by_regime.values())
+    losses_total = sum(bucket.get("gross_loss", 0) for bucket in by_regime.values())
+    avg_win = wins_total / win_count if win_count else 0.0
+    avg_loss = -losses_total / total_losses if total_losses else 0.0
+
+    return {
+        "total_losses": total_losses,
+        "loss_share_by_regime": loss_share_by_regime,
+        "low_confidence_loss_share": low_confidence_loss_share,
+        "avg_win": round(avg_win, 4),
+        "avg_loss": round(avg_loss, 4),
+        "unattributed_trades": regime.get("unattributed_trades", 0),
+    }
+
+
 def compute_engine_metrics(
     cycles: list[CycleResult],
     events: list[EventEnvelope],
@@ -468,4 +513,5 @@ def compute_outcome_metrics(
     outcome["regime_analysis"] = compute_regime_breakdown(events)
     outcome["score"] = compute_strategy_score(outcome)
     outcome["optimization_score"] = compute_optimization_score(outcome)
+    outcome["failure_summary"] = summarize_failures(outcome)
     return outcome

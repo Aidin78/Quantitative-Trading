@@ -19,6 +19,7 @@ from src.validation.metrics import (
     compute_outcome_metrics,
     compute_regime_breakdown,
     compute_strategy_score,
+    summarize_failures,
 )
 
 
@@ -259,3 +260,73 @@ def test_outcome_metrics_includes_regime_analysis() -> None:
     outcome = compute_outcome_metrics(events, initial_capital=10_000.0)
     assert "regime_analysis" in outcome
     assert outcome["regime_analysis"]["by_regime"]["DOWN_NORMAL"]["trades"] == 1
+
+
+def test_summarize_failures_computes_loss_share_by_regime() -> None:
+    outcome = {
+        "regime_analysis": {
+            "by_regime": {
+                "UP_HIGH": {
+                    "losses": 3,
+                    "wins": 1,
+                    "gross_profit": 50.0,
+                    "gross_loss": 90.0,
+                },
+                "DOWN_NORMAL": {
+                    "losses": 1,
+                    "wins": 2,
+                    "gross_profit": 120.0,
+                    "gross_loss": 20.0,
+                },
+            },
+            "by_confidence_band": {
+                "below_0.60": {"losses": 2},
+                "0.80-1.00": {"losses": 2},
+            },
+            "unattributed_trades": 0,
+        }
+    }
+    summary = summarize_failures(outcome)
+    assert summary["total_losses"] == 4
+    assert summary["loss_share_by_regime"]["UP_HIGH"] == pytest.approx(0.75)
+    assert summary["loss_share_by_regime"]["DOWN_NORMAL"] == pytest.approx(0.25)
+    assert summary["low_confidence_loss_share"] == pytest.approx(0.5)
+    assert summary["avg_win"] == pytest.approx((50.0 + 120.0) / 3)
+    assert summary["avg_loss"] == pytest.approx(-(90.0 + 20.0) / 4)
+
+
+def test_summarize_failures_handles_no_losses() -> None:
+    outcome = {
+        "regime_analysis": {
+            "by_regime": {"UP_LOW": {"losses": 0, "wins": 2, "gross_profit": 40.0}},
+            "by_confidence_band": {},
+            "unattributed_trades": 0,
+        }
+    }
+    summary = summarize_failures(outcome)
+    assert summary["total_losses"] == 0
+    assert summary["loss_share_by_regime"] == {}
+    assert summary["low_confidence_loss_share"] == 0.0
+
+
+def test_summarize_failures_defaults_when_no_regime_analysis() -> None:
+    summary = summarize_failures({})
+    assert summary["total_losses"] == 0
+    assert summary["avg_win"] == 0.0
+    assert summary["avg_loss"] == 0.0
+
+
+def test_outcome_metrics_includes_failure_summary() -> None:
+    events = _cycle_events(
+        correlation_id="c_entry_1",
+        event_time=datetime(2026, 6, 10, 8, tzinfo=UTC),
+        position_id="pos_1",
+        pnl=-50.0,
+        trend="UP",
+        volatility="HIGH",
+        confidence=0.55,
+    )
+    outcome = compute_outcome_metrics(events, initial_capital=10_000.0)
+    assert outcome["failure_summary"]["total_losses"] == 1
+    assert outcome["failure_summary"]["loss_share_by_regime"]["UP_HIGH"] == pytest.approx(1.0)
+    assert outcome["failure_summary"]["low_confidence_loss_share"] == pytest.approx(1.0)
