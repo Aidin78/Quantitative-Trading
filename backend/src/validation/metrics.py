@@ -26,7 +26,7 @@ def _derive_session_utc(event_time: datetime) -> Literal["ASIA", "EUROPE", "US",
     return "ASIA"
 
 
-def _bucket_stats(pnls: list[float]) -> dict:
+def bucket_stats(pnls: list[float]) -> dict:
     wins = [p for p in pnls if p > 0]
     losses = [p for p in pnls if p <= 0]
     return {
@@ -172,11 +172,11 @@ def compute_diagnostics(events: list[EventEnvelope]) -> dict:
         side_buckets[side].append(pnl)
 
     for key, pnls in exit_buckets.items():
-        by_exit_reason[key] = _bucket_stats(pnls)
+        by_exit_reason[key] = bucket_stats(pnls)
     for key, pnls in session_buckets.items():
-        by_session[key] = _bucket_stats(pnls)
+        by_session[key] = bucket_stats(pnls)
     for key, pnls in side_buckets.items():
-        by_side[key] = _bucket_stats(pnls)
+        by_side[key] = bucket_stats(pnls)
 
     return {
         "by_exit_reason": by_exit_reason,
@@ -255,10 +255,8 @@ def compute_regime_breakdown(events: list[EventEnvelope]) -> dict:
             confidence_buckets[band].append(pnl)
 
     return {
-        "by_regime": {key: _bucket_stats(pnls) for key, pnls in regime_buckets.items()},
-        "by_confidence_band": {
-            key: _bucket_stats(pnls) for key, pnls in confidence_buckets.items()
-        },
+        "by_regime": {key: bucket_stats(pnls) for key, pnls in regime_buckets.items()},
+        "by_confidence_band": {key: bucket_stats(pnls) for key, pnls in confidence_buckets.items()},
         "unattributed_trades": unattributed,
     }
 

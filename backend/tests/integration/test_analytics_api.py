@@ -10,9 +10,16 @@ from src.api.auth import create_access_token
 from src.core.contracts.event import EventFamily
 from src.core.settings import get_settings
 from src.db.base import Base
+from src.db.models import SimulatedTradeRow
+from src.db.repositories.backtest import persist_event
 from src.db.repositories.decision import persist_decision_from_event
 from src.db.session import get_async_engine
-from src.events.envelopes import DecisionEventType, build_envelope
+from src.events.envelopes import (
+    DecisionEventType,
+    ExecutionEventType,
+    MarketEventType,
+    build_envelope,
+)
 from src.main import app
 
 
@@ -98,6 +105,69 @@ async def test_analytics_heatmap(api_client, auth_headers) -> None:
     body = resp.json()
     assert body["period"] == "7d"
     assert "data" in body
+
+
+@pytest.mark.asyncio
+async def test_analytics_regimes_empty(api_client, auth_headers) -> None:
+    client, _ = api_client
+    resp = await client.get("/api/v1/analytics/regimes?period=30d", headers=auth_headers)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["period"] == "30d"
+    assert body["by_regime"] == {}
+    assert body["unattributed_trades"] == 0
+
+
+@pytest.mark.asyncio
+async def test_analytics_regimes_attributes_trade_to_entry_regime(api_client, auth_headers) -> None:
+    client, factory = api_client
+    now = datetime.now(UTC)
+    entry_correlation = "cycle_entry_regime"
+    context_event = build_envelope(
+        event_family=EventFamily.MARKET,
+        event_type=MarketEventType.MARKET_CONTEXT_DERIVED,
+        event_time=now,
+        processing_time=now,
+        correlation_id=entry_correlation,
+        symbol="BTC/USDT",
+        timeframe="1h",
+        mode="validation",
+        payload={"trend": "UP", "volatility": "HIGH"},
+    )
+    open_event = build_envelope(
+        event_family=EventFamily.EXECUTION,
+        event_type=ExecutionEventType.POSITION_OPENED,
+        event_time=now,
+        processing_time=now,
+        correlation_id=entry_correlation,
+        symbol="BTC/USDT",
+        timeframe="1h",
+        mode="validation",
+        payload={"position_id": "pos_regime_1"},
+    )
+    async with factory() as session:
+        await persist_event(session, context_event)
+        await persist_event(session, open_event)
+        session.add(
+            SimulatedTradeRow(
+                trade_id="trade_regime_1",
+                run_id="run_regime_test",
+                position_id="pos_regime_1",
+                correlation_id="cycle_exit_regime",
+                symbol="BTC/USDT",
+                pnl=-42.0,
+                exit_reason="stop_loss",
+                payload={"position_id": "pos_regime_1", "pnl": -42.0},
+            )
+        )
+        await session.commit()
+
+    resp = await client.get("/api/v1/analytics/regimes?period=30d", headers=auth_headers)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["by_regime"]["UP_HIGH"]["trades"] == 1
+    assert body["by_regime"]["UP_HIGH"]["pnl"] == pytest.approx(-42.0)
+    assert body["unattributed_trades"] == 0
 
 
 @pytest.mark.asyncio

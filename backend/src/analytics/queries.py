@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import DecisionRecordRow, EventLogRow, SimulatedTradeRow
 from src.db.repositories.decision import _extract_rejection_reason
+from src.events.envelopes import ExecutionEventType, MarketEventType
+from src.validation.metrics import bucket_stats, classify_regime
 
 
 def _parse_period(period: str) -> int:
@@ -138,6 +140,76 @@ async def compute_heatmap(session: AsyncSession, *, period: str = "30d") -> dict
             }
         )
     return {"period": period, "data": data}
+
+
+async def compute_regime_overview(session: AsyncSession, *, period: str = "30d") -> dict:
+    """Cross-run regime breakdown: which regime/confidence band losses concentrate in,
+    across every trade closed in the window — not scoped to a single validation run.
+
+    Trades have no event_time of their own (simulated_trades carries no timestamp),
+    so the window is applied to event_log first and trades are joined in through the
+    POSITION_OPENED event for the same position_id, exactly like
+    validation.metrics.compute_regime_breakdown does for a single run's in-memory
+    event list.
+    """
+    days = _parse_period(period)
+    since = datetime.now(UTC) - timedelta(days=days)
+
+    event_rows = (
+        (
+            await session.execute(
+                select(EventLogRow).where(
+                    EventLogRow.event_time >= since,
+                    EventLogRow.event_type.in_(
+                        [ExecutionEventType.POSITION_OPENED, MarketEventType.MARKET_CONTEXT_DERIVED]
+                    ),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    entry_correlation_by_position: dict[str, str] = {}
+    context_by_correlation: dict[str, dict] = {}
+    for row in event_rows:
+        if row.event_type == ExecutionEventType.POSITION_OPENED:
+            position_id = row.payload.get("position_id")
+            if position_id:
+                entry_correlation_by_position[position_id] = row.correlation_id
+        elif row.event_type == MarketEventType.MARKET_CONTEXT_DERIVED:
+            context_by_correlation[row.correlation_id] = row.payload
+
+    if not entry_correlation_by_position:
+        return {"period": period, "by_regime": {}, "unattributed_trades": 0}
+
+    trade_rows = (
+        (
+            await session.execute(
+                select(SimulatedTradeRow).where(
+                    SimulatedTradeRow.position_id.in_(entry_correlation_by_position.keys())
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    regime_buckets: dict[str, list[float]] = defaultdict(list)
+    unattributed = 0
+    for trade in trade_rows:
+        correlation_id = entry_correlation_by_position.get(trade.position_id)
+        context_payload = context_by_correlation.get(correlation_id) if correlation_id else None
+        if context_payload is None:
+            unattributed += 1
+            continue
+        regime_buckets[classify_regime(context_payload)].append(trade.pnl)
+
+    return {
+        "period": period,
+        "by_regime": {key: bucket_stats(pnls) for key, pnls in regime_buckets.items()},
+        "unattributed_trades": unattributed,
+    }
 
 
 async def _symbol_for_row(session: AsyncSession, row: DecisionRecordRow) -> str:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.analytics.queries import compute_heatmap, compute_overview
+from src.analytics.queries import compute_heatmap, compute_overview, compute_regime_overview
 from src.api.deps import get_current_user, get_db
 
 router = APIRouter(
@@ -25,3 +25,11 @@ async def analytics_heatmap(
     period: str = Query("30d"),
 ) -> dict:
     return await compute_heatmap(db, period=period)
+
+
+@router.get("/regimes")
+async def analytics_regimes(
+    db: AsyncSession = Depends(get_db),
+    period: str = Query("30d"),
+) -> dict:
+    return await compute_regime_overview(db, period=period)
