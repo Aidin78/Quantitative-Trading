@@ -16,9 +16,13 @@ optimization:
   min_trades_test: 50
   min_trades_holdout: 20
 fill_models:
-  default: close_price_v1
+  default: next_open_v1
   models:
     close_price_v1:
       slippage_bps: 5
       fee_bps: 10
       fill_at: close
+    next_open_v1:
+      slippage_bps: 5
+      fee_bps: 10
+      fill_at: next_open

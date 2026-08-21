@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from src.core.exceptions import InsufficientDataError
@@ -14,20 +15,33 @@ def _find_confirmed_pivots(
     pivot_bars: int,
     up_to_index: int,
 ) -> tuple[list[tuple[int, float]], list[tuple[int, float]]]:
-    highs: list[tuple[int, float]] = []
-    lows: list[tuple[int, float]] = []
-    high_series = df["high"]
-    low_series = df["low"]
     last_confirmable = up_to_index - pivot_bars
-    for i in range(pivot_bars, last_confirmable + 1):
-        window_start = i - pivot_bars
-        window_end = i + pivot_bars + 1
-        window_high = high_series.iloc[window_start:window_end]
-        window_low = low_series.iloc[window_start:window_end]
-        if float(high_series.iloc[i]) >= float(window_high.max()):
-            highs.append((i, float(high_series.iloc[i])))
-        if float(low_series.iloc[i]) <= float(window_low.min()):
-            lows.append((i, float(low_series.iloc[i])))
+    if last_confirmable < pivot_bars:
+        return [], []
+
+    high_arr = df["high"].to_numpy(dtype=np.float64, copy=False)
+    low_arr = df["low"].to_numpy(dtype=np.float64, copy=False)
+
+    window = 2 * pivot_bars + 1
+    high_windows = np.lib.stride_tricks.sliding_window_view(high_arr, window)
+    low_windows = np.lib.stride_tricks.sliding_window_view(low_arr, window)
+    window_max = high_windows.max(axis=1)
+    window_min = low_windows.min(axis=1)
+
+    # sliding_window_view row j covers source indices [j, j+window), centered at i = j + pivot_bars.
+    candidate_i = np.arange(pivot_bars, pivot_bars + len(window_max))
+    keep = candidate_i <= last_confirmable
+    candidate_i = candidate_i[keep]
+    window_max = window_max[keep]
+    window_min = window_min[keep]
+
+    center_high = high_arr[candidate_i]
+    center_low = low_arr[candidate_i]
+
+    highs = [(int(i), float(h)) for i, h, m in zip(candidate_i, center_high, window_max) if h >= m]
+    lows = [
+        (int(i), float(low)) for i, low, m in zip(candidate_i, center_low, window_min) if low <= m
+    ]
     return highs, lows
 
 
