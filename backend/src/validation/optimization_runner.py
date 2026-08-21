@@ -30,6 +30,7 @@ from src.validation.optimization_space import (
     generate_trials,
     generate_trials_optuna,
     refine_trials_around,
+    run_optuna_trials,
 )
 from src.validation.optimization_windows import split_holdout, split_train_test
 from src.validation.trial_config import (
@@ -197,12 +198,23 @@ async def run_optimization(
             opt_start, opt_end, train_ratio=train_ratio
         )
 
+    # Optuna's TPE sampler only adapts across trials when ask() is followed by
+    # tell() before the next ask() -- i.e. sequential evaluation. With
+    # max_parallel_trials > 1 all trials are dispatched concurrently, so there
+    # is no result to tell() the sampler before the next ask() anyway; that
+    # case still uses the plain batch generator (no adaptivity, but honest
+    # about it). n_train is unknown ahead of time in the adaptive path since
+    # trials are generated one at a time, so it is filled in once the loop
+    # below (or the fallback generator) actually runs.
+    adaptive_optuna = search_method == "optuna" and parallel == 1
     trial_params = (
-        generate_trials_optuna(opt_space, max_trials=max_trials, seed=seed)
+        []
+        if adaptive_optuna
+        else generate_trials_optuna(opt_space, max_trials=max_trials, seed=seed)
         if search_method == "optuna"
         else generate_trials(opt_space, max_trials=max_trials, seed=seed)
     )
-    n_train = len(trial_params)
+    n_train = max_trials if adaptive_optuna else len(trial_params)
     n_test = min(top_k, n_train)
     total_steps = n_train + n_test
     if local_refine and n_train > 0:
@@ -313,7 +325,28 @@ async def run_optimization(
             )
             return trial
 
-    if n_train:
+    if adaptive_optuna:
+        next_index = 0
+
+        async def _evaluate(params: dict[str, Any]) -> tuple[float, TrialResult]:
+            nonlocal next_index
+            trial = await _train_one(next_index, params)
+            next_index += 1
+            return trial.train_score, trial
+
+        train_results = await run_optuna_trials(
+            opt_space,
+            _evaluate,
+            max_trials=max_trials,
+            seed=seed,
+        )
+        n_train = len(train_results)
+        n_test = min(top_k, n_train)
+        total_steps = completed_train + n_test
+        if local_refine and n_train > 0:
+            total_steps += min(9, n_train)
+        step = completed_train
+    elif n_train:
         tasks = [
             asyncio.create_task(_train_one(index, params))
             for index, params in enumerate(trial_params)

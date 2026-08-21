@@ -384,6 +384,16 @@ def _suggest_params_from_optuna_trial(
     return params
 
 
+def _make_optuna_study(seed: int | None):
+    import optuna
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    sampler = (
+        optuna.samplers.TPESampler(seed=seed) if seed is not None else optuna.samplers.TPESampler()
+    )
+    return optuna.create_study(direction="maximize", sampler=sampler)
+
+
 def generate_trials_optuna(
     space: OptimizationSpace,
     *,
@@ -391,20 +401,20 @@ def generate_trials_optuna(
     seed: int | None = None,
     require_compatible_family: bool | None = None,
 ) -> list[dict[str, Any]]:
-    import optuna
-
+    """Ask Optuna for ``max_trials`` distinct parameter sets without ever
+    scoring them, so the TPE sampler never receives feedback and effectively
+    degenerates to sampling from its prior. This is intentional here: callers
+    that batch/parallelize trial execution (max_parallel_trials > 1) can't
+    interleave tell() between asks anyway. For adaptive sequential search,
+    use run_optuna_trials instead, which does ask -> evaluate -> tell per
+    trial.
+    """
     enforce_family = (
         space_requires_family_filter(space)
         if require_compatible_family is None
         else require_compatible_family
     )
-    optuna.logging.set_verbosity(optuna.logging.WARNING)
-    sampler: optuna.samplers.BaseSampler
-    if seed is not None:
-        sampler = optuna.samplers.TPESampler(seed=seed)
-    else:
-        sampler = optuna.samplers.TPESampler()
-    study = optuna.create_study(direction="maximize", sampler=sampler)
+    study = _make_optuna_study(seed)
     picked: list[dict[str, Any]] = []
     seen: set[tuple[tuple[str, Any], ...]] = set()
     max_attempts = max(max_trials * 20, max_trials)
@@ -421,6 +431,58 @@ def generate_trials_optuna(
         seen.add(key)
         picked.append(params)
     return picked
+
+
+async def run_optuna_trials(
+    space: OptimizationSpace,
+    evaluate: Any,
+    *,
+    max_trials: int = 40,
+    seed: int | None = None,
+    require_compatible_family: bool | None = None,
+    study: Any | None = None,
+) -> list[Any]:
+    """Adaptive sequential search: ask Optuna for one trial, score it with
+    ``evaluate`` (an async callable taking the trial's params dict and
+    returning a float score), then tell Optuna the result before asking for
+    the next one. Unlike generate_trials_optuna, this is genuine Bayesian
+    optimization -- each trial's sampling is informed by every prior result.
+
+    ``study`` can be supplied to inspect the sampler's state after the run
+    (tests) or to reuse a study across calls; a fresh one is created if
+    omitted.
+
+    Returns the list of values evaluate() returned, in trial order, so
+    callers can build their own result objects from the scores.
+    """
+    import optuna
+
+    enforce_family = (
+        space_requires_family_filter(space)
+        if require_compatible_family is None
+        else require_compatible_family
+    )
+    study = study if study is not None else _make_optuna_study(seed)
+    results: list[Any] = []
+    seen: set[tuple[tuple[str, Any], ...]] = set()
+    max_attempts = max(max_trials * 20, max_trials)
+    attempts = 0
+    while len(results) < max_trials and attempts < max_attempts:
+        attempts += 1
+        trial = study.ask()
+        params = _suggest_params_from_optuna_trial(trial, space)
+        if not is_valid_provider_trial(params, require_compatible_family=enforce_family):
+            study.tell(trial, state=optuna.trial.TrialState.FAIL)
+            continue
+        key = tuple(sorted(params.items()))
+        if key in seen:
+            study.tell(trial, state=optuna.trial.TrialState.FAIL)
+            continue
+        seen.add(key)
+        score, result = await evaluate(params)
+        study.tell(trial, score)
+        results.append(result)
+    return results
 
 
 def refine_trials_around(

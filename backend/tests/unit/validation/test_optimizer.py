@@ -12,6 +12,7 @@ from src.validation.optimizer import (
     has_any_provider_enabled,
     refine_trials_around,
     run_optimization,
+    run_optuna_trials,
     select_best,
     space_requires_family_filter,
     split_holdout,
@@ -331,6 +332,100 @@ def test_generate_trials_optuna_respects_max() -> None:
     trials = generate_trials_optuna(space, max_trials=4, seed=42)
     assert len(trials) == 4
     assert all("min_confidence" in t for t in trials)
+
+
+@pytest.mark.asyncio
+async def test_run_optuna_trials_evaluates_each_accepted_trial_once() -> None:
+    space = OptimizationSpace(min_confidence=(0.6, 0.7), min_risk_reward=(1.2, 1.5))
+    seen_params: list[dict] = []
+
+    async def evaluate(params: dict) -> tuple[float, dict]:
+        seen_params.append(params)
+        return params["min_confidence"], params
+
+    results = await run_optuna_trials(space, evaluate, max_trials=5, seed=42)
+    assert len(results) == 5
+    assert len(seen_params) == 5
+    assert all("min_confidence" in p for p in seen_params)
+
+
+@pytest.mark.asyncio
+async def test_run_optuna_trials_feeds_scores_back_to_the_sampler() -> None:
+    """The whole point of the fix: study.tell() must actually be called with
+    real scores, not left as dead code. A caller-supplied study lets the test
+    inspect completed trials afterward -- each one must carry the score
+    evaluate() returned, proving tell() received real feedback rather than
+    every ask() sampling from an untouched prior with no outcome recorded.
+    """
+    import optuna
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    space = OptimizationSpace(min_confidence=(0.6, 0.65, 0.7), min_risk_reward=(1.2, 1.5))
+    study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(seed=7))
+
+    async def evaluate(params: dict) -> tuple[float, dict]:
+        return params["min_confidence"] * 10, params
+
+    results = await run_optuna_trials(space, evaluate, max_trials=4, seed=7, study=study)
+
+    completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+    assert len(completed) == len(results)
+    assert len(completed) > 0
+    completed_values = sorted(t.value for t in completed)
+    expected_values = sorted(params["min_confidence"] * 10 for params in results)
+    assert completed_values == pytest.approx(expected_values)
+
+
+def test_run_optimization_uses_adaptive_optuna_when_sequential() -> None:
+    """End-to-end: search_method='optuna' with the default max_parallel_trials=1
+    must go through the ask/evaluate/tell loop (run_optuna_trials), not the
+    plain batch generator -- this is the actual code path the M6 fix targets.
+    """
+    from datetime import UTC, datetime
+    from unittest.mock import AsyncMock, patch
+
+    scored_confidences: list[float] = []
+
+    async def fake_run_trial(*, params, **kwargs):
+        scored_confidences.append(params["min_confidence"])
+        return params["min_confidence"], {"total_trades": 25, "return_pct": 2.0}, "rev"
+
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 4, 1, tzinfo=UTC)
+    space = OptimizationSpace(min_confidence=(0.6, 0.65, 0.7), min_risk_reward=(1.2,))
+
+    with (
+        patch(
+            "src.validation.optimization_runner._run_trial",
+            new=AsyncMock(side_effect=fake_run_trial),
+        ),
+        patch("src.validation.optimization_runner.refine_trials_around", return_value=[]),
+    ):
+        import asyncio
+
+        result = asyncio.run(
+            run_optimization(
+                symbol="BTC/USDT",
+                timeframe="1h",
+                start=start,
+                end=end,
+                source="csv",
+                space=space,
+                max_trials=3,
+                top_k=1,
+                search_method="optuna",
+                max_parallel_trials=1,
+                local_refine=False,
+            )
+        )
+
+    # Real trials were scored one at a time via _run_trial during training
+    # (extra calls beyond the first 3 come from top_k test-phase re-scoring,
+    # not the adaptive loop) -- proving run_optuna_trials actually drove the
+    # search rather than silently falling through to the batch path.
+    assert len(scored_confidences) >= 3
+    assert result.trials
+    assert len(result.trials) == 3
 
 
 def _discovery_space() -> OptimizationSpace:

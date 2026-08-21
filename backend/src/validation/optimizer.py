@@ -26,6 +26,7 @@ from src.validation.optimization_space import (
     has_compatible_provider_family,
     is_valid_provider_trial,
     refine_trials_around,
+    run_optuna_trials,
     space_requires_family_filter,
 )
 from src.validation.optimization_windows import split_holdout, split_train_test
@@ -54,6 +55,7 @@ __all__ = [
     "is_valid_provider_trial",
     "refine_trials_around",
     "run_optimization",
+    "run_optuna_trials",
     "select_best",
     "space_requires_family_filter",
     "split_holdout",
