@@ -6,6 +6,7 @@ from src.api.v1 import (
     decisions,
     engine,
     experiments,
+    hypotheses,
     live,
     market_data,
     optimization,
@@ -21,6 +22,7 @@ api_v1_router.include_router(auth_routes.router)
 api_v1_router.include_router(analytics.router)
 api_v1_router.include_router(config.router)
 api_v1_router.include_router(experiments.router)
+api_v1_router.include_router(hypotheses.router)
 api_v1_router.include_router(decisions.router)
 api_v1_router.include_router(engine.router)
 api_v1_router.include_router(signals.router)

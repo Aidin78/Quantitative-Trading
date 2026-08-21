@@ -160,3 +160,22 @@ class ExperimentRunRow(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(String(32))
     metrics_summary: Mapped[dict | None] = mapped_column(JsonType, nullable=True)
+
+
+class HypothesisRow(Base):
+    __tablename__ = "hypotheses"
+
+    hypothesis_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    observation: Mapped[str] = mapped_column(String(2000))
+    statement: Mapped[str] = mapped_column(String(2000))
+    expected_effect: Mapped[str] = mapped_column(String(2000))
+    proposed_change: Mapped[str] = mapped_column(String(2000))
+    source_experiment_run_id: Mapped[str | None] = mapped_column(
+        String(64), index=True, nullable=True
+    )
+    tested_by_experiment_id: Mapped[str | None] = mapped_column(
+        String(64), index=True, nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(32), default="open")
+    created_by: Mapped[str] = mapped_column(String(64), default="system")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
