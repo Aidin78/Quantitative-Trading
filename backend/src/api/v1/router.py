@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from src.api.v1 import (
     analytics,
+    candidates,
     config,
     decisions,
     engine,
@@ -23,6 +24,7 @@ api_v1_router.include_router(analytics.router)
 api_v1_router.include_router(config.router)
 api_v1_router.include_router(experiments.router)
 api_v1_router.include_router(hypotheses.router)
+api_v1_router.include_router(candidates.router)
 api_v1_router.include_router(decisions.router)
 api_v1_router.include_router(engine.router)
 api_v1_router.include_router(signals.router)

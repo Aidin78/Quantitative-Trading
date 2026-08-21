@@ -24,4 +24,20 @@ class LiveGovernanceGate:
         revision = await get_revision(session, revision_id)
         if revision is None:
             return False
-        return await has_successful_validation(session, revision_id)
+        if not await has_successful_validation(session, revision_id):
+            return False
+
+        if settings.require_champion_candidate:
+            from src.governance.candidate_store import (
+                revision_has_candidate_lineage,
+                revision_has_champion,
+            )
+
+            # Only enforced for revisions that actually went through the
+            # candidate workflow -- a revision with no candidate lineage at
+            # all (e.g. a manual/legacy experiment) is not retroactively
+            # blocked by turning this flag on.
+            if await revision_has_candidate_lineage(session, revision_id):
+                return await revision_has_champion(session, revision_id)
+
+        return True

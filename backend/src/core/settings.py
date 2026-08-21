@@ -82,6 +82,7 @@ class Settings(BaseSettings):
     config_dir: str | None = None
     environment: Literal["development", "staging", "production"] = "development"
     auth_required: bool = False
+    require_champion_candidate: bool = False
 
 
 def resolve_config_dir(settings: Settings | None = None) -> Path:

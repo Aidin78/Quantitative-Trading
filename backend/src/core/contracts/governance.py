@@ -60,3 +60,35 @@ class Hypothesis(BaseModel, frozen=True):
     status: Literal["open", "tested", "confirmed", "refuted"] = "open"
     created_by: str = "system"
     created_at: datetime
+
+
+class CandidateCheck(BaseModel, frozen=True):
+    check_name: str
+    passed: bool
+    detail: str
+    current_value: float | None = None
+    threshold: float | None = None
+
+
+class Candidate(BaseModel, frozen=True):
+    """A configuration under evaluation for promotion. Never becomes champion
+    by historical return alone -- CandidateEvaluator's checks (see
+    governance/candidate_evaluator.py) must all pass and the acceptance
+    decision is deterministic, never an LLM judgment call.
+    """
+
+    candidate_id: str
+    experiment_id: str
+    hypothesis_id: str | None = None
+    parent_candidate_id: str | None = None
+    state: Literal["candidate", "challenger", "champion", "rejected", "archived"] = "candidate"
+    created_at: datetime
+
+
+class CandidateEvaluation(BaseModel, frozen=True):
+    evaluation_id: str
+    candidate_id: str
+    checks: tuple[CandidateCheck, ...]
+    decision: Literal["accepted", "rejected"]
+    decision_reason: str
+    created_at: datetime

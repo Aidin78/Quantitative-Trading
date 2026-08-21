@@ -179,3 +179,25 @@ class HypothesisRow(Base):
     status: Mapped[str] = mapped_column(String(32), default="open")
     created_by: Mapped[str] = mapped_column(String(64), default="system")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class CandidateRow(Base):
+    __tablename__ = "candidates"
+
+    candidate_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    experiment_id: Mapped[str] = mapped_column(String(64), index=True)
+    hypothesis_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    parent_candidate_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    state: Mapped[str] = mapped_column(String(32), default="candidate", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class CandidateEvaluationRow(Base):
+    __tablename__ = "candidate_evaluations"
+
+    evaluation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(64), index=True)
+    checks: Mapped[list] = mapped_column(JsonType)
+    decision: Mapped[str] = mapped_column(String(16))
+    decision_reason: Mapped[str] = mapped_column(String(2000))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
