@@ -1,6 +1,7 @@
 import { analyticsApi } from "./domains/analytics";
 import { authApi } from "./domains/auth";
 import { engineApi } from "./domains/engine";
+import { governanceApi } from "./domains/governance";
 import { liveApi } from "./domains/live";
 import { marketDataApi } from "./domains/marketData";
 import { optimizationApi } from "./domains/optimization";
@@ -25,4 +26,5 @@ export const api = {
   ...liveApi,
   ...analyticsApi,
   ...marketDataApi,
+  ...governanceApi,
 };

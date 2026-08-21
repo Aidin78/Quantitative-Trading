@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   BarChart3,
+  Beaker,
   Cpu,
   FlaskConical,
   GitBranch,
@@ -29,6 +30,7 @@ const links = [
   { href: "/market-data", label: "Market Data", icon: Database },
   { href: "/optimization", label: "Auto Optimizer", icon: Sparkles },
   { href: "/experiments", label: "Experiments", icon: FlaskConical },
+  { href: "/research", label: "Research", icon: Beaker },
   { href: "/providers", label: "Providers", icon: Layers },
 ];
 

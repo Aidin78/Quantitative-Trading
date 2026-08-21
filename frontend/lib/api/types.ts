@@ -8,3 +8,4 @@ export type * from "./types/replay";
 export type * from "./types/analytics";
 export type * from "./types/live";
 export type * from "./types/marketData";
+export type * from "./types/governance";
