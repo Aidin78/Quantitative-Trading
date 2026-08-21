@@ -290,6 +290,10 @@ async def run_validation_job(
                 from src.governance.experiment_store import complete_experiment_run
 
                 outcome = result.outcome_metrics or {}
+                engine = result.engine_metrics or {}
+                profit_factor = float(outcome.get("profit_factor", 0))
+                if profit_factor == float("inf"):
+                    profit_factor = 999999.0
                 await complete_experiment_run(
                     session,
                     experiment_run_id,
@@ -298,6 +302,12 @@ async def run_validation_job(
                         "total_trades": float(outcome.get("total_trades", 0)),
                         "win_rate": float(outcome.get("win_rate", 0)),
                         "total_pnl": float(outcome.get("total_pnl", 0)),
+                        "return_pct": float(outcome.get("return_pct", 0)),
+                        "sharpe_ratio": float(outcome.get("sharpe_ratio", 0)),
+                        "sortino_ratio": float(outcome.get("sortino_ratio", 0)),
+                        "max_drawdown_pct": float(outcome.get("max_drawdown_pct", 0)),
+                        "profit_factor": profit_factor,
+                        "approval_rate": float(engine.get("approval_rate", 0)),
                     },
                 )
             await session.commit()

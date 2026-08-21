@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.deps import get_current_user, get_db
 from src.api.services.live_service import get_live_manager
 from src.core.settings import load_app_yaml_config
+from src.governance.experiment_comparator import compare_experiments
 from src.governance.experiment_store import (
     create_experiment,
     delete_experiment,
@@ -122,6 +123,28 @@ async def delete_experiment_route(
         raise HTTPException(status_code=404, detail="Experiment not found")
     await db.commit()
     return {"deleted": experiment_id}
+
+
+@router.get("/compare")
+async def compare_experiments_route(
+    a: str,
+    b: str,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    if await get_experiment(db, a) is None:
+        raise HTTPException(status_code=404, detail=f"Experiment not found: {a}")
+    if await get_experiment(db, b) is None:
+        raise HTTPException(status_code=404, detail=f"Experiment not found: {b}")
+    comparison = await compare_experiments(db, a, b)
+    return {
+        "experiment_a_id": comparison.experiment_a_id,
+        "experiment_b_id": comparison.experiment_b_id,
+        "metrics_delta": comparison.metrics_delta,
+        "decision_diff_count": comparison.decision_diff_count,
+        "significant_cycles": comparison.significant_cycles,
+        "a_run_count": comparison.a_run_count,
+        "b_run_count": comparison.b_run_count,
+    }
 
 
 @router.get("/{experiment_id}")

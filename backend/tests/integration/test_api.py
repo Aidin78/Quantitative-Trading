@@ -561,3 +561,68 @@ async def test_experiments_delete_and_bulk_delete(api_client, auth_headers) -> N
 
         assert await get_experiment(session, created_ids[0]) is None
         assert await get_experiment(session, created_ids[1]) is None
+
+
+@pytest.mark.asyncio
+async def test_experiments_compare(api_client, auth_headers) -> None:
+    from datetime import UTC, datetime
+
+    from src.db.models import ExperimentRunRow
+
+    client, factory = api_client
+
+    created_ids: list[str] = []
+    for name in ("exp-compare-a", "exp-compare-b"):
+        resp = await client.post(
+            "/api/v1/experiments",
+            headers=auth_headers,
+            json={"name": name, "mode": "validation"},
+        )
+        assert resp.status_code == 200
+        created_ids.append(resp.json()["experiment_id"])
+    exp_a, exp_b = created_ids
+
+    async with factory() as session:
+        session.add(
+            ExperimentRunRow(
+                run_id="erun_compare_a",
+                experiment_id=exp_a,
+                revision_id="rev_a",
+                started_at=datetime.now(UTC),
+                completed_at=datetime.now(UTC),
+                status="completed",
+                metrics_summary={"sharpe_ratio": 1.0},
+            )
+        )
+        session.add(
+            ExperimentRunRow(
+                run_id="erun_compare_b",
+                experiment_id=exp_b,
+                revision_id="rev_b",
+                started_at=datetime.now(UTC),
+                completed_at=datetime.now(UTC),
+                status="completed",
+                metrics_summary={"sharpe_ratio": 1.4},
+            )
+        )
+        await session.commit()
+
+    resp = await client.get(
+        f"/api/v1/experiments/compare?a={exp_a}&b={exp_b}",
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["metrics_delta"]["sharpe_ratio"] == pytest.approx(0.4)
+    assert body["experiment_a_id"] == exp_a
+    assert body["experiment_b_id"] == exp_b
+
+
+@pytest.mark.asyncio
+async def test_experiments_compare_missing_experiment_returns_404(api_client, auth_headers) -> None:
+    client, _ = api_client
+    resp = await client.get(
+        "/api/v1/experiments/compare?a=exp_missing_a&b=exp_missing_b",
+        headers=auth_headers,
+    )
+    assert resp.status_code == 404
