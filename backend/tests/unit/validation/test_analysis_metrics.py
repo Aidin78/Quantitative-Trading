@@ -5,12 +5,19 @@ from datetime import UTC, datetime
 import pytest
 
 from src.core.contracts.event import EventFamily
-from src.events.envelopes import ExecutionEventType, build_envelope
+from src.events.envelopes import (
+    DecisionEventType,
+    ExecutionEventType,
+    MarketEventType,
+    build_envelope,
+)
 from src.validation.metrics import (
+    classify_regime,
     compute_diagnostics,
     compute_monthly_breakdown,
     compute_optimization_score,
     compute_outcome_metrics,
+    compute_regime_breakdown,
     compute_strategy_score,
 )
 
@@ -127,3 +134,128 @@ def test_optimization_score_caps_low_trade_count() -> None:
         "total_trades": 5,
     }
     assert compute_optimization_score(outcome) <= -50.0
+
+
+def test_classify_regime_combines_trend_and_volatility() -> None:
+    assert classify_regime({"trend": "UP", "volatility": "HIGH"}) == "UP_HIGH"
+    assert classify_regime({"trend": "SIDEWAYS", "volatility": "LOW"}) == "SIDEWAYS_LOW"
+    assert classify_regime({}) == "UNKNOWN_UNKNOWN"
+
+
+def _cycle_events(
+    *,
+    correlation_id: str,
+    event_time: datetime,
+    position_id: str,
+    pnl: float,
+    trend: str,
+    volatility: str,
+    confidence: float,
+    exit_reason: str = "take_profit",
+) -> list[object]:
+    """One entry cycle (context + decision + open) plus its close on a later bar."""
+    common = dict(
+        event_family=EventFamily.MARKET,
+        event_time=event_time,
+        processing_time=event_time,
+        correlation_id=correlation_id,
+        symbol="BTC/USDT",
+        timeframe="1h",
+        mode="validation",
+    )
+    context_event = build_envelope(
+        **{**common, "event_family": EventFamily.MARKET},
+        event_type=MarketEventType.MARKET_CONTEXT_DERIVED,
+        payload={"trend": trend, "volatility": volatility},
+    )
+    decision_event = build_envelope(
+        **{**common, "event_family": EventFamily.DECISION},
+        event_type=DecisionEventType.DECISION_MADE,
+        payload={"result": "approved", "confidence": confidence},
+    )
+    open_event = build_envelope(
+        **{**common, "event_family": EventFamily.EXECUTION},
+        event_type=ExecutionEventType.POSITION_OPENED,
+        payload={"position_id": position_id},
+    )
+    close_event = build_envelope(
+        event_family=EventFamily.EXECUTION,
+        event_type=ExecutionEventType.POSITION_CLOSED,
+        event_time=event_time,
+        processing_time=event_time,
+        correlation_id=f"exit_{correlation_id}",
+        symbol="BTC/USDT",
+        timeframe="1h",
+        mode="validation",
+        payload={
+            "position_id": position_id,
+            "pnl": pnl,
+            "exit_reason": exit_reason,
+            "side": "LONG",
+            "fill_id": f"f_{position_id}",
+        },
+    )
+    return [context_event, decision_event, open_event, close_event]
+
+
+def test_regime_breakdown_attributes_trades_to_entry_regime_not_exit_cycle() -> None:
+    events = _cycle_events(
+        correlation_id="c_entry_1",
+        event_time=datetime(2026, 6, 10, 8, tzinfo=UTC),
+        position_id="pos_1",
+        pnl=-30.0,
+        trend="UP",
+        volatility="HIGH",
+        confidence=0.65,
+    ) + _cycle_events(
+        correlation_id="c_entry_2",
+        event_time=datetime(2026, 6, 11, 8, tzinfo=UTC),
+        position_id="pos_2",
+        pnl=90.0,
+        trend="UP",
+        volatility="HIGH",
+        confidence=0.85,
+    )
+    breakdown = compute_regime_breakdown(events)
+    assert breakdown["by_regime"]["UP_HIGH"]["trades"] == 2
+    assert breakdown["by_regime"]["UP_HIGH"]["pnl"] == pytest.approx(60.0)
+    assert breakdown["by_confidence_band"]["0.60-0.69"]["pnl"] == pytest.approx(-30.0)
+    assert breakdown["by_confidence_band"]["0.80-1.00"]["pnl"] == pytest.approx(90.0)
+    assert breakdown["unattributed_trades"] == 0
+
+
+def test_regime_breakdown_counts_trades_with_no_entry_context_as_unattributed() -> None:
+    orphan_close = build_envelope(
+        event_family=EventFamily.EXECUTION,
+        event_type=ExecutionEventType.POSITION_CLOSED,
+        event_time=datetime(2026, 6, 10, 8, tzinfo=UTC),
+        processing_time=datetime(2026, 6, 10, 8, tzinfo=UTC),
+        correlation_id="exit_only",
+        symbol="BTC/USDT",
+        timeframe="1h",
+        mode="validation",
+        payload={
+            "position_id": "pos_orphan",
+            "pnl": 10.0,
+            "exit_reason": "timeout",
+            "side": "LONG",
+        },
+    )
+    breakdown = compute_regime_breakdown([orphan_close])
+    assert breakdown["unattributed_trades"] == 1
+    assert breakdown["by_regime"] == {}
+
+
+def test_outcome_metrics_includes_regime_analysis() -> None:
+    events = _cycle_events(
+        correlation_id="c_entry_1",
+        event_time=datetime(2026, 6, 10, 8, tzinfo=UTC),
+        position_id="pos_1",
+        pnl=100.0,
+        trend="DOWN",
+        volatility="NORMAL",
+        confidence=0.72,
+    )
+    outcome = compute_outcome_metrics(events, initial_capital=10_000.0)
+    assert "regime_analysis" in outcome
+    assert outcome["regime_analysis"]["by_regime"]["DOWN_NORMAL"]["trades"] == 1

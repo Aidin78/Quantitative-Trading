@@ -6,7 +6,7 @@ from typing import Literal
 from zoneinfo import ZoneInfo
 
 from src.core.contracts.event import EventEnvelope, EventFamily
-from src.events.envelopes import DecisionEventType, ExecutionEventType
+from src.events.envelopes import DecisionEventType, ExecutionEventType, MarketEventType
 from src.runtime.models import CycleResult
 
 
@@ -183,6 +183,94 @@ def compute_diagnostics(events: list[EventEnvelope]) -> dict:
         "by_session": by_session,
         "by_side": by_side,
     }
+
+
+def _entry_correlation_by_position(events: list[EventEnvelope]) -> dict[str, str]:
+    """Map position_id -> correlation_id of the cycle that opened it.
+
+    A closed trade's own correlation_id belongs to the exit bar's cycle, not the
+    entry decision's — regime/confidence at entry must be looked up via the
+    POSITION_OPENED event for the same position_id instead.
+    """
+    mapping: dict[str, str] = {}
+    for event in events:
+        if event.event_type != ExecutionEventType.POSITION_OPENED:
+            continue
+        position_id = event.payload.get("position_id")
+        if position_id:
+            mapping[position_id] = event.correlation_id
+    return mapping
+
+
+def classify_regime(context_payload: dict) -> str:
+    """Collapse a MarketContext snapshot into a single regime label.
+
+    Trend and volatility are the two dimensions the platform already derives
+    per bar (context.py); this only combines them into one stable bucket name
+    so failure analysis can group by regime without a new persisted concept.
+    """
+    trend = str(context_payload.get("trend") or "UNKNOWN")
+    volatility = str(context_payload.get("volatility") or "UNKNOWN")
+    return f"{trend}_{volatility}"
+
+
+def compute_regime_breakdown(events: list[EventEnvelope]) -> dict:
+    """Bucket closed-trade PnL by the regime and confidence band active at entry."""
+    closed = [e for e in events if e.event_type == ExecutionEventType.POSITION_CLOSED]
+    if not closed:
+        return {"by_regime": {}, "by_confidence_band": {}, "unattributed_trades": 0}
+
+    entry_correlation = _entry_correlation_by_position(events)
+
+    context_by_correlation: dict[str, dict] = {}
+    confidence_by_correlation: dict[str, float] = {}
+    for event in events:
+        if event.event_type == MarketEventType.MARKET_CONTEXT_DERIVED:
+            context_by_correlation[event.correlation_id] = event.payload
+        elif event.event_type == DecisionEventType.DECISION_MADE:
+            confidence = event.payload.get("confidence")
+            if confidence is not None:
+                confidence_by_correlation[event.correlation_id] = float(confidence)
+
+    regime_buckets: dict[str, list[float]] = defaultdict(list)
+    confidence_buckets: dict[str, list[float]] = defaultdict(list)
+    unattributed = 0
+
+    for event in closed:
+        pnl = float(event.payload.get("pnl", 0))
+        position_id = event.payload.get("position_id")
+        correlation_id = entry_correlation.get(position_id) if position_id else None
+        context_payload = context_by_correlation.get(correlation_id) if correlation_id else None
+
+        if context_payload is None:
+            unattributed += 1
+            continue
+
+        regime = classify_regime(context_payload)
+        regime_buckets[regime].append(pnl)
+
+        confidence = confidence_by_correlation.get(correlation_id)
+        if confidence is not None:
+            band = _confidence_band(confidence)
+            confidence_buckets[band].append(pnl)
+
+    return {
+        "by_regime": {key: _bucket_stats(pnls) for key, pnls in regime_buckets.items()},
+        "by_confidence_band": {
+            key: _bucket_stats(pnls) for key, pnls in confidence_buckets.items()
+        },
+        "unattributed_trades": unattributed,
+    }
+
+
+def _confidence_band(confidence: float) -> str:
+    if confidence >= 0.8:
+        return "0.80-1.00"
+    if confidence >= 0.7:
+        return "0.70-0.79"
+    if confidence >= 0.6:
+        return "0.60-0.69"
+    return "below_0.60"
 
 
 def compute_strategy_score(outcome: dict) -> float:
@@ -377,6 +465,7 @@ def compute_outcome_metrics(
         events, initial_capital=initial_capital
     )
     outcome["diagnostics"] = compute_diagnostics(events)
+    outcome["regime_analysis"] = compute_regime_breakdown(events)
     outcome["score"] = compute_strategy_score(outcome)
     outcome["optimization_score"] = compute_optimization_score(outcome)
     return outcome
