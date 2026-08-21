@@ -77,6 +77,19 @@ class RiskManager:
             )
         )
 
+        max_consecutive_losses = risk.limits.max_consecutive_losses
+        checks.append(
+            RiskCheckResult(
+                check_name="max_consecutive_losses",
+                passed=risk.consecutive_losses < max_consecutive_losses,
+                current_value=float(risk.consecutive_losses),
+                threshold=float(max_consecutive_losses),
+                message="consecutive losses within limit"
+                if risk.consecutive_losses < max_consecutive_losses
+                else "max consecutive losses reached",
+            )
+        )
+
         passed = all(c.passed for c in checks)
         return RiskVerdict(
             passed=passed,

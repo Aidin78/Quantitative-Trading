@@ -39,6 +39,8 @@ def make_snapshot(
     open_positions: int = 0,
     exposure_pct: float = 10.0,
     signals_today: int = 0,
+    consecutive_losses: int = 0,
+    max_consecutive_losses: int = 5,
     snapshot_id: str = "snap_test_001",
 ) -> StateSnapshot:
     now = utc_now()
@@ -46,6 +48,7 @@ def make_snapshot(
         max_daily_drawdown_pct=5.0,
         max_open_positions=3,
         max_exposure_pct=50.0,
+        max_consecutive_losses=max_consecutive_losses,
     )
     portfolio = PortfolioState(
         portfolio_id="portfolio_test",
@@ -63,6 +66,7 @@ def make_snapshot(
         daily_drawdown_pct=drawdown_pct,
         open_exposure_pct=exposure_pct,
         signals_today=signals_today,
+        consecutive_losses=consecutive_losses,
         limits=limits,
         version=1,
         as_of_event_time=now,
