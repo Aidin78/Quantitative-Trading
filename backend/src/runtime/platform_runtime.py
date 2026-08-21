@@ -508,13 +508,24 @@ class PlatformRuntime:
             return
         self._signals_day = current_day
         risk = self._state_store.get_risk(self._portfolio_id)
-        if risk.signals_today == 0 and risk.daily_pnl == 0.0 and risk.daily_drawdown_pct == 0.0:
+        current_equity = self._state_store.get_portfolio(self._portfolio_id).equity
+        if (
+            risk.signals_today == 0
+            and risk.daily_pnl == 0.0
+            and risk.daily_drawdown_pct == 0.0
+            and risk.daily_start_equity == current_equity
+        ):
             return
         reset_transition = StateTransitionEvent(
             transition_id=f"trans_{uuid.uuid4().hex[:12]}",
             portfolio_id=self._portfolio_id,
             transition_type="risk_updated",
-            payload={"signals_today": 0, "daily_pnl": 0.0, "daily_drawdown_pct": 0.0},
+            payload={
+                "signals_today": 0,
+                "daily_pnl": 0.0,
+                "daily_drawdown_pct": 0.0,
+                "daily_start_equity": current_equity,
+            },
             event_time=event_time,
             correlation_id=cycle_id,
         )

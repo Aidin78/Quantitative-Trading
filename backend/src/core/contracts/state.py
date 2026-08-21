@@ -41,6 +41,7 @@ class RiskState(BaseModel, frozen=True):
     portfolio_id: str
     daily_pnl: float = 0.0
     daily_drawdown_pct: float = 0.0
+    daily_start_equity: float = 0.0
     open_exposure_pct: float = 0.0
     consecutive_losses: int = 0
     signals_today: int = 0

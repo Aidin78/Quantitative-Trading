@@ -55,6 +55,7 @@ class InMemoryStateStore:
         self._risk = RiskState(
             risk_state_id=f"risk_{portfolio_id}",
             portfolio_id=portfolio_id,
+            daily_start_equity=initial_cash,
             limits=self._limits,
             version=1,
             as_of_event_time=now,
@@ -143,6 +144,11 @@ class InMemoryStateStore:
         new_equity = self._portfolio.equity + pnl
         consecutive = 0 if pnl >= 0 else self._risk.consecutive_losses + 1
 
+        start_equity = self._risk.daily_start_equity or new_equity
+        drawdown_pct = (
+            max(0.0, (start_equity - new_equity) / start_equity * 100) if start_equity else 0.0
+        )
+
         self._portfolio = self._portfolio.model_copy(
             update={
                 "cash": new_cash,
@@ -157,6 +163,7 @@ class InMemoryStateStore:
         self._risk = self._risk.model_copy(
             update={
                 "daily_pnl": self._risk.daily_pnl + pnl,
+                "daily_drawdown_pct": drawdown_pct,
                 "open_exposure_pct": max(0.0, self._risk.open_exposure_pct - exposure_drop),
                 "consecutive_losses": consecutive,
                 "version": self._risk.version + 1,
