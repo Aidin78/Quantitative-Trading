@@ -1,0 +1,18 @@
+{
+  "experiment_id": "exp_a3c7946e8813",
+  "name": "SuperTrend + ADX combined confirmation",
+  "description": "Tests whether combining SuperTrend with ADX (trend-strength confirmation) improves on SuperTrend-alone results (9 trades/-2.86%/-6.26 Sharpe with require_trend=false; 6 trades/0% win rate/-49.91 Sharpe with require_trend=true).",
+  "revision_id": "rev_70e1eaae07c9c598",
+  "status": "running",
+  "mode": "validation",
+  "symbols": [
+    "BTC/USDT"
+  ],
+  "timeframes": [
+    "1h"
+  ],
+  "date_range": null,
+  "created_by": "system",
+  "tags": [],
+  "hypothesis": "SuperTrend alone has no durable edge on BTC/USDT 1h; adding an ADX confirmation filter should reduce entries during weak/choppy trends and improve win rate and Sharpe."
+}

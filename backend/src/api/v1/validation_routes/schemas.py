@@ -15,6 +15,7 @@ class ValidationRunRequest(BaseModel):
     initial_capital: float = 10000.0
     experiment_id: str | None = None
     revision_id: str | None = None
+    max_consecutive_losses: int | None = None
 
 
 class WalkForwardRequest(BaseModel):

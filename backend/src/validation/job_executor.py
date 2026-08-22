@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from src.api.services.validation_service import JobCancelled, validation_jobs
-from src.api.v1.validation_routes.schemas import ValidationRunRequest
 from src.observability.metrics import VALIDATION_RUNS_TOTAL
 from src.validation.errors import format_validation_error
 from src.validation.harness import ValidationProgressEvent
 from src.validation.job_runner import run_validation_job
 
+if TYPE_CHECKING:
+    from src.api.v1.validation_routes.schemas import ValidationRunRequest
+
 
 def _as_request(config: dict[str, Any] | ValidationRunRequest) -> ValidationRunRequest:
+    # Imported lazily (rather than at module scope) because validation_routes
+    # imports this module, which would otherwise create a circular import.
+    from src.api.v1.validation_routes.schemas import ValidationRunRequest
+
     if isinstance(config, ValidationRunRequest):
         return config
     return ValidationRunRequest.model_validate(config)
@@ -54,6 +60,7 @@ async def execute_validation_job(
             persist_db=True,
             experiment_id=body.experiment_id,
             revision_id=body.revision_id,
+            max_consecutive_losses=body.max_consecutive_losses,
             on_progress=on_progress,
         )
         job.result = result

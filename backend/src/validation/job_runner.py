@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 from src.core.contracts.event import EventFamily
+from src.core.contracts.state import RiskLimits
 from src.core.settings import get_settings, load_app_yaml_config, resolve_config_dir
 from src.data.csv_provider import CsvDataProvider
 from src.data.market_cache import get_or_download_csv
@@ -103,6 +104,7 @@ async def run_validation_job(
     provider_overrides: dict[str, dict] | None = None,
     execution_config: ValidationExecutionConfig | None = None,
     features_config: tuple[FeaturesConfig, str] | None = None,
+    max_consecutive_losses: int | None = None,
     on_progress: ValidationProgressCallback | None = None,
 ) -> ValidationResult:
     app = load_app_yaml_config()
@@ -164,9 +166,22 @@ async def run_validation_job(
     )
     clock = SimulatedClock(event_time=start)
     feature_store = InMemoryFeatureStore()
+    # Mirrors InMemoryStateStore's own defaults for the fields we're not
+    # overriding -- it only accepts a full RiskLimits, not a partial one.
+    risk_limits = (
+        RiskLimits(
+            max_daily_drawdown_pct=5.0,
+            max_open_positions=3,
+            max_exposure_pct=50.0,
+            max_consecutive_losses=max_consecutive_losses,
+        )
+        if max_consecutive_losses is not None
+        else None
+    )
     state_store = InMemoryStateStore(
         portfolio_id="portfolio_default",
         initial_cash=initial_capital,
+        limits=risk_limits,
     )
     fill_model = load_default_fill_model(resolve_config_dir())
     execution_engine = SimulatedExecutionEngine(

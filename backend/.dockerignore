@@ -5,5 +5,5 @@ __pycache__
 .mypy_cache
 .git
 tests
-scripts
+# scripts is required by the Dockerfile (COPY scripts ./scripts) — do not ignore it
 # Keep README.md — required by pyproject.toml for poetry install --only-root
