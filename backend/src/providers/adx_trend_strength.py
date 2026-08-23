@@ -29,6 +29,7 @@ class AdxTrendStrengthProvider(BaseSignalProvider):
         min_adx = float(self.params.get("min_adx", 25.0))
         min_di_spread = float(self.params.get("min_di_spread", 5.0))
         require_trend = bool(self.params.get("require_trend", False))
+        regime_filter = self.params.get("regime_filter")
 
         di_spread = abs(plus_di - minus_di)
         strong_trend = adx >= min_adx and di_spread >= min_di_spread
@@ -65,6 +66,12 @@ class AdxTrendStrengthProvider(BaseSignalProvider):
             if side == "SELL" and context.trend == "UP":
                 side = "HOLD"
                 summary = f"{summary} — trend filter"
+
+        if regime_filter and side != "HOLD":
+            current_regime = f"{context.trend}_{context.volatility}"
+            if current_regime not in regime_filter:
+                side = "HOLD"
+                summary = f"{summary} — regime filter ({current_regime})"
 
         rationale = self._rationale(
             summary=summary,

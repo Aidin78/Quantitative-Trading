@@ -106,6 +106,45 @@ def test_require_trend_blocks_buy_in_down(context) -> None:
     assert signal.side == "HOLD"
 
 
+def test_regime_filter_blocks_signal_outside_allowed_regimes(context) -> None:
+    provider = AdxTrendStrengthProvider(
+        ProviderConfig(
+            provider_id="adx_trend_strength",
+            params={"regime_filter": ["DOWN_NORMAL"]},
+        )
+    )
+    signal = provider.analyze(
+        make_feature_set(indicators=_adx_features()),
+        context,
+    )
+    assert signal.side == "HOLD"
+
+
+def test_regime_filter_allows_signal_inside_allowed_regime(context) -> None:
+    provider = AdxTrendStrengthProvider(
+        ProviderConfig(
+            provider_id="adx_trend_strength",
+            params={"regime_filter": ["DOWN_NORMAL"], "min_confidence": 0.55},
+        )
+    )
+    down_context = MarketContext(
+        symbol=context.symbol,
+        timeframe=context.timeframe,
+        current_price=context.current_price,
+        trend="DOWN",
+        volatility="NORMAL",
+        atr=context.atr,
+        atr_pct=context.atr_pct,
+        session=context.session,
+        event_time=context.event_time,
+    )
+    signal = provider.analyze(
+        make_feature_set(indicators=_adx_features(adx=32.0, plus_di=12.0, minus_di=26.0)),
+        down_context,
+    )
+    assert signal.side == "SELL"
+
+
 def test_below_min_confidence_emits_hold(context) -> None:
     provider = AdxTrendStrengthProvider(
         ProviderConfig(

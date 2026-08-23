@@ -1,0 +1,122 @@
+from __future__ import annotations
+
+import pandas as pd
+import pytest
+
+from src.research.classification_phase import (
+    MIN_TRADES_FOR_COMPARISON,
+    MIN_WIN_RATE_IMPROVEMENT_PP,
+    evaluate_magnitude_gate,
+    run_classification_phase,
+)
+from src.research.direction_phase import ema_compare
+from src.research.magnitude_phase import PERCENTILE_PREDICTORS, atr_pct_percentile
+from src.research.signal_evaluator import compute_forward_targets
+from tests.fixtures.ohlcv import make_sample_ohlcv
+
+
+@pytest.fixture
+def df_with_targets() -> pd.DataFrame:
+    df = make_sample_ohlcv(bars=250)
+    return compute_forward_targets(df, horizons=(4, 14))
+
+
+def test_evaluate_magnitude_gate_filtered_trades_never_exceed_baseline(
+    df_with_targets: pd.DataFrame,
+) -> None:
+    base_signal = ema_compare(df_with_targets)
+    filter_series = atr_pct_percentile(df_with_targets)
+    result = evaluate_magnitude_gate(
+        df_with_targets,
+        base_signal_name="ema",
+        base_signal=base_signal,
+        filter_name="atr_pct_percentile_200",
+        filter_series=filter_series,
+        percentile_threshold=70.0,
+        horizon=4,
+    )
+    assert result.filtered_trades <= result.baseline_trades
+
+
+def test_evaluate_magnitude_gate_win_rates_are_valid_percentages(
+    df_with_targets: pd.DataFrame,
+) -> None:
+    base_signal = ema_compare(df_with_targets)
+    filter_series = atr_pct_percentile(df_with_targets)
+    result = evaluate_magnitude_gate(
+        df_with_targets,
+        base_signal_name="ema",
+        base_signal=base_signal,
+        filter_name="atr_pct_percentile_200",
+        filter_series=filter_series,
+        percentile_threshold=50.0,
+        horizon=4,
+    )
+    if result.baseline_trades > 0:
+        assert 0.0 <= result.baseline_win_rate <= 100.0
+    if result.filtered_trades > 0:
+        assert 0.0 <= result.filtered_win_rate <= 100.0
+
+
+def test_passes_threshold_requires_minimum_trade_count(df_with_targets: pd.DataFrame) -> None:
+    """A gate that starves the sample down to near-zero trades must never pass,
+    even if the (noisy, tiny-sample) win rate happens to look great.
+    """
+    base_signal = ema_compare(df_with_targets)
+    filter_series = atr_pct_percentile(df_with_targets)
+    result = evaluate_magnitude_gate(
+        df_with_targets,
+        base_signal_name="ema",
+        base_signal=base_signal,
+        filter_name="atr_pct_percentile_200",
+        filter_series=filter_series,
+        percentile_threshold=99.9,  # near-empty gate on this small fixture
+        horizon=4,
+    )
+    if result.filtered_trades < MIN_TRADES_FOR_COMPARISON:
+        assert result.passes_threshold is False
+
+
+def test_passes_threshold_requires_minimum_improvement() -> None:
+    """A gate that improves win-rate by less than the threshold, even with
+    plenty of trades, must not pass — construct a case where filtered and
+    baseline win-rate are equal.
+    """
+    df = make_sample_ohlcv(bars=250)
+    df_with_targets = compute_forward_targets(df, horizons=(4,))
+    base_signal = ema_compare(df_with_targets)
+    # A filter that keeps everything (threshold 0) can't improve win-rate —
+    # filtered == baseline exactly.
+    always_on = pd.Series(100.0, index=df_with_targets.index)
+    result = evaluate_magnitude_gate(
+        df_with_targets,
+        base_signal_name="ema",
+        base_signal=base_signal,
+        filter_name="always_on",
+        filter_series=always_on,
+        percentile_threshold=0.0,
+        horizon=4,
+    )
+    assert result.win_rate_improvement_pp == pytest.approx(0.0, abs=1e-9)
+    assert result.passes_threshold is False
+
+
+def test_run_classification_phase_covers_full_grid(df_with_targets: pd.DataFrame) -> None:
+    base_signals = {"ema": ema_compare}
+    thresholds = (50.0, 90.0)
+    horizons = (4, 14)
+    results = run_classification_phase(
+        df_with_targets,
+        base_signals=base_signals,
+        magnitude_filters=PERCENTILE_PREDICTORS,
+        percentile_thresholds=thresholds,
+        horizons=horizons,
+    )
+    expected_count = (
+        len(base_signals) * len(PERCENTILE_PREDICTORS) * len(thresholds) * len(horizons)
+    )
+    assert len(results) == expected_count
+
+
+def test_improvement_threshold_constant_is_positive() -> None:
+    assert MIN_WIN_RATE_IMPROVEMENT_PP > 0
