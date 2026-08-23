@@ -33,6 +33,8 @@
 | **استقرار** | [docker.md](./deployment/docker.md) | Docker و محیط‌های اجرا |
 | **توسعه** | [roadmap.md](./development/roadmap.md) | فازبندی پروژه |
 | | [conventions.md](./development/conventions.md) | قراردادها و استانداردها |
+| | [edge-investigation-findings.md](./development/edge-investigation-findings.md) | بررسی ریشه‌ای باگ‌های ادج/بک‌تست |
+| | [candidate-stability-findings.md](./development/candidate-stability-findings.md) | پایداری candidateهای Phase 3 (research) |
 
 ## خلاصه Stack
 

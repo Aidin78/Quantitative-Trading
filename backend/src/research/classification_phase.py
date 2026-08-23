@@ -13,11 +13,12 @@ magnitude/volatility threshold change trade quality? This directly produces a
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
 
+from src.execution.config import load_default_fill_model
 from src.research.signal_evaluator import DEFAULT_HORIZONS
 
 BaseSignal = Callable[[pd.DataFrame], pd.Series]
@@ -28,6 +29,110 @@ MagnitudeFilter = Callable[[pd.DataFrame], pd.Series]
 #: as a Phase-4 candidate.
 MIN_WIN_RATE_IMPROVEMENT_PP = 2.0
 MIN_TRADES_FOR_COMPARISON = 30
+
+
+@dataclass(frozen=True)
+class TradeStats:
+    """Trade-level stats derived from a signed PnL vector (one entry per 'trade').
+
+    ``pnl`` here is a directional forward-return percentage (see
+    ``_trade_pnls``), not a real fee/slippage-adjusted fill — see
+    ``net_of_fees`` for the fee/slippage-approximated variant.
+
+    ``max_drawdown_pct`` is peak-to-trough on a *cumulative-sum* of per-trade
+    percentage returns (flat position sizing, no compounding, no equity
+    base) — it can exceed 100 with enough overlapping/back-to-back trades.
+    This is a relative-ranking tool for comparing candidates, not the
+    platform's real equity-based ``max_drawdown_pct`` from
+    ``validation.metrics.compute_outcome_metrics`` (compounding, dollar
+    equity curve) — do not quote this number as an expected account
+    drawdown.
+    """
+
+    trades: int
+    win_rate: float
+    expectancy: float
+    profit_factor: float
+    avg_win: float
+    avg_loss: float
+    max_drawdown_pct: float
+
+
+_EMPTY_TRADE_STATS = TradeStats(
+    trades=0,
+    win_rate=float("nan"),
+    expectancy=float("nan"),
+    profit_factor=float("nan"),
+    avg_win=float("nan"),
+    avg_loss=float("nan"),
+    max_drawdown_pct=float("nan"),
+)
+
+
+def _trade_pnls(
+    df_with_targets: pd.DataFrame,
+    signal: pd.Series,
+    *,
+    horizon: int,
+    mask: pd.Series | None = None,
+) -> np.ndarray:
+    """Signed PnL (%) for each active bar: +fwd_ret for UP, -fwd_ret for DOWN.
+
+    Reuses the same look-ahead-safe ``fwd_ret_{horizon}`` column every other
+    function in this package reads from (see ``signal_evaluator``'s
+    look-ahead rule) — never recomputed here.
+    """
+    fwd = df_with_targets[f"fwd_ret_{horizon}"]
+    active = signal.isin(["UP", "DOWN"]) & fwd.notna()
+    if mask is not None:
+        active = active & mask
+    direction = np.where(signal == "UP", 1.0, -1.0)
+    pnl = fwd.to_numpy() * direction
+    return pnl[active.to_numpy()]
+
+
+def _trade_stats_from_pnls(pnls: np.ndarray) -> TradeStats:
+    if pnls.size == 0:
+        return _EMPTY_TRADE_STATS
+    wins = pnls[pnls > 0]
+    losses = pnls[pnls <= 0]
+    win_rate = wins.size / pnls.size * 100
+    expectancy = float(pnls.mean())
+    gross_profit = float(wins.sum())
+    gross_loss = float(-losses.sum())
+    profit_factor = (
+        gross_profit / gross_loss if gross_loss > 0 else float("inf") if gross_profit else 0.0
+    )
+    avg_win = float(wins.mean()) if wins.size else 0.0
+    avg_loss = float(losses.mean()) if losses.size else 0.0
+
+    equity = np.cumsum(pnls)
+    peak = np.maximum.accumulate(equity)
+    drawdown = peak - equity
+    max_drawdown_pct = float(drawdown.max())
+
+    return TradeStats(
+        trades=int(pnls.size),
+        win_rate=win_rate,
+        expectancy=expectancy,
+        profit_factor=profit_factor,
+        avg_win=avg_win,
+        avg_loss=avg_loss,
+        max_drawdown_pct=max_drawdown_pct,
+    )
+
+
+def _net_of_fees(pnls: np.ndarray) -> TradeStats:
+    """Approximate round-trip fee/slippage drag using the platform's real default FillModel.
+
+    This is a pre-screening approximation (a flat bps haircut per trade), not
+    an order-level fill simulation — the real cost depends on entry/exit fill
+    price and slippage direction, which only ``ValidationHarness`` computes.
+    """
+    fill_model = load_default_fill_model()
+    round_trip_cost_pct = 2 * (fill_model.fee_bps + fill_model.slippage_bps) / 100
+    net_pnls = pnls - round_trip_cost_pct
+    return _trade_stats_from_pnls(net_pnls)
 
 
 @dataclass(frozen=True)
@@ -42,6 +147,10 @@ class ClassificationResult:
     filtered_win_rate: float
     win_rate_improvement_pp: float
     passes_threshold: bool
+    baseline_stats: TradeStats = field(default_factory=lambda: _EMPTY_TRADE_STATS)
+    filtered_stats: TradeStats = field(default_factory=lambda: _EMPTY_TRADE_STATS)
+    baseline_stats_net_fees: TradeStats = field(default_factory=lambda: _EMPTY_TRADE_STATS)
+    filtered_stats_net_fees: TradeStats = field(default_factory=lambda: _EMPTY_TRADE_STATS)
 
 
 def _directional_win_rate(
@@ -101,6 +210,9 @@ def evaluate_magnitude_gate(
         and improvement >= MIN_WIN_RATE_IMPROVEMENT_PP
     )
 
+    baseline_pnls = _trade_pnls(df_with_targets, base_signal, horizon=horizon)
+    filtered_pnls = _trade_pnls(df_with_targets, base_signal, horizon=horizon, mask=gate_mask)
+
     return ClassificationResult(
         base_signal=base_signal_name,
         filter_name=filter_name,
@@ -112,6 +224,10 @@ def evaluate_magnitude_gate(
         filtered_win_rate=filtered_win_rate,
         win_rate_improvement_pp=improvement,
         passes_threshold=passes,
+        baseline_stats=_trade_stats_from_pnls(baseline_pnls),
+        filtered_stats=_trade_stats_from_pnls(filtered_pnls),
+        baseline_stats_net_fees=_net_of_fees(baseline_pnls),
+        filtered_stats_net_fees=_net_of_fees(filtered_pnls),
     )
 
 
