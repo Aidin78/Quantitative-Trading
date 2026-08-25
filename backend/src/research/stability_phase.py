@@ -247,8 +247,14 @@ def sweep_percentile_thresholds(
     percentile_thresholds: tuple[float, ...] = (75.0, 80.0, 85.0, 90.0, 95.0),
     n_windows: int = 3,
 ) -> PercentileSweepResult:
-    """Sweep the magnitude-gate percentile threshold as a hyperparameter, with
-    a held-out final sub-window never used for threshold selection.
+    """Sweep a magnitude-gate threshold as a hyperparameter, with a held-out
+    final sub-window never used for threshold selection.
+
+    Despite the name, this works for any scalar threshold compared against
+    ``magnitude_filter``'s output via ``>=`` — a rank-percentile filter (0-100,
+    e.g. ``atr_pct_percentile``) or a fixed absolute-scale filter (e.g. raw
+    ``atr_pct``, single-digit %) are both valid; only the values passed in
+    ``percentile_thresholds`` need to match the filter's scale.
 
     Selecting "the best threshold" by trying several and keeping the winner
     is exactly a multiple-comparisons setup — the more thresholds tried, the
