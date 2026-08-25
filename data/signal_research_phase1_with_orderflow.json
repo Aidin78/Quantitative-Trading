@@ -1,0 +1,100 @@
+{
+  "symbol": "BTC/USDT",
+  "timeframe": "1h",
+  "start": "2026-01-09",
+  "end": "2026-07-09",
+  "bars": 4332,
+  "phase_1": {
+    "phase": 1,
+    "name": "direction_prediction",
+    "candidates": [
+      {
+        "name": "ema_compare_12_26 (current production)",
+        "accuracy_by_horizon": {
+          "4": 50.04621072088724,
+          "8": 50.04625346901017,
+          "14": 51.25057897174617,
+          "24": 50.02321262766946
+        },
+        "flips": 159,
+        "median_run_len": 15.0,
+        "passes_threshold": false
+      },
+      {
+        "name": "ema_compare_50_200 (slow)",
+        "accuracy_by_horizon": {
+          "4": 49.83826247689464,
+          "8": 50.346901017576315,
+          "14": 50.02315886984715,
+          "24": 50.62674094707521
+        },
+        "flips": 24,
+        "median_run_len": 103.0,
+        "passes_threshold": false
+      },
+      {
+        "name": "supertrend_direction_10_3.0",
+        "accuracy_by_horizon": {
+          "4": 49.584103512014785,
+          "8": 49.76873265494912,
+          "14": 51.06530801296897,
+          "24": 51.949860724233986
+        },
+        "flips": 101,
+        "median_run_len": 32.0,
+        "passes_threshold": false
+      },
+      {
+        "name": "adx_directional_raw_14",
+        "accuracy_by_horizon": {
+          "4": 49.88447319778189,
+          "8": 49.79185938945421,
+          "14": 51.64427975914775,
+          "24": 52.01949860724234
+        },
+        "flips": 323,
+        "median_run_len": 6.0,
+        "passes_threshold": false
+      },
+      {
+        "name": "adx_directional_gated_14_20",
+        "accuracy_by_horizon": {
+          "4": 49.491682070240294,
+          "8": 49.07493061979649,
+          "14": 49.90736452061139,
+          "24": 51.25348189415042
+        },
+        "flips": 191,
+        "median_run_len": 14.0,
+        "passes_threshold": false
+      },
+      {
+        "name": "market_structure_bias_5",
+        "accuracy_by_horizon": {
+          "4": 49.56099815157117,
+          "8": 50.09250693802036,
+          "14": 49.69893469198703,
+          "24": 48.67688022284122
+        },
+        "flips": 96,
+        "median_run_len": 37.5,
+        "passes_threshold": false
+      },
+      {
+        "name": "volume_order_flow_20",
+        "accuracy_by_horizon": {
+          "4": 50.947319778188536,
+          "8": 50.99444958371878,
+          "14": 51.13478462251042,
+          "24": 52.25162488393686
+        },
+        "flips": 123,
+        "median_run_len": 25.0,
+        "passes_threshold": false
+      }
+    ],
+    "passing_candidates": [],
+    "verdict": "No candidate showed direction-prediction edge above the baseline threshold.",
+    "generated_at": "2026-08-25T14:25:43.192065+00:00"
+  }
+}

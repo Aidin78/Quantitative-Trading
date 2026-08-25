@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
+from src.features.indicators import _volume_flow_components
 from src.research.direction_phase import (
     DEFAULT_CANDIDATES,
     adx_directional_gated,
@@ -13,6 +14,7 @@ from src.research.direction_phase import (
     market_structure_bias,
     run_direction_phase,
     supertrend_direction,
+    volume_order_flow_direction,
 )
 from src.research.signal_evaluator import compute_forward_targets
 from tests.fixtures.ohlcv import make_sample_ohlcv
@@ -110,6 +112,43 @@ def test_run_direction_phase_returns_one_result_per_candidate(
     assert len(results) == len(DEFAULT_CANDIDATES)
     names = {r.name for r in results}
     assert names == set(DEFAULT_CANDIDATES.keys())
+
+
+def test_volume_order_flow_direction_matches_provider_gate_on_confirmed_bars(
+    df_with_targets: pd.DataFrame,
+) -> None:
+    """On bars where the real provider's gate (CMF/volume_ratio thresholds)
+    actually fires bullish or bearish, the research signal's side must agree
+    with VolumeOrderFlowProvider's side — the only divergence allowed is on
+    weak-flow bars, where the provider emits HOLD but this binary signal must
+    still pick a side (carries forward the last confirmed direction).
+    """
+    signal = volume_order_flow_direction(df_with_targets, period=20)
+    cmf, volume_ratio = _volume_flow_components(df_with_targets, period=20)
+    volume_confirmed = volume_ratio >= 1.2
+    bullish = (cmf >= 0.05) & volume_confirmed
+    bearish = (cmf <= -0.05) & volume_confirmed
+
+    assert (signal[bullish] == "UP").all()
+    assert (signal[bearish] == "DOWN").all()
+
+
+def test_volume_order_flow_direction_carries_forward_on_weak_flow() -> None:
+    """A bar with weak CMF/volume (gate doesn't fire either side) must hold
+    the previous bar's direction rather than defaulting to an arbitrary side.
+    """
+    df = make_sample_ohlcv(bars=200)
+    signal = volume_order_flow_direction(df, period=20, min_cmf=999.0, min_volume_ratio=999.0)
+    # With absurd thresholds the gate never fires after warmup, so the signal
+    # must stay constant once the rolling window is full.
+    assert (signal.iloc[20:] == signal.iloc[20]).all()
+
+
+def test_volume_order_flow_direction_produces_up_down_only(
+    df_with_targets: pd.DataFrame,
+) -> None:
+    signal = volume_order_flow_direction(df_with_targets)
+    assert set(signal.unique()) <= {"UP", "DOWN"}
 
 
 def test_random_walk_signal_does_not_pass_threshold_by_default() -> None:

@@ -18,6 +18,7 @@ import pandas as pd
 from src.features.indicators import (
     _adx_components,
     _supertrend_components,
+    _volume_flow_components,
 )
 from src.features.indicators.market_structure import _find_confirmed_pivots
 from src.research.signal_evaluator import DEFAULT_HORIZONS
@@ -115,6 +116,38 @@ def market_structure_bias(df: pd.DataFrame, *, pivot_bars: int = 5) -> pd.Series
     return pd.Series(np.where(bias >= 0, "UP", "DOWN"), index=df.index)
 
 
+def volume_order_flow_direction(
+    df: pd.DataFrame, *, period: int = 20, min_cmf: float = 0.05, min_volume_ratio: float = 1.2
+) -> pd.Series:
+    """Order-flow-hypothesis direction: distinct from every other candidate here
+    (all of which are trend-following variants of a price-derived line/pivot).
+    Mirrors ``providers.volume_order_flow.VolumeOrderFlowProvider``'s BUY/SELL
+    gate exactly (bullish: CMF >= min_cmf AND volume_ratio >= min_volume_ratio;
+    bearish: the mirror) so a finding here transfers to what that real provider
+    would see -- but returns UP/DOWN only (no HOLD, no price-alignment filter,
+    no confidence/min_confidence), since ``DirectionSignal`` in this research
+    module is binary and Phase 1 measures raw directional accuracy before any
+    gating is layered on. On a weak-flow bar (CMF or volume below threshold on
+    both sides), holds over the last confirmed direction (bar 1 defaults UP)
+    rather than picking an arbitrary side, the same "carry forward" shape
+    ``adx_directional_gated`` uses for its own weak-signal bars.
+    """
+    cmf, volume_ratio = _volume_flow_components(df, period=period)
+    volume_confirmed = (volume_ratio >= min_volume_ratio).to_numpy()
+    bullish = (cmf.to_numpy() >= min_cmf) & volume_confirmed
+    bearish = (cmf.to_numpy() <= -min_cmf) & volume_confirmed
+
+    direction = np.ones(len(df))
+    for i in range(len(df)):
+        if bullish[i]:
+            direction[i] = 1
+        elif bearish[i]:
+            direction[i] = -1
+        elif i > 0:
+            direction[i] = direction[i - 1]
+    return pd.Series(np.where(direction > 0, "UP", "DOWN"), index=df.index)
+
+
 DEFAULT_CANDIDATES: dict[str, DirectionSignal] = {
     "ema_compare_12_26 (current production)": ema_compare,
     "ema_compare_50_200 (slow)": ema_compare_slow,
@@ -122,6 +155,7 @@ DEFAULT_CANDIDATES: dict[str, DirectionSignal] = {
     "adx_directional_raw_14": adx_directional_raw,
     "adx_directional_gated_14_20": adx_directional_gated,
     "market_structure_bias_5": market_structure_bias,
+    "volume_order_flow_20": volume_order_flow_direction,
 }
 
 
