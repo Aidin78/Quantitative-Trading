@@ -1,0 +1,5176 @@
+{
+  "data_range": {
+    "start": "2026-01-09",
+    "end": "2026-07-09",
+    "bars": 4337
+  },
+  "n_windows": 3,
+  "filter_name": "atr_pct_percentile_200",
+  "ensembles": {
+    "ema_compare_12_26+ema_compare_50_200 (unanimous 2/2)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "ema_compare_50_200 (slow)"
+      ],
+      "min_agreeing": 2,
+      "active_share": 63.38482822227346,
+      "active_bars": 2749,
+      "accuracy_by_horizon": {
+        "14": 51.18224809021462,
+        "24": 50.83697234352256,
+        "48": 53.28440366972477,
+        "72": 50.12929442186923
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 890,
+              "net_expectancy": 0.05854481692930861,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 919,
+              "net_expectancy": -0.37235564667028637,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 925,
+              "net_expectancy": -0.036441525652855696,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 890,
+              "net_expectancy": 0.14071896521218547,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 919,
+              "net_expectancy": -0.4007116205175513,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 924,
+              "net_expectancy": 0.10992346499953837,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 890,
+              "net_expectancy": 0.17315812249987578,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 919,
+              "net_expectancy": -0.4608353432856686,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 901,
+              "net_expectancy": 0.31690072217905185,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 890,
+              "net_expectancy": 0.11811687775984354,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 919,
+              "net_expectancy": -0.501865018039634,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 883,
+              "net_expectancy": 0.46952118598089976,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +12.5pp"
+        },
+        "24": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +10.4pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.5pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +10.2pp"
+        }
+      }
+    },
+    "ema_compare_12_26+supertrend_direction_10_3.0 (unanimous 2/2)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "supertrend_direction_10_3.0"
+      ],
+      "min_agreeing": 2,
+      "active_share": 86.5344708323726,
+      "active_bars": 3753,
+      "accuracy_by_horizon": {
+        "14": 51.430863867344215,
+        "24": 51.31367292225201,
+        "48": 50.66091178850822,
+        "72": 46.86737184703011
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1237,
+              "net_expectancy": 0.024186004243840754,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1234,
+              "net_expectancy": -0.4721992499573629,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1240,
+              "net_expectancy": -0.09182009176521462,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1237,
+              "net_expectancy": 0.08199781222859202,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1234,
+              "net_expectancy": -0.6293019245475044,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1231,
+              "net_expectancy": 0.032237879706137694,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1237,
+              "net_expectancy": -0.13655127530761768,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1234,
+              "net_expectancy": -0.8695920182809737,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1208,
+              "net_expectancy": 0.1502182607954119,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1237,
+              "net_expectancy": -0.33456957752076827,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1234,
+              "net_expectancy": -1.039437692320432,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1188,
+              "net_expectancy": 0.08607045139237826,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.3pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +7.6pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +9.2pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +11.8pp"
+        }
+      }
+    },
+    "ema_compare_12_26+adx_directional_raw_14 (unanimous 2/2)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "adx_directional_raw_14"
+      ],
+      "min_agreeing": 2,
+      "active_share": 84.89739451233571,
+      "active_bars": 3682,
+      "accuracy_by_horizon": {
+        "14": 51.77208287895311,
+        "24": 51.4348182563542,
+        "48": 51.958367570528615,
+        "72": 47.1900826446281
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1213,
+              "net_expectancy": 0.0672768189626912,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1223,
+              "net_expectancy": -0.4251378621250615,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1230,
+              "net_expectancy": -0.08639399983902214,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1213,
+              "net_expectancy": 0.087898279435665,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1223,
+              "net_expectancy": -0.5624170309196321,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1221,
+              "net_expectancy": 0.04060305903005703,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1213,
+              "net_expectancy": -0.08791034209361477,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1223,
+              "net_expectancy": -0.6931689018683305,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1213,
+              "net_expectancy": 0.1440841345742908,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1213,
+              "net_expectancy": -0.4694726505131719,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1223,
+              "net_expectancy": -0.839798999230441,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1192,
+              "net_expectancy": 0.06725965177338987,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +10.7pp"
+        },
+        "24": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.5pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.5pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +12.8pp"
+        }
+      }
+    },
+    "ema_compare_12_26+adx_directional_gated_14_20 (unanimous 2/2)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "adx_directional_gated_14_20"
+      ],
+      "min_agreeing": 2,
+      "active_share": 79.2713857505188,
+      "active_bars": 3438,
+      "accuracy_by_horizon": {
+        "14": 50.8177570093458,
+        "24": 51.01024890190337,
+        "48": 50.96717467760844,
+        "72": 47.43514150943396
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1154,
+              "net_expectancy": -0.1324256013448321,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1110,
+              "net_expectancy": -0.5164429069949518,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1133,
+              "net_expectancy": -0.06388265642574194,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1154,
+              "net_expectancy": -0.17169161152908,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1110,
+              "net_expectancy": -0.6612866935635012,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1124,
+              "net_expectancy": 0.10655294441456743,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1154,
+              "net_expectancy": -0.4660519243120746,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1110,
+              "net_expectancy": -0.8094333847743622,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1121,
+              "net_expectancy": 0.26780950043852697,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1154,
+              "net_expectancy": -0.983455455078857,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1110,
+              "net_expectancy": -0.8675187761602331,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1101,
+              "net_expectancy": 0.2879197820303955,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +9.8pp"
+        },
+        "24": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +5.3pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +5.0pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.4pp"
+        }
+      }
+    },
+    "ema_compare_12_26+market_structure_bias_5 (unanimous 2/2)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 2,
+      "active_share": 67.65044961955269,
+      "active_bars": 2934,
+      "accuracy_by_horizon": {
+        "14": 50.890410958904106,
+        "24": 49.36447956028856,
+        "48": 46.53567735263702,
+        "72": 44.52504317789292
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1009,
+              "net_expectancy": -0.048829388743471924,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 943,
+              "net_expectancy": -0.4621584152167412,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 944,
+              "net_expectancy": -0.003048442581761266,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1009,
+              "net_expectancy": -0.11550296395251192,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 943,
+              "net_expectancy": -0.5505690117792789,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 935,
+              "net_expectancy": 0.046118287532526364,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1009,
+              "net_expectancy": -0.6695298866868554,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 943,
+              "net_expectancy": -0.724600231505757,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 925,
+              "net_expectancy": 0.015025209700161767,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1009,
+              "net_expectancy": -0.842913811299223,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 943,
+              "net_expectancy": -0.6186436595775168,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 919,
+              "net_expectancy": 0.010496055315343441,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +18.7pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +13.8pp"
+        },
+        "48": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +13.6pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +15.4pp"
+        }
+      }
+    },
+    "ema_compare_50_200+supertrend_direction_10_3.0 (unanimous 2/2)": {
+      "member_names": [
+        "ema_compare_50_200 (slow)",
+        "supertrend_direction_10_3.0"
+      ],
+      "min_agreeing": 2,
+      "active_share": 60.571823841365,
+      "active_bars": 2627,
+      "accuracy_by_horizon": {
+        "14": 50.894556528359345,
+        "24": 52.076190476190476,
+        "48": 53.787004998077656,
+        "72": 50.94850948509485
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 800,
+              "net_expectancy": 0.053372456504906435,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 895,
+              "net_expectancy": -0.3819754929903172,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 925,
+              "net_expectancy": -0.0463091924082172,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 800,
+              "net_expectancy": 0.22109704416338538,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 895,
+              "net_expectancy": -0.4572761816360781,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 923,
+              "net_expectancy": 0.1697383819935272,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 800,
+              "net_expectancy": 0.4355343831064588,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 895,
+              "net_expectancy": -0.6014207849746955,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 899,
+              "net_expectancy": 0.4041867901954796,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 800,
+              "net_expectancy": 0.6793613250636522,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 895,
+              "net_expectancy": -0.6531086917746732,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 881,
+              "net_expectancy": 0.637076698240903,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +6.3pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +5.9pp"
+        },
+        "48": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +2.3pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +6.2pp"
+        }
+      }
+    },
+    "ema_compare_50_200+adx_directional_raw_14 (unanimous 2/2)": {
+      "member_names": [
+        "ema_compare_50_200 (slow)",
+        "adx_directional_raw_14"
+      ],
+      "min_agreeing": 2,
+      "active_share": 58.796403043578515,
+      "active_bars": 2550,
+      "accuracy_by_horizon": {
+        "14": 51.37254901960784,
+        "24": 52.27450980392157,
+        "48": 55.72158867479355,
+        "72": 51.50554675118859
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 840,
+              "net_expectancy": 0.08950792780480779,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 822,
+              "net_expectancy": -0.3169316267127716,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 901,
+              "net_expectancy": -0.03445472695974698,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 840,
+              "net_expectancy": 0.19388923161833532,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 822,
+              "net_expectancy": -0.3673231587437706,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 901,
+              "net_expectancy": 0.18885686097388432,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 840,
+              "net_expectancy": 0.46607879652516104,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 822,
+              "net_expectancy": -0.35807861189610596,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 894,
+              "net_expectancy": 0.40232026910905333,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 840,
+              "net_expectancy": 0.4389063123471842,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 822,
+              "net_expectancy": -0.37754299619677484,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 875,
+              "net_expectancy": 0.6196415769256808,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +10.7pp"
+        },
+        "24": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.3pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +4.2pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.6pp"
+        }
+      }
+    },
+    "ema_compare_50_200+adx_directional_gated_14_20 (unanimous 2/2)": {
+      "member_names": [
+        "ema_compare_50_200 (slow)",
+        "adx_directional_gated_14_20"
+      ],
+      "min_agreeing": 2,
+      "active_share": 56.905695181000695,
+      "active_bars": 2468,
+      "accuracy_by_horizon": {
+        "14": 49.91896272285251,
+        "24": 51.620745542949756,
+        "48": 54.33901054339011,
+        "72": 52.16857610474632
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 769,
+              "net_expectancy": -0.2023917633259326,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 693,
+              "net_expectancy": -0.44592470208274815,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 964,
+              "net_expectancy": -0.04684454244719949,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 769,
+              "net_expectancy": -0.17982545916855414,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 693,
+              "net_expectancy": -0.49542833698146566,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 964,
+              "net_expectancy": 0.19953237155990025,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 769,
+              "net_expectancy": -0.04692130899277481,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 693,
+              "net_expectancy": -0.49100448642593536,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 962,
+              "net_expectancy": 0.4543812009734588,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 769,
+              "net_expectancy": -0.2511781114653955,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 693,
+              "net_expectancy": -0.3483578764109356,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 940,
+              "net_expectancy": 0.7789495265016546,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +10.2pp"
+        },
+        "24": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +4.7pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "failed: holdout improvement only +0.7pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +3.1pp"
+        }
+      }
+    },
+    "ema_compare_50_200+market_structure_bias_5 (unanimous 2/2)": {
+      "member_names": [
+        "ema_compare_50_200 (slow)",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 2,
+      "active_share": 58.335254784413195,
+      "active_bars": 2530,
+      "accuracy_by_horizon": {
+        "14": 49.84189723320158,
+        "24": 49.48616600790513,
+        "48": 48.94799523620485,
+        "72": 49.265581579992066
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 886,
+              "net_expectancy": -0.1475044867808906,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 920,
+              "net_expectancy": -0.3149886710090598,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 715,
+              "net_expectancy": 0.05922123218752816,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 886,
+              "net_expectancy": -0.15270445713786066,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 920,
+              "net_expectancy": -0.26814150628318395,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 715,
+              "net_expectancy": 0.18699901469186328,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 886,
+              "net_expectancy": -0.2848918979981345,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 920,
+              "net_expectancy": -0.2644489894603913,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 704,
+              "net_expectancy": 0.24062298908739796,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 886,
+              "net_expectancy": 0.014279449032952085,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 920,
+              "net_expectancy": 0.02168789369943705,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 704,
+              "net_expectancy": 0.6265039058677425,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +18.6pp"
+        },
+        "24": {
+          "best_threshold_on_train": 80.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +13.0pp"
+        },
+        "48": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +9.0pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +9.7pp"
+        }
+      }
+    },
+    "supertrend_direction_10_3.0+adx_directional_raw_14 (unanimous 2/2)": {
+      "member_names": [
+        "supertrend_direction_10_3.0",
+        "adx_directional_raw_14"
+      ],
+      "min_agreeing": 2,
+      "active_share": 80.97763430943048,
+      "active_bars": 3512,
+      "accuracy_by_horizon": {
+        "14": 51.60091480846197,
+        "24": 52.40687679083095,
+        "48": 52.31122595463681,
+        "72": 47.65895953757225
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1143,
+              "net_expectancy": 0.057917637391587805,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1161,
+              "net_expectancy": -0.4377405963094667,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1192,
+              "net_expectancy": -0.08724178821368006,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1143,
+              "net_expectancy": 0.13320942191367008,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1161,
+              "net_expectancy": -0.6179536883060899,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1184,
+              "net_expectancy": 0.09753005067242543,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1143,
+              "net_expectancy": 0.07146240813711534,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1161,
+              "net_expectancy": -0.8192157528490881,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1177,
+              "net_expectancy": 0.22328838482669952,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1143,
+              "net_expectancy": -0.1199521314329102,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1161,
+              "net_expectancy": -0.9810443614287151,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1154,
+              "net_expectancy": 0.2059366281135022,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +4.4pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +3.7pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +6.4pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +9.6pp"
+        }
+      }
+    },
+    "supertrend_direction_10_3.0+adx_directional_gated_14_20 (unanimous 2/2)": {
+      "member_names": [
+        "supertrend_direction_10_3.0",
+        "adx_directional_gated_14_20"
+      ],
+      "min_agreeing": 2,
+      "active_share": 79.45584505418492,
+      "active_bars": 3446,
+      "accuracy_by_horizon": {
+        "14": 50.553613053613056,
+        "24": 51.927570093457945,
+        "48": 51.227352425482174,
+        "72": 48.05996472663139
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1114,
+              "net_expectancy": -0.1590898256868006,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1098,
+              "net_expectancy": -0.5250681727693417,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1157,
+              "net_expectancy": -0.07666952591104145,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1114,
+              "net_expectancy": -0.144968010244789,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1098,
+              "net_expectancy": -0.7091406495119732,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1149,
+              "net_expectancy": 0.14540013441464392,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1114,
+              "net_expectancy": -0.32181969766234864,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1098,
+              "net_expectancy": -0.9260792160039757,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1147,
+              "net_expectancy": 0.3222762194367909,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1114,
+              "net_expectancy": -0.6387276089015618,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1098,
+              "net_expectancy": -0.9925903179396789,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1127,
+              "net_expectancy": 0.40397253233768077,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +1.8pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "failed: holdout improvement only +0.2pp"
+        },
+        "48": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "failed: holdout improvement only -1.4pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +5.2pp"
+        }
+      }
+    },
+    "supertrend_direction_10_3.0+market_structure_bias_5 (unanimous 2/2)": {
+      "member_names": [
+        "supertrend_direction_10_3.0",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 2,
+      "active_share": 64.09960802397971,
+      "active_bars": 2780,
+      "accuracy_by_horizon": {
+        "14": 50.61460592913956,
+        "24": 50.4713560551124,
+        "48": 46.66909355660721,
+        "72": 44.983582634075155
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 959,
+              "net_expectancy": -0.07369736715883496,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 923,
+              "net_expectancy": -0.4731187567559347,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 888,
+              "net_expectancy": 0.0053994126735450315,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 959,
+              "net_expectancy": -0.08019263225883343,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 923,
+              "net_expectancy": -0.6082283655650272,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 880,
+              "net_expectancy": 0.13002254973109567,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 959,
+              "net_expectancy": -0.514326254647299,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 923,
+              "net_expectancy": -0.8659392636866221,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 869,
+              "net_expectancy": 0.12420563023597257,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 959,
+              "net_expectancy": -0.4422679841045414,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 923,
+              "net_expectancy": -0.7669548196549375,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 863,
+              "net_expectancy": 0.19991105302885442,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +16.5pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +11.0pp"
+        },
+        "48": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +15.1pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +11.0pp"
+        }
+      }
+    },
+    "adx_directional_raw_14+adx_directional_gated_14_20 (unanimous 2/2)": {
+      "member_names": [
+        "adx_directional_raw_14",
+        "adx_directional_gated_14_20"
+      ],
+      "min_agreeing": 2,
+      "active_share": 86.99561909153793,
+      "active_bars": 3773,
+      "accuracy_by_horizon": {
+        "14": 50.811386006916734,
+        "24": 51.8538276873833,
+        "48": 52.38605898123324,
+        "72": 48.58452413049339
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1238,
+              "net_expectancy": -0.13726766693294218,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1249,
+              "net_expectancy": -0.4502598756063263,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1267,
+              "net_expectancy": -0.09243437055422737,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1238,
+              "net_expectancy": -0.1621203911017783,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1249,
+              "net_expectancy": -0.5912841369793725,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1257,
+              "net_expectancy": 0.11261436722344471,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1238,
+              "net_expectancy": -0.27514415234239753,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1249,
+              "net_expectancy": -0.6726212935137004,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1238,
+              "net_expectancy": 0.27234347325666924,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1238,
+              "net_expectancy": -0.7363088158284546,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1249,
+              "net_expectancy": -0.7068632768880576,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1217,
+              "net_expectancy": 0.33475665785069975,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.6pp"
+        },
+        "24": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +3.4pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +2.4pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +6.0pp"
+        }
+      }
+    },
+    "adx_directional_raw_14+market_structure_bias_5 (unanimous 2/2)": {
+      "member_names": [
+        "adx_directional_raw_14",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 2,
+      "active_share": 61.8630389670279,
+      "active_bars": 2683,
+      "accuracy_by_horizon": {
+        "14": 51.067815661296365,
+        "24": 50.62053403535164,
+        "48": 48.3163072266364,
+        "72": 45.2994692949204
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 899,
+              "net_expectancy": -0.009106875365082635,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 862,
+              "net_expectancy": -0.41640179050729936,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 894,
+              "net_expectancy": 0.008486546354560252,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 899,
+              "net_expectancy": -0.06775908243329022,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 862,
+              "net_expectancy": -0.5309422683754174,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 884,
+              "net_expectancy": 0.1358725666524982,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 899,
+              "net_expectancy": -0.46736395507318307,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 862,
+              "net_expectancy": -0.6484117828410657,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 868,
+              "net_expectancy": 0.11871554017605697,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 899,
+              "net_expectancy": -0.6328617958126167,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 862,
+              "net_expectancy": -0.5073171256112803,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 863,
+              "net_expectancy": 0.1757184790540402,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +15.0pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +8.9pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +10.1pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +11.9pp"
+        }
+      }
+    },
+    "adx_directional_gated_14_20+market_structure_bias_5 (unanimous 2/2)": {
+      "member_names": [
+        "adx_directional_gated_14_20",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 2,
+      "active_share": 61.5863500115287,
+      "active_bars": 2671,
+      "accuracy_by_horizon": {
+        "14": 49.68009032743696,
+        "24": 49.94333207404609,
+        "48": 46.85128983308042,
+        "72": 45.861807137433566
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 880,
+              "net_expectancy": -0.289332961712375,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 811,
+              "net_expectancy": -0.5312532241710707,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 905,
+              "net_expectancy": 0.010024908853711108,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 880,
+              "net_expectancy": -0.42916834973584983,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 811,
+              "net_expectancy": -0.6442224862890085,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 895,
+              "net_expectancy": 0.17642516577327655,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 880,
+              "net_expectancy": -0.9810782628492843,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 811,
+              "net_expectancy": -0.774668861804652,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 884,
+              "net_expectancy": 0.22181615794772763,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 880,
+              "net_expectancy": -1.302704573322802,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 811,
+              "net_expectancy": -0.48308141523545384,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 882,
+              "net_expectancy": 0.4030285969673711,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +10.8pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +3.6pp"
+        },
+        "48": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.4pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +5.3pp"
+        }
+      }
+    },
+    "ema_compare_12_26+ema_compare_50_200+supertrend_direction_10_3.0 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "ema_compare_50_200 (slow)",
+        "supertrend_direction_10_3.0"
+      ],
+      "min_agreeing": 3,
+      "active_share": 55.24556144800553,
+      "active_bars": 2396,
+      "accuracy_by_horizon": {
+        "14": 50.959933222036724,
+        "24": 51.022964509394576,
+        "48": 52.86677908937606,
+        "72": 49.32088285229202
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 741,
+              "net_expectancy": 0.07046599782260601,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 801,
+              "net_expectancy": -0.40712501085268393,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 829,
+              "net_expectancy": -0.01512767295179304,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 741,
+              "net_expectancy": 0.22697034545843933,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 801,
+              "net_expectancy": -0.5025377810793402,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 828,
+              "net_expectancy": 0.16909636315680066,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 741,
+              "net_expectancy": 0.33660525097766025,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 801,
+              "net_expectancy": -0.6658255204924834,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 805,
+              "net_expectancy": 0.4769970145988726,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 741,
+              "net_expectancy": 0.29009571805086193,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 801,
+              "net_expectancy": -0.7041613281883062,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 789,
+              "net_expectancy": 0.6034402592433106,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.1pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.7pp"
+        },
+        "48": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +4.1pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +8.4pp"
+        }
+      }
+    },
+    "ema_compare_12_26+ema_compare_50_200+adx_directional_raw_14 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "ema_compare_50_200 (slow)",
+        "adx_directional_raw_14"
+      ],
+      "min_agreeing": 3,
+      "active_share": 53.53931288909385,
+      "active_bars": 2322,
+      "accuracy_by_horizon": {
+        "14": 50.94745908699397,
+        "24": 51.24892334194659,
+        "48": 54.21166306695464,
+        "72": 49.78241949521323
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 749,
+              "net_expectancy": 0.10261127859992138,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 759,
+              "net_expectancy": -0.360117253304412,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 812,
+              "net_expectancy": -0.030802260646910468,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 749,
+              "net_expectancy": 0.17074858140725463,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 759,
+              "net_expectancy": -0.41422195858976196,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 812,
+              "net_expectancy": 0.16424037282816192,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 749,
+              "net_expectancy": 0.1877492878998665,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 759,
+              "net_expectancy": -0.4518813172368776,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 805,
+              "net_expectancy": 0.36289243674353594,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 749,
+              "net_expectancy": 0.037211169049911424,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 759,
+              "net_expectancy": -0.49291773834669106,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 788,
+              "net_expectancy": 0.5390779718302252,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +11.2pp"
+        },
+        "24": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.8pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +6.0pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.9pp"
+        }
+      }
+    },
+    "ema_compare_12_26+ema_compare_50_200+adx_directional_gated_14_20 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "ema_compare_50_200 (slow)",
+        "adx_directional_gated_14_20"
+      ],
+      "min_agreeing": 3,
+      "active_share": 49.78095457689648,
+      "active_bars": 2159,
+      "accuracy_by_horizon": {
+        "14": 49.652616952292725,
+        "24": 50.25474756831867,
+        "48": 52.34121464997682,
+        "72": 49.41561477325853
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 684,
+              "net_expectancy": -0.08638514176333496,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 638,
+              "net_expectancy": -0.45204940833568064,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 795,
+              "net_expectancy": -0.047682550303582205,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 684,
+              "net_expectancy": -0.05812638760956024,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 638,
+              "net_expectancy": -0.49324309755137746,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 795,
+              "net_expectancy": 0.12722762017006897,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 684,
+              "net_expectancy": -0.0620223864123064,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 638,
+              "net_expectancy": -0.5665106273825263,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 793,
+              "net_expectancy": 0.30467248832400734,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 684,
+              "net_expectancy": -0.3088768391213071,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 638,
+              "net_expectancy": -0.47900402162884287,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 775,
+              "net_expectancy": 0.4589234291032709,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +12.0pp"
+        },
+        "24": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.6pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +5.8pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.0pp"
+        }
+      }
+    },
+    "ema_compare_12_26+ema_compare_50_200+market_structure_bias_5 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "ema_compare_50_200 (slow)",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 3,
+      "active_share": 44.68526631311967,
+      "active_bars": 1938,
+      "accuracy_by_horizon": {
+        "14": 50.20639834881321,
+        "24": 49.63880288957688,
+        "48": 49.22199170124482,
+        "72": 46.16182572614108
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 670,
+              "net_expectancy": 0.012336890759640784,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 668,
+              "net_expectancy": -0.37272477891255057,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 576,
+              "net_expectancy": 0.10983199096763172,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 670,
+              "net_expectancy": 0.01638947741496539,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 668,
+              "net_expectancy": -0.4195317377710707,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 576,
+              "net_expectancy": 0.2233317184457388,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 670,
+              "net_expectancy": -0.2406182602984759,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 668,
+              "net_expectancy": -0.5602790759866633,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 566,
+              "net_expectancy": 0.3105458358691743,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 670,
+              "net_expectancy": -0.22799317979154918,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 668,
+              "net_expectancy": -0.4057323864858039,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 566,
+              "net_expectancy": 0.45582996992080543,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +18.1pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +12.4pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +12.4pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +15.6pp"
+        }
+      }
+    },
+    "ema_compare_12_26+supertrend_direction_10_3.0+adx_directional_raw_14 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "supertrend_direction_10_3.0",
+        "adx_directional_raw_14"
+      ],
+      "min_agreeing": 3,
+      "active_share": 76.2047498270694,
+      "active_bars": 3305,
+      "accuracy_by_horizon": {
+        "14": 51.62564570039502,
+        "24": 52.086506244288756,
+        "48": 52.04517704517705,
+        "72": 47.45085995085995
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1074,
+              "net_expectancy": 0.061268102218569036,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1086,
+              "net_expectancy": -0.4558467936630574,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1115,
+              "net_expectancy": -0.06239945832807631,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1074,
+              "net_expectancy": 0.12626455045591317,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1086,
+              "net_expectancy": -0.6200624258073618,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1107,
+              "net_expectancy": 0.10963346602961963,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1074,
+              "net_expectancy": 0.023614365251206797,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1086,
+              "net_expectancy": -0.8177960036047156,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1100,
+              "net_expectancy": 0.23740313453187856,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1074,
+              "net_expectancy": -0.22731537146228242,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1086,
+              "net_expectancy": -0.9558687157253944,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1080,
+              "net_expectancy": 0.19316945285036452,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +6.3pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +5.4pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.2pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +10.2pp"
+        }
+      }
+    },
+    "ema_compare_12_26+supertrend_direction_10_3.0+adx_directional_gated_14_20 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "supertrend_direction_10_3.0",
+        "adx_directional_gated_14_20"
+      ],
+      "min_agreeing": 3,
+      "active_share": 72.63085081853816,
+      "active_bars": 3150,
+      "accuracy_by_horizon": {
+        "14": 50.98852040816326,
+        "24": 51.66240409207161,
+        "48": 51.40754958413307,
+        "72": 47.87644787644788
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1030,
+              "net_expectancy": -0.06308977674783793,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 998,
+              "net_expectancy": -0.526567707101325,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1049,
+              "net_expectancy": -0.052512738438536974,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1030,
+              "net_expectancy": -0.036120543425828294,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 998,
+              "net_expectancy": -0.684454614068833,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1041,
+              "net_expectancy": 0.13790674282146828,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1030,
+              "net_expectancy": -0.26466163759576294,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 998,
+              "net_expectancy": -0.9064185342187847,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1039,
+              "net_expectancy": 0.33702478546223763,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1030,
+              "net_expectancy": -0.6191293870004191,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 998,
+              "net_expectancy": -0.9734647509356845,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1021,
+              "net_expectancy": 0.362830116764244,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +4.2pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +2.3pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +4.7pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.2pp"
+        }
+      }
+    },
+    "ema_compare_12_26+supertrend_direction_10_3.0+market_structure_bias_5 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "supertrend_direction_10_3.0",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 3,
+      "active_share": 59.1422642379525,
+      "active_bars": 2565,
+      "accuracy_by_horizon": {
+        "14": 50.99960799686397,
+        "24": 50.491545418796704,
+        "48": 46.94038689301224,
+        "72": 44.128113879003564
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 880,
+              "net_expectancy": -0.06822543563504685,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 827,
+              "net_expectancy": -0.4786406464089025,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 820,
+              "net_expectancy": 0.022877460477386116,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 880,
+              "net_expectancy": -0.09738420798543557,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 827,
+              "net_expectancy": -0.6199591291320717,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 812,
+              "net_expectancy": 0.14367339124665687,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 880,
+              "net_expectancy": -0.5365313032312532,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 827,
+              "net_expectancy": -0.865143171754379,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 802,
+              "net_expectancy": 0.1517284377770364,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 880,
+              "net_expectancy": -0.6828649617499652,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 827,
+              "net_expectancy": -0.8337649059857339,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 798,
+              "net_expectancy": 0.18370832490331535,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +17.1pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +11.6pp"
+        },
+        "48": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +12.1pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +13.5pp"
+        }
+      }
+    },
+    "ema_compare_12_26+adx_directional_raw_14+adx_directional_gated_14_20 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "adx_directional_raw_14",
+        "adx_directional_gated_14_20"
+      ],
+      "min_agreeing": 3,
+      "active_share": 75.58219967719621,
+      "active_bars": 3278,
+      "accuracy_by_horizon": {
+        "14": 51.13357843137255,
+        "24": 51.55145929339477,
+        "48": 51.75276752767528,
+        "72": 47.72656974945871
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1080,
+              "net_expectancy": -0.06319615672952142,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1068,
+              "net_expectancy": -0.4878645807441771,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1099,
+              "net_expectancy": -0.05418411592676908,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1080,
+              "net_expectancy": -0.055350655694659606,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1068,
+              "net_expectancy": -0.630721706064609,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1090,
+              "net_expectancy": 0.11550331158160672,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1080,
+              "net_expectancy": -0.2626755259538689,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1068,
+              "net_expectancy": -0.7543815596571648,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1087,
+              "net_expectancy": 0.2836890297722146,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1080,
+              "net_expectancy": -0.6921583357386358,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1068,
+              "net_expectancy": -0.8208732632631153,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1068,
+              "net_expectancy": 0.3039014121830135,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +9.5pp"
+        },
+        "24": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +5.0pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +4.8pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.8pp"
+        }
+      }
+    },
+    "ema_compare_12_26+adx_directional_raw_14+market_structure_bias_5 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "adx_directional_raw_14",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 3,
+      "active_share": 57.20544154945814,
+      "active_bars": 2481,
+      "accuracy_by_horizon": {
+        "14": 51.64167004458857,
+        "24": 50.44751830756713,
+        "48": 48.4304932735426,
+        "72": 45.12045732952225
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 838,
+              "net_expectancy": 0.013099212039897796,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 791,
+              "net_expectancy": -0.4165721813313921,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 818,
+              "net_expectancy": 0.043000566461255094,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 838,
+              "net_expectancy": -0.038724102086509095,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 791,
+              "net_expectancy": -0.5490277552357101,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 809,
+              "net_expectancy": 0.16725825389688298,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 838,
+              "net_expectancy": -0.5150985558078564,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 791,
+              "net_expectancy": -0.658495781901557,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 804,
+              "net_expectancy": 0.21895650688185989,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 838,
+              "net_expectancy": -0.8755180158871806,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 791,
+              "net_expectancy": -0.5551571864465326,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 800,
+              "net_expectancy": 0.27054214158967455,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +16.4pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +10.5pp"
+        },
+        "48": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +10.5pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +13.5pp"
+        }
+      }
+    },
+    "ema_compare_12_26+adx_directional_gated_14_20+market_structure_bias_5 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_12_26 (current production)",
+        "adx_directional_gated_14_20",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 3,
+      "active_share": 54.25409269080009,
+      "active_bars": 2353,
+      "accuracy_by_horizon": {
+        "14": 51.13296280461736,
+        "24": 50.30042918454936,
+        "48": 47.5107296137339,
+        "72": 45.40378006872852
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 799,
+              "net_expectancy": -0.12723650886489785,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 709,
+              "net_expectancy": -0.5624304031473601,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 775,
+              "net_expectancy": 0.09511697821174349,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 799,
+              "net_expectancy": -0.2532928878592931,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 709,
+              "net_expectancy": -0.6759836455290588,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 766,
+              "net_expectancy": 0.2500202160519227,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 799,
+              "net_expectancy": -0.7623074193442072,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 709,
+              "net_expectancy": -0.8141928734066094,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 766,
+              "net_expectancy": 0.3611539819969864,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 799,
+              "net_expectancy": -1.2346735014623569,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 709,
+              "net_expectancy": -0.6133722762251349,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 764,
+              "net_expectancy": 0.44375118114343826,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +13.5pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +8.4pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +9.0pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +10.7pp"
+        }
+      }
+    },
+    "ema_compare_50_200+supertrend_direction_10_3.0+adx_directional_raw_14 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_50_200 (slow)",
+        "supertrend_direction_10_3.0",
+        "adx_directional_raw_14"
+      ],
+      "min_agreeing": 3,
+      "active_share": 50.17293059718699,
+      "active_bars": 2176,
+      "accuracy_by_horizon": {
+        "14": 50.36764705882353,
+        "24": 51.51654411764706,
+        "48": 54.17242969110189,
+        "72": 50.0697350069735
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 669,
+              "net_expectancy": 0.059639531445100404,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 716,
+              "net_expectancy": -0.39364565301332616,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 793,
+              "net_expectancy": -0.014067216206463543,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 669,
+              "net_expectancy": 0.1977929375660188,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 716,
+              "net_expectancy": -0.47597632458985356,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 793,
+              "net_expectancy": 0.2273949759677506,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 669,
+              "net_expectancy": 0.376989739175526,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 716,
+              "net_expectancy": -0.5854030005416007,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 786,
+              "net_expectancy": 0.4362024249942401,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 669,
+              "net_expectancy": 0.3898705364813227,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 716,
+              "net_expectancy": -0.5528806789251461,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 768,
+              "net_expectancy": 0.5918590608209766,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +10.9pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +4.8pp"
+        },
+        "48": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +2.3pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +7.1pp"
+        }
+      }
+    },
+    "ema_compare_50_200+supertrend_direction_10_3.0+adx_directional_gated_14_20 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_50_200 (slow)",
+        "supertrend_direction_10_3.0",
+        "adx_directional_gated_14_20"
+      ],
+      "min_agreeing": 3,
+      "active_share": 48.4666820382753,
+      "active_bars": 2102,
+      "accuracy_by_horizon": {
+        "14": 50.0,
+        "24": 51.902949571836345,
+        "48": 53.80952380952381,
+        "72": 51.39289145052833
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 619,
+              "net_expectancy": -0.019812926756459973,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 620,
+              "net_expectancy": -0.4962608336748045,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 807,
+              "net_expectancy": -0.033170998113929956,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 619,
+              "net_expectancy": 0.10016863900533736,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 620,
+              "net_expectancy": -0.5636699106040322,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 807,
+              "net_expectancy": 0.21006505374250503,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 619,
+              "net_expectancy": 0.1563199179590864,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 620,
+              "net_expectancy": -0.642871055225672,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 805,
+              "net_expectancy": 0.36898013813280794,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 619,
+              "net_expectancy": 0.04272695806677548,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 620,
+              "net_expectancy": -0.4868444756594736,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 787,
+              "net_expectancy": 0.5659950778091726,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +4.0pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +2.2pp"
+        },
+        "48": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "failed: holdout improvement only -0.3pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +4.3pp"
+        }
+      }
+    },
+    "ema_compare_50_200+supertrend_direction_10_3.0+market_structure_bias_5 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_50_200 (slow)",
+        "supertrend_direction_10_3.0",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 3,
+      "active_share": 41.50334332487895,
+      "active_bars": 1800,
+      "accuracy_by_horizon": {
+        "14": 49.72222222222222,
+        "24": 50.33333333333333,
+        "48": 49.245388485187256,
+        "72": 46.00335382895472
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 600,
+              "net_expectancy": -0.048149384427482476,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 646,
+              "net_expectancy": -0.3767163812075917,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 548,
+              "net_expectancy": 0.16782013224446704,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 600,
+              "net_expectancy": 0.03337978149863716,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 646,
+              "net_expectancy": -0.5009279526488404,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 548,
+              "net_expectancy": 0.36964500072883716,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 600,
+              "net_expectancy": -0.03221382986316011,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 646,
+              "net_expectancy": -0.6970517021175017,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 537,
+              "net_expectancy": 0.513167865728795,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 600,
+              "net_expectancy": 0.14324402303345626,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 646,
+              "net_expectancy": -0.5327778171154449,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 537,
+              "net_expectancy": 0.6884169013953685,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +16.0pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.6pp"
+        },
+        "48": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.2pp"
+        },
+        "72": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.1pp"
+        }
+      }
+    },
+    "ema_compare_50_200+adx_directional_raw_14+adx_directional_gated_14_20 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_50_200 (slow)",
+        "adx_directional_raw_14",
+        "adx_directional_gated_14_20"
+      ],
+      "min_agreeing": 3,
+      "active_share": 51.34885865805856,
+      "active_bars": 2227,
+      "accuracy_by_horizon": {
+        "14": 49.88774135608442,
+        "24": 51.414458913336325,
+        "48": 53.57303370786517,
+        "72": 50.31731640979148
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 701,
+              "net_expectancy": -0.11251009359986527,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 659,
+              "net_expectancy": -0.3748340820665298,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 850,
+              "net_expectancy": -0.042394891171644494,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 701,
+              "net_expectancy": -0.05835733024593473,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 659,
+              "net_expectancy": -0.4158877131452686,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 850,
+              "net_expectancy": 0.18330549028682236,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 701,
+              "net_expectancy": 0.01234418990801735,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 659,
+              "net_expectancy": -0.4112788817524128,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 848,
+              "net_expectancy": 0.3874795950428804,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 701,
+              "net_expectancy": -0.19405399287472003,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 659,
+              "net_expectancy": -0.33450998218534783,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 829,
+              "net_expectancy": 0.5835541269333876,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +11.3pp"
+        },
+        "24": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +6.5pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +3.5pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +6.7pp"
+        }
+      }
+    },
+    "ema_compare_50_200+adx_directional_raw_14+market_structure_bias_5 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_50_200 (slow)",
+        "adx_directional_raw_14",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 3,
+      "active_share": 39.4973483975098,
+      "active_bars": 1713,
+      "accuracy_by_horizon": {
+        "14": 50.32107413893754,
+        "24": 49.97081144191477,
+        "48": 50.409836065573764,
+        "72": 46.487119437939114
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 590,
+              "net_expectancy": 0.05713610479042646,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 579,
+              "net_expectancy": -0.33790435173308625,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 539,
+              "net_expectancy": 0.15764262520287417,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 590,
+              "net_expectancy": 0.026424511118886655,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 579,
+              "net_expectancy": -0.42937671802843075,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 539,
+              "net_expectancy": 0.35836319915150744,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 590,
+              "net_expectancy": -0.03846942731698325,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 579,
+              "net_expectancy": -0.5125373793033893,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 534,
+              "net_expectancy": 0.46426841425950116,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 590,
+              "net_expectancy": 0.007776596055944892,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 579,
+              "net_expectancy": -0.3588721993585132,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 534,
+              "net_expectancy": 0.690741091335796,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +15.3pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.9pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +9.3pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +12.4pp"
+        }
+      }
+    },
+    "ema_compare_50_200+adx_directional_gated_14_20+market_structure_bias_5 (unanimous 3/3)": {
+      "member_names": [
+        "ema_compare_50_200 (slow)",
+        "adx_directional_gated_14_20",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 3,
+      "active_share": 38.41364998847129,
+      "active_bars": 1666,
+      "accuracy_by_horizon": {
+        "14": 48.619447779111646,
+        "24": 49.51980792316927,
+        "48": 49.09963985594238,
+        "72": 47.35894357743097
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 545,
+              "net_expectancy": -0.1751130467360692,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 489,
+              "net_expectancy": -0.5620188956075896,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 576,
+              "net_expectancy": 0.16280025386507718,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 545,
+              "net_expectancy": -0.18703283817223623,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 489,
+              "net_expectancy": -0.6348202540161215,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 576,
+              "net_expectancy": 0.4330923804486331,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 545,
+              "net_expectancy": -0.4585375294552465,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 489,
+              "net_expectancy": -0.7081569088703445,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 576,
+              "net_expectancy": 0.5513726385111676,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 545,
+              "net_expectancy": -0.6357897741148569,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 489,
+              "net_expectancy": -0.3511716062279923,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 576,
+              "net_expectancy": 0.9166349584625285,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +17.8pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +6.2pp"
+        },
+        "48": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +5.5pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +8.8pp"
+        }
+      }
+    },
+    "supertrend_direction_10_3.0+adx_directional_raw_14+adx_directional_gated_14_20 (unanimous 3/3)": {
+      "member_names": [
+        "supertrend_direction_10_3.0",
+        "adx_directional_raw_14",
+        "adx_directional_gated_14_20"
+      ],
+      "min_agreeing": 3,
+      "active_share": 73.71454922757667,
+      "active_bars": 3197,
+      "accuracy_by_horizon": {
+        "14": 51.2095507382972,
+        "24": 52.56692913385827,
+        "48": 52.12732429877088,
+        "72": 47.79575007928957
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1025,
+              "net_expectancy": -0.02673615943935901,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1031,
+              "net_expectancy": -0.4767826144513539,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1092,
+              "net_expectancy": -0.0605684431282038,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1025,
+              "net_expectancy": 0.04482288903014528,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1031,
+              "net_expectancy": -0.6554269180901636,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1084,
+              "net_expectancy": 0.14947491150133496,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1025,
+              "net_expectancy": -0.06498249422318156,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1031,
+              "net_expectancy": -0.8545667640110232,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1082,
+              "net_expectancy": 0.3398888618821165,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 1025,
+              "net_expectancy": -0.4116310266896567,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 1031,
+              "net_expectancy": -0.9717086495390617,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 1062,
+              "net_expectancy": 0.3823663987206626,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +2.3pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "failed: holdout improvement only +0.5pp"
+        },
+        "48": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "failed: holdout improvement only -0.8pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +6.8pp"
+        }
+      }
+    },
+    "supertrend_direction_10_3.0+adx_directional_raw_14+market_structure_bias_5 (unanimous 3/3)": {
+      "member_names": [
+        "supertrend_direction_10_3.0",
+        "adx_directional_raw_14",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 3,
+      "active_share": 53.470140650219044,
+      "active_bars": 2319,
+      "accuracy_by_horizon": {
+        "14": 52.14750542299349,
+        "24": 52.2855898998694,
+        "48": 49.17102966841187,
+        "72": 45.08089199825098
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 778,
+              "net_expectancy": -0.021310909235640753,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 750,
+              "net_expectancy": -0.4574482390280287,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 771,
+              "net_expectancy": 0.09728652587680887,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 778,
+              "net_expectancy": 0.000461713248263223,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 750,
+              "net_expectancy": -0.5935257191473108,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 763,
+              "net_expectancy": 0.28003081644635675,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 778,
+              "net_expectancy": -0.37312711669269627,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 750,
+              "net_expectancy": -0.7804065899825422,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 758,
+              "net_expectancy": 0.3298111858894302,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 778,
+              "net_expectancy": -0.6000278359908583,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 750,
+              "net_expectancy": -0.712935459056036,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 753,
+              "net_expectancy": 0.38790833091002846,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +13.7pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +8.0pp"
+        },
+        "48": {
+          "best_threshold_on_train": 85.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.6pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +11.7pp"
+        }
+      }
+    },
+    "supertrend_direction_10_3.0+adx_directional_gated_14_20+market_structure_bias_5 (unanimous 3/3)": {
+      "member_names": [
+        "supertrend_direction_10_3.0",
+        "adx_directional_gated_14_20",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 3,
+      "active_share": 52.57090154484667,
+      "active_bars": 2280,
+      "accuracy_by_horizon": {
+        "14": 51.809355692850836,
+        "24": 52.17006200177148,
+        "48": 48.93711248892825,
+        "72": 46.63120567375886
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 754,
+              "net_expectancy": -0.10358165021468528,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 693,
+              "net_expectancy": -0.5890267589488458,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 759,
+              "net_expectancy": 0.12683293713280355,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 754,
+              "net_expectancy": -0.19275164405676204,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 693,
+              "net_expectancy": -0.7057326649430805,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 751,
+              "net_expectancy": 0.34423973239153277,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 754,
+              "net_expectancy": -0.5575123609891184,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 693,
+              "net_expectancy": -0.9139747663982358,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 751,
+              "net_expectancy": 0.4430227545373491,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 754,
+              "net_expectancy": -0.8609473118545011,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 693,
+              "net_expectancy": -0.7239157002056079,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 749,
+              "net_expectancy": 0.5616061545337002,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +13.0pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +6.7pp"
+        },
+        "48": {
+          "best_threshold_on_train": 90.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +7.4pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.6pp"
+        }
+      }
+    },
+    "adx_directional_raw_14+adx_directional_gated_14_20+market_structure_bias_5 (unanimous 3/3)": {
+      "member_names": [
+        "adx_directional_raw_14",
+        "adx_directional_gated_14_20",
+        "market_structure_bias_5"
+      ],
+      "min_agreeing": 3,
+      "active_share": 55.22250403504727,
+      "active_bars": 2395,
+      "accuracy_by_horizon": {
+        "14": 50.52498950020999,
+        "24": 50.82243778996204,
+        "48": 47.92372881355932,
+        "72": 45.33502968617473
+      },
+      "ungated_stability": {
+        "14": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 786,
+              "net_expectancy": -0.16717033740668938,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 738,
+              "net_expectancy": -0.5030566185084664,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 817,
+              "net_expectancy": 0.07961133402951921,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "24": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 786,
+              "net_expectancy": -0.2511562841735552,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 738,
+              "net_expectancy": -0.6087683962373698,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 807,
+              "net_expectancy": 0.24304801938523882,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "48": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 786,
+              "net_expectancy": -0.684982121760487,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 738,
+              "net_expectancy": -0.7543053952230545,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 796,
+              "net_expectancy": 0.2856161508422182,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        },
+        "72": {
+          "passes_repeatability": false,
+          "detail": "0/3 sub-windows met the >= 1.0pp floor (0/3 were directionally positive at all)",
+          "windows": [
+            {
+              "window_index": 0,
+              "trades": 786,
+              "net_expectancy": -1.0749889798600287,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 1,
+              "trades": 738,
+              "net_expectancy": -0.5270035064231601,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            },
+            {
+              "window_index": 2,
+              "trades": 794,
+              "net_expectancy": 0.3657459707305967,
+              "win_rate_improvement_pp": 0.0,
+              "regime_concentration_flag": false
+            }
+          ]
+        }
+      },
+      "gated_sweep": {
+        "14": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +12.6pp"
+        },
+        "24": {
+          "best_threshold_on_train": 75.0,
+          "rank_unstable": false,
+          "holdout_verdict": "confirmed: holdout improvement +6.6pp"
+        },
+        "48": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +10.2pp"
+        },
+        "72": {
+          "best_threshold_on_train": 95.0,
+          "rank_unstable": true,
+          "holdout_verdict": "confirmed: holdout improvement +8.9pp"
+        }
+      }
+    }
+  }
+}

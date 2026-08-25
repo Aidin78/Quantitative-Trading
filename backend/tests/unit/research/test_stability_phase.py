@@ -12,6 +12,7 @@ from src.research.stability_phase import (
     MIN_SUB_WINDOW_IMPROVEMENT_PP,
     apply_min_atr_filter,
     evaluate_candidate_stability,
+    evaluate_threshold_band,
     evaluate_volatility_overlay,
     regime_label,
     size_multiplier_from_percentile,
@@ -184,6 +185,65 @@ def test_evaluate_volatility_overlay_returns_three_variants(
     assert overlay["gate_plus_min_atr_filter"].trades <= overlay["gate_only"].trades
     # Sizing overlay changes weights, not trade count.
     assert overlay["gate_plus_volatility_sizing"].trades == overlay["gate_only"].trades
+
+
+def test_evaluate_threshold_band_scores_every_threshold_on_every_window(
+    df_with_targets: pd.DataFrame,
+) -> None:
+    result = evaluate_threshold_band(
+        df_with_targets,
+        base_signal=ema_compare,
+        magnitude_filter=atr_pct_percentile,
+        horizon=4,
+        percentile_thresholds=(85.0, 90.0, 95.0),
+        n_windows=3,
+    )
+    # No holdout reservation: every (threshold, window) pair is scored.
+    assert len(result.rows) == 3 * 3
+    seen = {(r.percentile_threshold, r.window_index) for r in result.rows}
+    assert seen == {(t, w) for t in (85.0, 90.0, 95.0) for w in range(3)}
+    assert result.windows_evaluated <= result.n_windows
+    assert result.windows_all_positive_across_band <= result.windows_evaluated
+
+
+def test_evaluate_threshold_band_excludes_windows_with_too_few_trades(
+    df_with_targets: pd.DataFrame,
+) -> None:
+    # A very high threshold on a small sample starves at least one window of
+    # MIN_TRADES_FOR_COMPARISON trades; that window must be excluded from
+    # windows_evaluated rather than counted as a band failure.
+    result = evaluate_threshold_band(
+        df_with_targets,
+        base_signal=ema_compare,
+        magnitude_filter=atr_pct_percentile,
+        horizon=4,
+        percentile_thresholds=(85.0, 99.0),
+        n_windows=5,
+    )
+    n_below_min = sum(1 for r in result.rows if r.below_min_trades)
+    assert n_below_min > 0  # sanity: this scenario does starve some windows
+    assert result.windows_evaluated < result.n_windows
+    assert result.windows_evaluated == result.n_windows - len(
+        {r.window_index for r in result.rows if r.below_min_trades}
+    )
+
+
+def test_evaluate_threshold_band_is_consistent_only_when_all_windows_positive(
+    df_with_targets: pd.DataFrame,
+) -> None:
+    result = evaluate_threshold_band(
+        df_with_targets,
+        base_signal=ema_compare,
+        magnitude_filter=atr_pct_percentile,
+        horizon=4,
+        percentile_thresholds=(85.0, 90.0),
+        n_windows=3,
+    )
+    expected = (
+        result.windows_evaluated > 0
+        and result.windows_all_positive_across_band == result.windows_evaluated
+    )
+    assert result.band_is_consistent == expected
 
 
 def test_constants_are_reasonable() -> None:

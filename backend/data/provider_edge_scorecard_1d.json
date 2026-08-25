@@ -1,0 +1,724 @@
+{
+  "mode": "full",
+  "symbol": "BTC/USDT",
+  "timeframe": "1d",
+  "start": "2025-01-01T00:00:00+00:00",
+  "end": "2026-07-18T00:00:00+00:00",
+  "windows": {
+    "train": [
+      "2025-01-01T00:00:00+00:00",
+      "2025-11-12T06:43:12+00:00"
+    ],
+    "test": [
+      "2025-11-12T06:43:12+00:00",
+      "2026-03-27T09:36:00+00:00"
+    ],
+    "holdout": [
+      "2026-03-27T09:36:00+00:00",
+      "2026-07-18T00:00:00+00:00"
+    ]
+  },
+  "configs": [
+    {
+      "config": "solo_EMA_agree1",
+      "params_overrides": {
+        "ema_enabled": 1,
+        "rsi_enabled": 0,
+        "macd_enabled": 0,
+        "adx_enabled": 0,
+        "bb_enabled": 0,
+        "st_enabled": 0,
+        "vol_enabled": 0,
+        "ms_enabled": 0,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "test": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "holdout": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "enabled_providers": [
+        "ema_enabled"
+      ],
+      "verdict": "drop"
+    },
+    {
+      "config": "solo_RSI_agree1",
+      "params_overrides": {
+        "ema_enabled": 0,
+        "rsi_enabled": 1,
+        "macd_enabled": 0,
+        "adx_enabled": 0,
+        "bb_enabled": 0,
+        "st_enabled": 0,
+        "vol_enabled": 0,
+        "ms_enabled": 0,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "test": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "holdout": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "enabled_providers": [
+        "rsi_enabled"
+      ],
+      "verdict": "drop"
+    },
+    {
+      "config": "solo_MACD_agree1",
+      "params_overrides": {
+        "ema_enabled": 0,
+        "rsi_enabled": 0,
+        "macd_enabled": 1,
+        "adx_enabled": 0,
+        "bb_enabled": 0,
+        "st_enabled": 0,
+        "vol_enabled": 0,
+        "ms_enabled": 0,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": -0.3456843716362709,
+        "total_trades": 15,
+        "win_rate": 0.4,
+        "profit_factor": 1.0514545241917332,
+        "sharpe_ratio": 0.4711767940170939,
+        "max_drawdown_pct": 4.195916811717636,
+        "optimization_score": -5.11,
+        "ending_equity": 9965.431562836373
+      },
+      "test": {
+        "return_pct": 2.973507856367596,
+        "total_trades": 14,
+        "win_rate": 0.42857142857142855,
+        "profit_factor": 1.5348436633790727,
+        "sharpe_ratio": 2.78882376024372,
+        "max_drawdown_pct": 4.375139787910488,
+        "optimization_score": 35.37,
+        "ending_equity": 10297.35078563676
+      },
+      "holdout": {
+        "return_pct": 2.7742272125197633,
+        "total_trades": 11,
+        "win_rate": 0.45454545454545453,
+        "profit_factor": 1.7452204511476017,
+        "sharpe_ratio": 3.756326915425831,
+        "max_drawdown_pct": 4.33975564351682,
+        "optimization_score": 39.52,
+        "ending_equity": 10277.422721251976
+      },
+      "enabled_providers": [
+        "macd_enabled"
+      ],
+      "verdict": "watch"
+    },
+    {
+      "config": "solo_ADX_agree1",
+      "params_overrides": {
+        "ema_enabled": 0,
+        "rsi_enabled": 0,
+        "macd_enabled": 0,
+        "adx_enabled": 1,
+        "bb_enabled": 0,
+        "st_enabled": 0,
+        "vol_enabled": 0,
+        "ms_enabled": 0,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 6.194125234492276,
+        "total_trades": 21,
+        "win_rate": 0.5238095238095238,
+        "profit_factor": 1.7633332481065038,
+        "sharpe_ratio": 3.4899758727371584,
+        "max_drawdown_pct": 4.3766397341691565,
+        "optimization_score": 57.29,
+        "ending_equity": 10619.412523449228
+      },
+      "test": {
+        "return_pct": -0.2516122133681893,
+        "total_trades": 16,
+        "win_rate": 0.375,
+        "profit_factor": 1.1215183060605296,
+        "sharpe_ratio": 0.8114165469488429,
+        "max_drawdown_pct": 5.315529813486918,
+        "optimization_score": -2.31,
+        "ending_equity": 9974.838778663181
+      },
+      "holdout": {
+        "return_pct": 0.4527829838354773,
+        "total_trades": 16,
+        "win_rate": 0.375,
+        "profit_factor": 1.1614051971044481,
+        "sharpe_ratio": 1.1229613082372405,
+        "max_drawdown_pct": 4.486792277953832,
+        "optimization_score": 6.02,
+        "ending_equity": 10045.278298383548
+      },
+      "enabled_providers": [
+        "adx_enabled"
+      ],
+      "verdict": "keep"
+    },
+    {
+      "config": "solo_BB_agree1",
+      "params_overrides": {
+        "ema_enabled": 0,
+        "rsi_enabled": 0,
+        "macd_enabled": 0,
+        "adx_enabled": 0,
+        "bb_enabled": 1,
+        "st_enabled": 0,
+        "vol_enabled": 0,
+        "ms_enabled": 0,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "test": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "holdout": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "enabled_providers": [
+        "bb_enabled"
+      ],
+      "verdict": "drop"
+    },
+    {
+      "config": "solo_ST_agree1",
+      "params_overrides": {
+        "ema_enabled": 0,
+        "rsi_enabled": 0,
+        "macd_enabled": 0,
+        "adx_enabled": 0,
+        "bb_enabled": 0,
+        "st_enabled": 1,
+        "vol_enabled": 0,
+        "ms_enabled": 0,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": -7.281238978493347,
+        "total_trades": 12,
+        "win_rate": 0.16666666666666666,
+        "profit_factor": 0.3764761701988365,
+        "sharpe_ratio": -6.397490224018718,
+        "max_drawdown_pct": 7.219001097720707,
+        "optimization_score": -73.59,
+        "ending_equity": 9271.876102150665
+      },
+      "test": {
+        "return_pct": -5.3547874438078,
+        "total_trades": 6,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": -65.40363748957485,
+        "max_drawdown_pct": 5.181388954537834,
+        "optimization_score": -66.87,
+        "ending_equity": 9464.52125561922
+      },
+      "holdout": {
+        "return_pct": 0.19648533050549305,
+        "total_trades": 18,
+        "win_rate": 0.3888888888888889,
+        "profit_factor": 1.244688572743884,
+        "sharpe_ratio": 1.4490998762897513,
+        "max_drawdown_pct": 2.9517079933527963,
+        "optimization_score": 12.51,
+        "ending_equity": 10019.64853305055
+      },
+      "enabled_providers": [
+        "st_enabled"
+      ],
+      "verdict": "watch"
+    },
+    {
+      "config": "solo_VOL_agree1",
+      "params_overrides": {
+        "ema_enabled": 0,
+        "rsi_enabled": 0,
+        "macd_enabled": 0,
+        "adx_enabled": 0,
+        "bb_enabled": 0,
+        "st_enabled": 0,
+        "vol_enabled": 1,
+        "ms_enabled": 0,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 1.6325082434950855,
+        "total_trades": 20,
+        "win_rate": 0.4,
+        "profit_factor": 1.2307514482402253,
+        "sharpe_ratio": 1.4470096482391515,
+        "max_drawdown_pct": 4.025557292085229,
+        "optimization_score": 17.39,
+        "ending_equity": 10163.250824349509
+      },
+      "test": {
+        "return_pct": -5.540167053460373,
+        "total_trades": 8,
+        "win_rate": 0.125,
+        "profit_factor": 0.29148240865376074,
+        "sharpe_ratio": -8.813610196676047,
+        "max_drawdown_pct": 4.5885023153673865,
+        "optimization_score": -63.06,
+        "ending_equity": 9445.983294653963
+      },
+      "holdout": {
+        "return_pct": 4.377310503168847,
+        "total_trades": 9,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 2.370789357769621,
+        "sharpe_ratio": 5.160650490364647,
+        "max_drawdown_pct": 2.0761351304393427,
+        "optimization_score": -50.0,
+        "ending_equity": 10437.731050316885
+      },
+      "enabled_providers": [
+        "vol_enabled"
+      ],
+      "verdict": "drop"
+    },
+    {
+      "config": "solo_MS_agree1",
+      "params_overrides": {
+        "ema_enabled": 0,
+        "rsi_enabled": 0,
+        "macd_enabled": 0,
+        "adx_enabled": 0,
+        "bb_enabled": 0,
+        "st_enabled": 0,
+        "vol_enabled": 0,
+        "ms_enabled": 1,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 3.009190145620378,
+        "total_trades": 7,
+        "win_rate": 0.5714285714285714,
+        "profit_factor": 2.0933454116596577,
+        "sharpe_ratio": 4.379634949622974,
+        "max_drawdown_pct": 1.6912170546992962,
+        "optimization_score": -50.0,
+        "ending_equity": 10300.919014562038
+      },
+      "test": {
+        "return_pct": -3.9299350315435913,
+        "total_trades": 3,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": -989.6052261204333,
+        "max_drawdown_pct": 3.0707333144684346,
+        "optimization_score": -57.29,
+        "ending_equity": 9607.00649684564
+      },
+      "holdout": {
+        "return_pct": -2.8986757104627574,
+        "total_trades": 3,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": -1270.9743235303777,
+        "max_drawdown_pct": 2.101106329658742,
+        "optimization_score": -51.2,
+        "ending_equity": 9710.132428953724
+      },
+      "enabled_providers": [
+        "ms_enabled"
+      ],
+      "verdict": "drop"
+    },
+    {
+      "config": "A_EMA_only_agree1",
+      "params_overrides": {
+        "ema_enabled": 1,
+        "bb_enabled": 0,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "test": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "holdout": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "enabled_providers": [
+        "ema_enabled"
+      ],
+      "verdict": "drop"
+    },
+    {
+      "config": "B_BB_only_agree1",
+      "params_overrides": {
+        "ema_enabled": 0,
+        "bb_enabled": 1,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "test": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "holdout": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "enabled_providers": [
+        "bb_enabled"
+      ],
+      "verdict": "drop"
+    },
+    {
+      "config": "C_EMA_BB_agree1",
+      "params_overrides": {
+        "ema_enabled": 1,
+        "bb_enabled": 1,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "test": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "holdout": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "enabled_providers": [
+        "ema_enabled",
+        "bb_enabled"
+      ],
+      "verdict": "drop"
+    },
+    {
+      "config": "C_EMA_BB_agree1_fees_halved",
+      "params_overrides": {
+        "ema_enabled": 1,
+        "bb_enabled": 1,
+        "min_agreeing_providers": 1,
+        "fee_note": "half slip+fee"
+      },
+      "train": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "test": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "holdout": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "enabled_providers": [
+        "ema_enabled",
+        "bb_enabled"
+      ],
+      "verdict": "drop"
+    },
+    {
+      "config": "D_EMA_BB_agree2",
+      "params_overrides": {
+        "ema_enabled": 1,
+        "bb_enabled": 1,
+        "min_agreeing_providers": 2
+      },
+      "train": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "test": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "holdout": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "enabled_providers": [
+        "ema_enabled",
+        "bb_enabled"
+      ],
+      "verdict": "drop"
+    },
+    {
+      "config": "trend_EMA_MACD_ADX_agree1",
+      "params_overrides": {
+        "ema_enabled": 1,
+        "macd_enabled": 1,
+        "adx_enabled": 1,
+        "rsi_enabled": 0,
+        "bb_enabled": 0,
+        "st_enabled": 0,
+        "vol_enabled": 0,
+        "ms_enabled": 0,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 5.293422292297018,
+        "total_trades": 22,
+        "win_rate": 0.5,
+        "profit_factor": 1.6821957004171464,
+        "sharpe_ratio": 3.3159029589806743,
+        "max_drawdown_pct": 4.729946105794176,
+        "optimization_score": 50.37,
+        "ending_equity": 10529.342229229702
+      },
+      "test": {
+        "return_pct": 2.6457013753069987,
+        "total_trades": 19,
+        "win_rate": 0.42105263157894735,
+        "profit_factor": 1.407963984779079,
+        "sharpe_ratio": 2.2756004300467474,
+        "max_drawdown_pct": 5.059527891810413,
+        "optimization_score": 30.11,
+        "ending_equity": 10264.5701375307
+      },
+      "holdout": {
+        "return_pct": 3.849775359339401,
+        "total_trades": 15,
+        "win_rate": 0.4666666666666667,
+        "profit_factor": 1.9896140456818752,
+        "sharpe_ratio": 4.1074691362133855,
+        "max_drawdown_pct": 2.339537383761729,
+        "optimization_score": 52.61,
+        "ending_equity": 10384.97753593394
+      },
+      "enabled_providers": [
+        "ema_enabled",
+        "macd_enabled",
+        "adx_enabled"
+      ],
+      "verdict": "keep"
+    },
+    {
+      "config": "reversion_BB_RSI_agree1",
+      "params_overrides": {
+        "ema_enabled": 0,
+        "macd_enabled": 0,
+        "adx_enabled": 0,
+        "rsi_enabled": 1,
+        "bb_enabled": 1,
+        "st_enabled": 0,
+        "vol_enabled": 0,
+        "ms_enabled": 0,
+        "min_agreeing_providers": 1
+      },
+      "train": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "test": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "holdout": {
+        "return_pct": 0.0,
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": 0.0,
+        "max_drawdown_pct": 0.0,
+        "optimization_score": -50.0,
+        "ending_equity": 10000.0
+      },
+      "enabled_providers": [
+        "rsi_enabled",
+        "bb_enabled"
+      ],
+      "verdict": "drop"
+    }
+  ],
+  "keep_shortlist": [
+    "adx_enabled"
+  ],
+  "generated_at": "2026-08-25T12:13:36.986281+00:00"
+}

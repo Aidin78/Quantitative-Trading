@@ -56,26 +56,22 @@ Provider اسمش `EmaCrossoverProvider` است ولی عملاً یک فیلت�
 
 ---
 
-## ⚠️ پیدا شده، هنوز فیکس نشده — شکاف مدیریت ریسک (خارج از بحث backtest)
+## ✅ فیکس‌شده (به‌روزرسانی)
 
-### 4. `daily_drawdown_pct` هرگز محاسبه نمی‌شود — چک risk مربوطه عملاً بی‌اثر است
+### 4. `daily_drawdown_pct` هرگز محاسبه نمی‌شد — چک risk مربوطه عملاً بی‌اثر بود
 
-**فایل‌ها:** [state/store.py](../../backend/src/state/store.py), [engine/risk_manager.py:19-29](../../backend/src/engine/risk_manager.py#L19-L29), [execution/simulated_positions.py](../../backend/src/execution/simulated_positions.py)
+**فایل‌ها:** [core/contracts/state.py](../../backend/src/core/contracts/state.py), [state/store.py](../../backend/src/state/store.py), [runtime/platform_runtime.py](../../backend/src/runtime/platform_runtime.py), [engine/risk_manager.py:19-29](../../backend/src/engine/risk_manager.py#L19-L29)
 
-`RiskManager.evaluate` یک چک سخت‌گیرانه دارد: `risk.daily_drawdown_pct < max_daily_drawdown_pct` (پیش‌فرض ۵٪) که قرار است معاملات جدید را وقتی ضرر روزانه از حد مجاز عبور کرد مسدود کند.
+> این بخش قبلاً «هنوز فیکس نشده» علامت‌گذاری شده بود. بررسی مجدد (۲۰۲۶-۰۸-۲۵) نشان داد فیکس واقعی از قبل در دو کامیت روی `main` انجام شده بود: `57d45c8` («Add daily_start_equity to RiskState and update drawdown calculations in InMemoryStateStore») و `6d3301d` («fix: address code review findings on live/backtest parity, risk, and reliability»). فقط این سند به‌روزرسانی نشده بود.
 
-اما `daily_drawdown_pct`:
-- در `RiskState` مقدار پیش‌فرض `0.0` دارد
-- هر روز توسط `_maybe_reset_daily_risk` صفر می‌شود
-- **هیچ‌جا واقعاً محاسبه/افزایش داده نمی‌شود** — `close_position` (در `simulated_positions.py`) فقط `pnl` (مقدار مطلق) را در transition payload می‌گذارد، نه یک درصد drawdown
+`RiskManager.evaluate` چک `risk.daily_drawdown_pct < max_daily_drawdown_pct` (پیش‌فرض ۵٪) را دارد که معاملات جدید را وقتی ضرر روزانه از حد مجاز عبور کرد مسدود می‌کند — این چک بدون تغییر باقی مانده و درست است.
 
-نتیجه: این چک همیشه `0.0 < 5.0` است — یعنی **هرگز فعال نمی‌شود**، مستقل از این‌که چقدر پول در یک روز از دست برود. `daily_pnl` (مقدار مطلق دلاری) درست آپدیت می‌شود، ولی `daily_drawdown_pct` (که همان چیزیه که RiskManager واقعاً چک می‌کند) نه.
+**راه‌حل واقعی که پیاده شده:**
+- `RiskState.daily_start_equity: float = 0.0` — فیلد جدید additive روی contract فریز‌شده ([core/contracts/state.py](../../backend/src/core/contracts/state.py))
+- `state/store.py` در دو مسیر `daily_drawdown_pct` را محاسبه می‌کند: `_apply_position_closed` (بستن پوزیشن) و `_apply_mark_to_market` (revaluation لحظه‌ای پوزیشن‌های باز — چیزی که سند قبلی حتی اسمش را نبرده بود) — فرمول: `max(0.0, (start_equity - new_equity) / start_equity * 100)` با `start_equity = risk.daily_start_equity or new_equity`
+- `runtime/platform_runtime.py` → `_maybe_reset_daily_risk` روی مرز روز، `daily_start_equity` را به equity فعلی ریست می‌کند (نه در `store.py` همان‌طور که حدس اولیه بود)
 
-هیچ تستی هم این محاسبه را پوشش نمی‌دهد — تنها جاهایی که `daily_drawdown_pct` در تست‌ها ظاهر می‌شود، fixtureهای mock هستند که مقدار را دستی ست می‌کنند، نه مسیر واقعی state store.
-
-**این باگ روی نتایج بک‌تست مستقیماً اثر نمی‌گذارد (چون بک‌تست‌ها معمولاً به این حد ضرر روزانه نمی‌رسند)، ولی برای معاملات زنده یک circuit-breaker امنیتی مهم است که الان عملاً وجود ندارد.**
-
-**پیشنهاد فیکس:** در `_apply_position_closed` (یا `_maybe_reset_daily_risk`)، `daily_drawdown_pct` باید از equity ابتدای روز نسبت به equity فعلی (یا نسبت به peak روز) محاسبه و به‌روزرسانی شود، مشابه الگوی `max_drawdown_pct` که در `metrics.py` (`compute_monthly_breakdown`) از قبل درست پیاده‌سازی شده.
+**پوشش تست:** مسیر واقعی state store (نه فقط mock fixture) از قبل در `backend/tests/unit/state/test_transitions.py` پوشش داده شده بود. یک شکاف باقی‌مانده — تست end-to-end که ضرر واقعی → snapshot → `RiskManager.evaluate` → رد سیگنال بعدی را زنجیره کند — در `backend/tests/unit/engine/test_risk_limits.py` اضافه شد (`test_real_state_store_loss_produces_working_daily_drawdown_circuit_breaker`؛ ضرر ۶٪ روی ۱۰٬۰۰۰$ equity → `rejection_reason == "daily_drawdown"` تأیید شد). ۴۶۶ تست پاس.
 
 ---
 
@@ -98,6 +94,6 @@ Provider اسمش `EmaCrossoverProvider` است ولی عملاً یک فیلت�
 | 1 | فرمول confidence EMA/MACD/BB کالیبره‌نشده | بحرانی | ✅ فیکس شد |
 | 2 | تعریف اشتباه crossover (state به‌جای event) | بحرانی | ✅ فیکس شد |
 | 3 | Look-ahead bias در fill price (`fill_at: close`) | بحرانی | ⏳ در انتظار تصمیم |
-| 4 | `daily_drawdown_pct` هرگز محاسبه نمی‌شود | متوسط (ریسک زنده، نه بک‌تست) | ⏳ فیکس نشده |
+| 4 | `daily_drawdown_pct` هرگز محاسبه نمی‌شد | متوسط (ریسک زنده، نه بک‌تست) | ✅ فیکس شد (`57d45c8`, `6d3301d`) — تست end-to-end تکمیل شد ۲۰۲۶-۰۸-۲۵ |
 
 **نکته‌ی مهم:** حتی بعد از فیکس ۱ و ۲، ممکن است هیچ‌کدام از استراتژی‌های موجود (EMA cross، BB touch، ...) به‌تنهایی روی BTC/USDT در 1h ادج آماری پایدار نداشته باشند — چون این بازار به‌شدت رقابتی است و استراتژی‌های کلاسیک معمولاً توسط بازیگران دیگر آربیتراژ می‌شوند. نتیجه‌ی scorecard در حال اجرا (با فیکس ۱+۲) این را روشن می‌کند؛ اگر بازهم نتیجه ضعیف بود، گام بعدی می‌تواند شامل تست تایم‌فریم‌های بزرگ‌تر (4h/1d)، ترکیب چند provider هم‌راستا، یا طراحی provider جدید مبتنی بر فرضیه‌ی متفاوت باشد.

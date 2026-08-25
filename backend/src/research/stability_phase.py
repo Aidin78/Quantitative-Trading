@@ -355,6 +355,106 @@ def sweep_percentile_thresholds(
     )
 
 
+@dataclass(frozen=True)
+class BandThresholdRow:
+    percentile_threshold: float
+    window_index: int
+    trades: int
+    net_expectancy: float
+    win_rate_improvement_pp: float
+    below_min_trades: bool
+
+
+@dataclass(frozen=True)
+class ThresholdBandResult:
+    rows: list[BandThresholdRow]
+    n_windows: int
+    windows_all_positive_across_band: int
+    windows_evaluated: int
+    band_is_consistent: bool
+    detail: str
+
+
+def evaluate_threshold_band(
+    df_with_targets: pd.DataFrame,
+    *,
+    base_signal: BaseSignal = ema_compare,
+    magnitude_filter: MagnitudeFilter,
+    horizon: int,
+    percentile_thresholds: tuple[float, ...] = (85.0, 90.0, 95.0),
+    n_windows: int = 3,
+) -> ThresholdBandResult:
+    """Check whether every threshold in a band performs consistently well,
+    rather than one point in the band winning per sub-window (Path B).
+
+    Unlike ``sweep_percentile_thresholds``, this never selects a "best"
+    threshold and never reserves a holdout — there is nothing to leak into,
+    because no selection happens. Every threshold in ``percentile_thresholds``
+    is scored on every sub-window. A band is called "consistent" only when,
+    in every sub-window that has enough trades to compare (at every threshold
+    in the band), net-of-fees expectancy is positive at *every* threshold in
+    the band — i.e. committing upfront to trading anywhere in the band would
+    have worked, not just the one point that would have been picked in
+    hindsight.
+    """
+    rows: list[BandThresholdRow] = []
+    for threshold in percentile_thresholds:
+        window_results = evaluate_candidate_stability(
+            df_with_targets,
+            base_signal=base_signal,
+            magnitude_filter=magnitude_filter,
+            percentile_threshold=threshold,
+            horizon=horizon,
+            n_windows=n_windows,
+        )
+        for r in window_results:
+            rows.append(
+                BandThresholdRow(
+                    percentile_threshold=threshold,
+                    window_index=r.window_index,
+                    trades=r.filtered_stats.trades,
+                    net_expectancy=r.filtered_stats_net_fees.expectancy,
+                    win_rate_improvement_pp=r.win_rate_improvement_pp,
+                    below_min_trades=r.filtered_stats.trades < MIN_TRADES_FOR_COMPARISON,
+                )
+            )
+
+    windows_evaluated = 0
+    windows_all_positive = 0
+    for window_idx in range(n_windows):
+        window_rows = [r for r in rows if r.window_index == window_idx]
+        comparable = [r for r in window_rows if not r.below_min_trades]
+        if len(comparable) < len(percentile_thresholds):
+            # At least one threshold in the band had too few trades in this
+            # window to trust its expectancy — this window can't confirm or
+            # deny band consistency, so it's excluded rather than counted
+            # against the band.
+            continue
+        windows_evaluated += 1
+        if all(r.net_expectancy > 0 for r in comparable):
+            windows_all_positive += 1
+
+    band_is_consistent = windows_evaluated > 0 and windows_all_positive == windows_evaluated
+    detail = (
+        f"{windows_all_positive}/{windows_evaluated} evaluable sub-windows had positive "
+        f"net-of-fees expectancy at every threshold in the band "
+        f"({percentile_thresholds[0]:.0f}-{percentile_thresholds[-1]:.0f})"
+        + (
+            f"; {n_windows - windows_evaluated} window(s) excluded for insufficient trades"
+            if windows_evaluated < n_windows
+            else ""
+        )
+    )
+    return ThresholdBandResult(
+        rows=rows,
+        n_windows=n_windows,
+        windows_all_positive_across_band=windows_all_positive,
+        windows_evaluated=windows_evaluated,
+        band_is_consistent=band_is_consistent,
+        detail=detail,
+    )
+
+
 # --- ATR-based volatility filtering / sizing overlays -----------------------
 
 
