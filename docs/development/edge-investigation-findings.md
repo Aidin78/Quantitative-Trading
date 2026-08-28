@@ -2,9 +2,9 @@
 
 این سند نتیجه‌ی یک بررسی کامل کد پلتفرم است که برای پاسخ به این سؤال انجام شد: چرا هیچ‌کدام از Signal Providerهای موجود (EMA, MACD, RSI, ADX, BB, SuperTrend, Volume, Market Structure) روی BTC/USDT در تایم‌فریم 1h نتیجه‌ی پایدار (train/test/holdout هم‌سو) تولید نمی‌کردند.
 
-سه دسته مشکل پیدا شد: **باگ‌های فنی قطعی** (فیکس شده)، **یک باگ متدولوژیک مهم** (فیکس شده)، و **یک شکاف در مدیریت ریسک** (هنوز فیکس نشده).
+چهار مشکل پیدا شد — همه اکنون فیکس‌شده‌اند: **دو باگ فنی قطعی** (کالیبراسیون confidence، تعریف crossover)، **یک باگ متدولوژیک مهم** (look-ahead bias در fill price)، و **یک شکاف در مدیریت ریسک زنده** (`daily_drawdown_pct`).
 
-**نتیجه‌ی نهایی (بعد از فیکس همه‌ی موارد بحرانی):** هیچ‌کدام از EMA solo، BB solo، یا ترکیب EMA+BB روی BTC/USDT در تایم‌فریم 1h ادج آماری پایدار ندارند — نتایج قبلی که ادج مثبت نشان می‌دادند صرفاً محصول باگ‌های فنی (۱ و ۲) و بایاس نگاه‌به‌جلو (۳) بودند، نه یک الگوی واقعی بازار. جزئیات کامل در بخش [نتیجه‌ی نهایی](#نتیجه‌ی-نهایی-scorecard) پایین سند.
+**نتیجه‌ی نهایی (بعد از فیکس همه‌ی موارد بحرانی):** هیچ‌کدام از EMA solo، BB solo، یا ترکیب EMA+BB روی BTC/USDT در تایم‌فریم 1h ادج آماری پایدار ندارند — نتایج قبلی که ادج مثبت نشان می‌دادند صرفاً محصول باگ‌های فنی (۱ و ۲) و بایاس نگاه‌به‌جلو (۳) بودند، نه یک الگوی واقعی بازار. این نتیجه با تحقیق مستقل و عمیق‌تر در [candidate-stability-findings.md](./candidate-stability-findings.md) تأیید و تکمیل شد — از جمله رد شدن ensemble، تایم‌فریم بزرگ‌تر، و سیگنال‌های با فرضیه‌ی متفاوت (order-flow)، به‌همراه تأیید مستقیم که علت ریشه‌ای یک باگ زیرساختی نیست بلکه کوچک بودن gross edge نسبت به هزینه‌ی معامله است.
 
 ---
 
@@ -42,7 +42,9 @@ Provider اسمش `EmaCrossoverProvider` است ولی عملاً یک فیلت�
 
 ### 3. Look-ahead bias در قیمت پرشدن معامله
 
-**فایل‌ها:** [config/settings.yaml](../../config/settings.yaml), [execution/config.py:21](../../backend/src/execution/config.py#L21), [runtime/platform_runtime.py:66-68](../../backend/src/runtime/platform_runtime.py#L66-L68)
+**فایل‌ها:** [config/settings.yaml](../../config/settings.yaml), [execution/config.py:21](../../backend/src/execution/config.py#L21), [execution/simulated.py:243](../../backend/src/execution/simulated.py#L243), [execution/simulated_pending.py](../../backend/src/execution/simulated_pending.py), [execution/simulated_pricing.py:11-28](../../backend/src/execution/simulated_pricing.py#L11-L28), [runtime/platform_runtime.py](../../backend/src/runtime/platform_runtime.py)
+
+> این بخش قبلاً «⏳ در انتظار تصمیم» علامت‌گذاری شده بود. بررسی مجدد (۲۰۲۶-۰۸-۲۵) نشان داد فیکس از قبل commit شده بود (کامیت `1168473`، هم‌زمان با نگارش اولیه‌ی همین سند) و کاملاً کار می‌کند؛ فقط جدول جمع‌بندی سند به‌روزرسانی نشده بود — همان الگویی که برای مورد #۴ (`daily_drawdown_pct`) هم رخ داده بود.
 
 مدل fill پیش‌فرض قبلی (`close_price_v1`, `fill_at: close`) این‌طور کار می‌کرد:
 
@@ -50,9 +52,16 @@ Provider اسمش `EmaCrossoverProvider` است ولی عملاً یک فیلت�
 2. `entry_price` هم برابر همان `close` است
 3. معامله هم **دقیقاً همان‌جا** (با فقط ۵bps slippage) پر می‌شد
 
-در دنیای واقعی این ممکن نیست: تا کندل کامل نبسته `close`اش را نمی‌دانید، و تا آن لحظه دیگر نمی‌توانید با همان قیمت وارد شوید. خود کد قابلیت `fill_at: next_open` (سیگنال از `close[t]`، fill روی `open[t+1]`) را از قبل داشت (`PendingEntry` mechanism، پوشش تست دارد در `test_next_open_defers_fill_to_next_bar`)، اما هیچ‌جا در `settings.yaml` به‌عنوان مدل تعریف یا پیش‌فرض نشده بود.
+در دنیای واقعی این ممکن نیست: تا کندل کامل نبسته `close`اش را نمی‌دانید، و تا آن لحظه دیگر نمی‌توانید با همان قیمت وارد شوید.
 
-**فیکس:** یک مدل جدید `next_open_v1` (همان slippage/fee، ولی `fill_at: next_open`) در [config/settings.yaml](../../config/settings.yaml) اضافه شد و `default` به آن تغییر کرد. تست‌ها: ۳۲۷ پاس (بدون تغییر)، همان ۴ fail قبلی و بی‌ربط.
+**راه‌حل واقعی که پیاده و تأیید شده:**
+- `config/settings.yaml`: `fill_models.default: next_open_v1` (همان slippage=5bps/fee=10bps مدل قبلی، فقط `fill_at: next_open`) — `load_default_fill_model()` این را واقعاً می‌خواند.
+- `execution/simulated.py:243` — وقتی `fill_model.fill_at == "next_open"`، سفارش بلافاصله fill نمی‌شود؛ به‌جای آن یک `PendingEntry` صف می‌شود (`_pending_entries`).
+- `execution/simulated_pending.py::process_pending_entries` — در ابتدای **cycle بعدی**، با `bar` جدید (کندل بعد از سیگنال) صدا زده می‌شود.
+- `execution/simulated_pricing.py::fill_price` — وقتی `fill_at == "next_open"`، `base = bar["open"]` (نه `close`) است؛ این چک مستقل از پارامتر `use_next_open` هم برقرار است (`if use_next_open or engine._fill_model.fill_at == "next_open"`).
+- `runtime/platform_runtime.py::run_cycle` → `evaluate_bar` (pre-decision، step 1 طبق docstring کلاس) هر cycle را با پردازش pending entries شروع می‌کند — یعنی سیگنال از `close[t]` صادر می‌شود و fill واقعاً روی `open[t+1]` رخ می‌دهد، دقیقاً طبق طراحی مستندشده در docstring `PlatformRuntime`.
+
+**پوشش تست:** `test_next_open_defers_fill_to_next_bar` (تأیید صف‌شدن و fill روی کندل بعد) + کل `tests/unit/execution/` (۱۱ تست، همه pass). هیچ فایلی اشاره‌ای به `close_price_v1` به‌عنوان پیش‌فرض واقعی ندارد (فقط یک fallback مرده در `execution/config.py:44` برای زمانی که کلید `default` در YAML وجود نداشته باشد، که نیست).
 
 ---
 
@@ -93,7 +102,7 @@ Provider اسمش `EmaCrossoverProvider` است ولی عملاً یک فیلت�
 |---|---|---|---|
 | 1 | فرمول confidence EMA/MACD/BB کالیبره‌نشده | بحرانی | ✅ فیکس شد |
 | 2 | تعریف اشتباه crossover (state به‌جای event) | بحرانی | ✅ فیکس شد |
-| 3 | Look-ahead bias در fill price (`fill_at: close`) | بحرانی | ⏳ در انتظار تصمیم |
+| 3 | Look-ahead bias در fill price (`fill_at: close`) | بحرانی | ✅ فیکس شد (`1168473`) — تأیید شد ۲۰۲۶-۰۸-۲۵ |
 | 4 | `daily_drawdown_pct` هرگز محاسبه نمی‌شد | متوسط (ریسک زنده، نه بک‌تست) | ✅ فیکس شد (`57d45c8`, `6d3301d`) — تست end-to-end تکمیل شد ۲۰۲۶-۰۸-۲۵ |
 
-**نکته‌ی مهم:** حتی بعد از فیکس ۱ و ۲، ممکن است هیچ‌کدام از استراتژی‌های موجود (EMA cross، BB touch، ...) به‌تنهایی روی BTC/USDT در 1h ادج آماری پایدار نداشته باشند — چون این بازار به‌شدت رقابتی است و استراتژی‌های کلاسیک معمولاً توسط بازیگران دیگر آربیتراژ می‌شوند. نتیجه‌ی scorecard در حال اجرا (با فیکس ۱+۲) این را روشن می‌کند؛ اگر بازهم نتیجه ضعیف بود، گام بعدی می‌تواند شامل تست تایم‌فریم‌های بزرگ‌تر (4h/1d)، ترکیب چند provider هم‌راستا، یا طراحی provider جدید مبتنی بر فرضیه‌ی متفاوت باشد.
+**نکته‌ی مهم (به‌روزرسانی ۲۰۲۶-۰۸-۲۵):** این نگرانی — که هیچ‌کدام از استراتژی‌های موجود به‌تنهایی روی BTC/USDT در 1h ادج آماری پایدار نداشته باشند چون بازار به‌شدت رقابتی است — با تحقیق مستقل و مفصل در [candidate-stability-findings.md](./candidate-stability-findings.md) به‌طور کامل بررسی شد: چهار مسیر (تنظیم آستانه، ترکیب چند provider هم‌راستا، تایم‌فریم بزرگ‌تر ۴h/1d، و سیگنال با فرضیه‌ی متفاوت مثل order-flow) همگی تست و رد شدند. بررسی زیرساخت در همان سند نشان داد این نتیجه یک یافته‌ی آماری واقعی است، نه باگ: gross edge سیگنال‌های کلاسیک روی این بازار/تایم‌فریم به‌قدری کوچک است که هزینه‌ی واقعی معامله (fee+slippage، حدود ۰.۳٪ رفت‌وبرگشت) آن را می‌بلعد.

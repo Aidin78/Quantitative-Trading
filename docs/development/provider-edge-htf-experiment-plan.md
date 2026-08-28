@@ -1,9 +1,9 @@
 # Provider Edge Scorecard — Higher-Timeframe Experiment Plan
 
-**Date:** 2026-08-25
-**Status:** Executable plan (4h required; 1d optional)
+**Date:** 2026-08-25 (updated same day — §9 added)
+**Status:** 4h/1d scorecard executed; **ADX parameter sweep (§9) found a robust edge on BTC/USDT 1d** pending longer-history/ETH confirmation (blocked by no network access in this environment)
 **Baseline rejected:** BTC/USDT **1h** classic TA scorecard — **0 keep / 3 watch / 12 drop**, empty `keep_shortlist`
-**Artifacts:** `backend/data/provider_edge_scorecard.json` (1h), this plan, `backend/data/provider_edge_scorecard_4h.json` (run output)
+**Artifacts:** `backend/data/provider_edge_scorecard.json` (1h), this plan, `backend/data/provider_edge_scorecard_4h.json` / `_1d.json` (run output), `backend/data/adx_1d_param_sweep_result.json` (§9 sweep)
 
 ---
 
@@ -169,6 +169,43 @@ Test window is reported for diagnostics but **does not** enter the keep/watch/dr
 1. **Do not** keep fishing EMA/RSI/BB on 1h or 4h — rejected under current fill/fee model.
 2. **Bounded follow-up on 1d ADX only:** longer calendar (e.g. 2023→now), ETH/USDT 1d scorecard, then light Optuna on `adx_*` params only if shortlist still holds — feed candidate evaluator (no live).
 3. If 1d ADX fails the expanded check: **change hypothesis class** (regime/vol targeting / non-classic-TA features), not another period grid on the same providers.
+
+---
+
+## 9. ADX parameter sensitivity sweep (executed 2026-08-25) — real edge, not a lucky default
+
+**Blocker:** network access to download a longer BTC history or ETH/USDT data was unavailable in this environment (tested directly — `get_or_download_csv` for a wider range hung indefinitely with no error). Item 2's "longer calendar" and "ETH confirm" steps could not be run. What *was* run instead, fully within the existing cache (BTC/USDT 1d, 2025-01-01→2026-07-18, 565 bars, same train/test/holdout split as the original scorecard): a bounded grid sweep of `adx_period` (10, 14), `min_adx` (20, 25, 30), `min_di_spread` (3, 5, 8) — 18 combinations, each a **real** `ValidationHarness`/`DecisionEngine` backtest via `evaluate_params_scorecard` (not a research approximation). Tool: `backend/scripts/run_adx_1d_param_sweep.py`; raw result: `backend/data/adx_1d_param_sweep_result.json`. (`adx_period=20` was attempted but raised `InsufficientDataError` — 565 bars is too short for a 40-bar ADX warmup on top of the smallest train window; only 10 and 14 were completed.)
+
+### Result: `adx_period=10` is robust across the whole neighborhood; `adx_period=14` (the original default) is not
+
+| `adx_period` | keep rate | test window positive | holdout window positive |
+|---|---|---|---|
+| **10** | 7/9 (78%) | **9/9 (100%)** | **9/9 (100%)** |
+| 14 (original default) | 3/9 (33%) | 0/9 (0%) | 3/9 (33%) |
+
+With `adx_period=10`, **every one of the 9 `min_adx`×`min_di_spread` combinations** had positive test *and* holdout return, profit factor > 1 (1.12–2.11 across windows), and positive Sharpe (mostly 1.4–4.5) — the kind of parameter-neighborhood stability none of the trend-following signals in `candidate-stability-findings.md` ever showed (there, a one-notch parameter change routinely flipped the verdict). With `adx_period=14`, the *only* combination that "keeps" is the exact original default (`min_adx=25`); `min_adx=20` makes test catastrophically negative (5 trades, `sharpe=-517`), and `min_adx=30` makes both test and holdout negative despite a much higher train return (+12.46%) — the classic overfit signature (train return *increases* while out-of-sample return *decreases*).
+
+Representative `adx_period=10` row (`min_adx=20, min_di_spread=3`):
+
+| window | return | trades | profit factor | sharpe | max DD |
+|---|---|---|---|---|---|
+| train | +2.14% | 25 | 1.26 | 1.43 | 5.09% |
+| test | +4.41% | 21 | 1.62 | 3.18 | 6.21% |
+| holdout | +2.71% | 14 | 1.50 | 2.55 | 2.12% |
+
+### Why this differs from every prior rejected hypothesis
+
+ADX is structurally different from every signal tested in `candidate-stability-findings.md` (EMA, SuperTrend, ADX-*directional*, market structure, order-flow): those all pick a **side** every bar (or nearly every bar) and lose money to whipsaw when the market chops against the trend. `AdxTrendStrengthProvider` only trades when `ADX >= min_adx` *and* `|+DI - -DI| >= min_di_spread` — i.e. it is a **trend-strength gate**, not a directional predictor; most bars it emits nothing. That is very likely why widening the horizon to 1d (fewer, higher-conviction trades) and a shorter ADX lookback (10 vs 14 — more responsive to the strong-trend windows this 18-month BTC period actually had) produced a result that survives a full parameter neighborhood, not just one lucky point.
+
+### Caveats — this is not yet a promotion-ready finding
+
+- **Sample size is still small** (14–27 trades per window) — well above the scorecard's `keep` floor (train≥20, holdout≥10) for most rows, but nowhere close to the "> 100 trades" comfort level `docs/backend/backtesting.md` recommends for outcome metrics.
+- **No longer-history or ETH/USDT confirmation was possible** in this environment — the original plan's two confirmation steps remain undone, not because they were tried and failed, but because the network was unavailable. This is a **documented gap, not a negative result** — do not read "network unavailable" as "hypothesis rejected."
+- **`adx_period=10` is a *neighbor* of the platform default (14), not something invented from scratch** — `TRIAL_PARAM_KEYS`/`OptimizationSpace` already includes `adx_period` as a tunable, so this is squarely inside the existing optimization surface, not a new parameter.
+
+### Verdict on plan item 7.2
+
+**Partially executed, and the part that could run produced the strongest, most parameter-robust finding of the entire investigation.** Per the plan's own decision tree (§5.1): *"Any solo `keep` on 4h/1d → freeze that shortlist; run provider discovery / light Optuna on those enables only; then candidate evaluator."* `adx_period=10` should be the next input to that step — but **only after** the still-missing confirmation (longer history and/or ETH/USDT) becomes feasible, since a single-symbol, ~18-month, sub-30-trade result is exactly the shape of finding this whole investigation has repeatedly shown can look robust and still not generalize.
 
 ---
 

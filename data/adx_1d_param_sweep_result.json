@@ -1,0 +1,677 @@
+{
+  "symbol": "BTC/USDT",
+  "timeframe": "1d",
+  "start": "2025-01-01",
+  "end": "2026-07-18",
+  "grid": {
+    "adx_period": [
+      10,
+      14
+    ],
+    "min_adx": [
+      20.0,
+      25.0,
+      30.0
+    ],
+    "min_di_spread": [
+      3.0,
+      5.0,
+      8.0
+    ]
+  },
+  "results": [
+    {
+      "adx_period": 10,
+      "min_adx": 20.0,
+      "min_di_spread": 3.0,
+      "verdict": "keep",
+      "train": {
+        "return_pct": 2.1357946966036616,
+        "total_trades": 25,
+        "win_rate": 0.44,
+        "profit_factor": 1.2552202147521982,
+        "sharpe_ratio": 1.4310603822882246,
+        "max_drawdown_pct": 5.092883984351723,
+        "optimization_score": 19.59,
+        "ending_equity": 10213.579469660366
+      },
+      "test": {
+        "return_pct": 4.408834742621257,
+        "total_trades": 21,
+        "win_rate": 0.42857142857142855,
+        "profit_factor": 1.6179173315160045,
+        "sharpe_ratio": 3.1770330354516516,
+        "max_drawdown_pct": 6.212289752920597,
+        "optimization_score": 40.74,
+        "ending_equity": 10440.883474262126
+      },
+      "holdout": {
+        "return_pct": 2.70910771440771,
+        "total_trades": 14,
+        "win_rate": 0.5,
+        "profit_factor": 1.4965042594014737,
+        "sharpe_ratio": 2.5523832383493845,
+        "max_drawdown_pct": 2.123699685393658,
+        "optimization_score": 38.94,
+        "ending_equity": 10270.910771440771
+      }
+    },
+    {
+      "adx_period": 10,
+      "min_adx": 20.0,
+      "min_di_spread": 5.0,
+      "verdict": "keep",
+      "train": {
+        "return_pct": 2.1357946966036616,
+        "total_trades": 25,
+        "win_rate": 0.44,
+        "profit_factor": 1.2552202147521982,
+        "sharpe_ratio": 1.4310603822882246,
+        "max_drawdown_pct": 5.092883984351723,
+        "optimization_score": 19.59,
+        "ending_equity": 10213.579469660366
+      },
+      "test": {
+        "return_pct": 4.408834742621257,
+        "total_trades": 21,
+        "win_rate": 0.42857142857142855,
+        "profit_factor": 1.6179173315160045,
+        "sharpe_ratio": 3.1770330354516516,
+        "max_drawdown_pct": 6.212289752920597,
+        "optimization_score": 40.74,
+        "ending_equity": 10440.883474262126
+      },
+      "holdout": {
+        "return_pct": 2.70910771440771,
+        "total_trades": 14,
+        "win_rate": 0.5,
+        "profit_factor": 1.4965042594014737,
+        "sharpe_ratio": 2.5523832383493845,
+        "max_drawdown_pct": 2.123699685393658,
+        "optimization_score": 38.94,
+        "ending_equity": 10270.910771440771
+      }
+    },
+    {
+      "adx_period": 10,
+      "min_adx": 20.0,
+      "min_di_spread": 8.0,
+      "verdict": "keep",
+      "train": {
+        "return_pct": 0.34303616572884493,
+        "total_trades": 22,
+        "win_rate": 0.45454545454545453,
+        "profit_factor": 1.120568040312377,
+        "sharpe_ratio": 0.7846876420152991,
+        "max_drawdown_pct": 5.672232531195091,
+        "optimization_score": 1.93,
+        "ending_equity": 10034.303616572884
+      },
+      "test": {
+        "return_pct": 5.014494580729679,
+        "total_trades": 20,
+        "win_rate": 0.45,
+        "profit_factor": 1.7596113417046109,
+        "sharpe_ratio": 3.5755023726986903,
+        "max_drawdown_pct": 5.5596161463439255,
+        "optimization_score": 47.92,
+        "ending_equity": 10501.449458072968
+      },
+      "holdout": {
+        "return_pct": 2.70910771440771,
+        "total_trades": 14,
+        "win_rate": 0.5,
+        "profit_factor": 1.4965042594014737,
+        "sharpe_ratio": 2.5523832383493845,
+        "max_drawdown_pct": 2.123699685393658,
+        "optimization_score": 38.94,
+        "ending_equity": 10270.910771440771
+      }
+    },
+    {
+      "adx_period": 10,
+      "min_adx": 25.0,
+      "min_di_spread": 3.0,
+      "verdict": "keep",
+      "train": {
+        "return_pct": 3.139511299618025,
+        "total_trades": 21,
+        "win_rate": 0.47619047619047616,
+        "profit_factor": 1.4462880765931132,
+        "sharpe_ratio": 2.3191049713032967,
+        "max_drawdown_pct": 5.297704677083151,
+        "optimization_score": 34.39,
+        "ending_equity": 10313.951129961803
+      },
+      "test": {
+        "return_pct": 1.4886675054759326,
+        "total_trades": 20,
+        "win_rate": 0.4,
+        "profit_factor": 1.2770894249489024,
+        "sharpe_ratio": 1.6147604099865058,
+        "max_drawdown_pct": 6.235364317506934,
+        "optimization_score": 16.04,
+        "ending_equity": 10148.866750547593
+      },
+      "holdout": {
+        "return_pct": 3.223012559387025,
+        "total_trades": 14,
+        "win_rate": 0.5,
+        "profit_factor": 1.5177958727117693,
+        "sharpe_ratio": 2.681557148903645,
+        "max_drawdown_pct": 2.123699685393658,
+        "optimization_score": 41.67,
+        "ending_equity": 10322.301255938703
+      }
+    },
+    {
+      "adx_period": 10,
+      "min_adx": 25.0,
+      "min_di_spread": 5.0,
+      "verdict": "keep",
+      "train": {
+        "return_pct": 3.139511299618025,
+        "total_trades": 21,
+        "win_rate": 0.47619047619047616,
+        "profit_factor": 1.4462880765931132,
+        "sharpe_ratio": 2.3191049713032967,
+        "max_drawdown_pct": 5.297704677083151,
+        "optimization_score": 34.39,
+        "ending_equity": 10313.951129961803
+      },
+      "test": {
+        "return_pct": 1.4886675054759326,
+        "total_trades": 20,
+        "win_rate": 0.4,
+        "profit_factor": 1.2770894249489024,
+        "sharpe_ratio": 1.6147604099865058,
+        "max_drawdown_pct": 6.235364317506934,
+        "optimization_score": 16.04,
+        "ending_equity": 10148.866750547593
+      },
+      "holdout": {
+        "return_pct": 3.223012559387025,
+        "total_trades": 14,
+        "win_rate": 0.5,
+        "profit_factor": 1.5177958727117693,
+        "sharpe_ratio": 2.681557148903645,
+        "max_drawdown_pct": 2.123699685393658,
+        "optimization_score": 41.67,
+        "ending_equity": 10322.301255938703
+      }
+    },
+    {
+      "adx_period": 10,
+      "min_adx": 25.0,
+      "min_di_spread": 8.0,
+      "verdict": "drop",
+      "train": {
+        "return_pct": 3.505539789389095,
+        "total_trades": 19,
+        "win_rate": 0.5263157894736842,
+        "profit_factor": 1.5945961506091095,
+        "sharpe_ratio": 2.596340961678406,
+        "max_drawdown_pct": 4.518562916554774,
+        "optimization_score": 41.68,
+        "ending_equity": 10350.55397893891
+      },
+      "test": {
+        "return_pct": 2.462112789937164,
+        "total_trades": 19,
+        "win_rate": 0.3684210526315789,
+        "profit_factor": 1.3654094117901014,
+        "sharpe_ratio": 1.893315393717926,
+        "max_drawdown_pct": 5.453557410945883,
+        "optimization_score": 25.19,
+        "ending_equity": 10246.211278993716
+      },
+      "holdout": {
+        "return_pct": 3.223012559387025,
+        "total_trades": 14,
+        "win_rate": 0.5,
+        "profit_factor": 1.5177958727117693,
+        "sharpe_ratio": 2.681557148903645,
+        "max_drawdown_pct": 2.123699685393658,
+        "optimization_score": 41.67,
+        "ending_equity": 10322.301255938703
+      }
+    },
+    {
+      "adx_period": 10,
+      "min_adx": 30.0,
+      "min_di_spread": 3.0,
+      "verdict": "keep",
+      "train": {
+        "return_pct": 11.660898024261696,
+        "total_trades": 27,
+        "win_rate": 0.6296296296296297,
+        "profit_factor": 2.105860241966493,
+        "sharpe_ratio": 4.543407110898392,
+        "max_drawdown_pct": 4.293825210589443,
+        "optimization_score": 82.45,
+        "ending_equity": 11166.08980242617
+      },
+      "test": {
+        "return_pct": 1.2755105290660869,
+        "total_trades": 17,
+        "win_rate": 0.35294117647058826,
+        "profit_factor": 1.3120925764206381,
+        "sharpe_ratio": 1.735253162091125,
+        "max_drawdown_pct": 4.249310924269311,
+        "optimization_score": 18.55,
+        "ending_equity": 10127.551052906609
+      },
+      "holdout": {
+        "return_pct": 3.282201595386923,
+        "total_trades": 14,
+        "win_rate": 0.5,
+        "profit_factor": 1.5306159546591613,
+        "sharpe_ratio": 2.7252217536293757,
+        "max_drawdown_pct": 2.123699685393658,
+        "optimization_score": 42.2,
+        "ending_equity": 10328.220159538692
+      }
+    },
+    {
+      "adx_period": 10,
+      "min_adx": 30.0,
+      "min_di_spread": 5.0,
+      "verdict": "keep",
+      "train": {
+        "return_pct": 11.660898024261696,
+        "total_trades": 27,
+        "win_rate": 0.6296296296296297,
+        "profit_factor": 2.105860241966493,
+        "sharpe_ratio": 4.543407110898392,
+        "max_drawdown_pct": 4.293825210589443,
+        "optimization_score": 82.45,
+        "ending_equity": 11166.08980242617
+      },
+      "test": {
+        "return_pct": 1.2755105290660869,
+        "total_trades": 17,
+        "win_rate": 0.35294117647058826,
+        "profit_factor": 1.3120925764206381,
+        "sharpe_ratio": 1.735253162091125,
+        "max_drawdown_pct": 4.249310924269311,
+        "optimization_score": 18.55,
+        "ending_equity": 10127.551052906609
+      },
+      "holdout": {
+        "return_pct": 3.282201595386923,
+        "total_trades": 14,
+        "win_rate": 0.5,
+        "profit_factor": 1.5306159546591613,
+        "sharpe_ratio": 2.7252217536293757,
+        "max_drawdown_pct": 2.123699685393658,
+        "optimization_score": 42.2,
+        "ending_equity": 10328.220159538692
+      }
+    },
+    {
+      "adx_period": 10,
+      "min_adx": 30.0,
+      "min_di_spread": 8.0,
+      "verdict": "drop",
+      "train": {
+        "return_pct": 5.29541060406993,
+        "total_trades": 18,
+        "win_rate": 0.5555555555555556,
+        "profit_factor": 1.8135056360652686,
+        "sharpe_ratio": 3.377629477653494,
+        "max_drawdown_pct": 3.4580727988339666,
+        "optimization_score": 56.58,
+        "ending_equity": 10529.541060406993
+      },
+      "test": {
+        "return_pct": 3.0729374882341833,
+        "total_trades": 15,
+        "win_rate": 0.4,
+        "profit_factor": 1.7033594333001798,
+        "sharpe_ratio": 3.119778324137226,
+        "max_drawdown_pct": 2.8745592578491053,
+        "optimization_score": 40.58,
+        "ending_equity": 10307.293748823418
+      },
+      "holdout": {
+        "return_pct": 3.282201595386923,
+        "total_trades": 14,
+        "win_rate": 0.5,
+        "profit_factor": 1.5306159546591613,
+        "sharpe_ratio": 2.7252217536293757,
+        "max_drawdown_pct": 2.123699685393658,
+        "optimization_score": 42.2,
+        "ending_equity": 10328.220159538692
+      }
+    },
+    {
+      "adx_period": 14,
+      "min_adx": 20.0,
+      "min_di_spread": 3.0,
+      "verdict": "drop",
+      "train": {
+        "return_pct": 6.299617129408361,
+        "total_trades": 22,
+        "win_rate": 0.5454545454545454,
+        "profit_factor": 1.6220259996340876,
+        "sharpe_ratio": 3.079594390619299,
+        "max_drawdown_pct": 5.2213198122093285,
+        "optimization_score": 54.32,
+        "ending_equity": 10629.961712940836
+      },
+      "test": {
+        "return_pct": -5.6075573871043165,
+        "total_trades": 5,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": -517.2352232775135,
+        "max_drawdown_pct": 4.014520790061615,
+        "optimization_score": -66.26,
+        "ending_equity": 9439.244261289568
+      },
+      "holdout": {
+        "return_pct": -0.1001903172548191,
+        "total_trades": 17,
+        "win_rate": 0.4117647058823529,
+        "profit_factor": 1.1434969849995378,
+        "sharpe_ratio": 0.9622941845488807,
+        "max_drawdown_pct": 3.539521600418312,
+        "optimization_score": 4.09,
+        "ending_equity": 9989.980968274518
+      }
+    },
+    {
+      "adx_period": 14,
+      "min_adx": 20.0,
+      "min_di_spread": 5.0,
+      "verdict": "drop",
+      "train": {
+        "return_pct": 6.299617129408361,
+        "total_trades": 22,
+        "win_rate": 0.5454545454545454,
+        "profit_factor": 1.6220259996340876,
+        "sharpe_ratio": 3.079594390619299,
+        "max_drawdown_pct": 5.2213198122093285,
+        "optimization_score": 54.32,
+        "ending_equity": 10629.961712940836
+      },
+      "test": {
+        "return_pct": -5.6075573871043165,
+        "total_trades": 5,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": -517.2352232775135,
+        "max_drawdown_pct": 4.014520790061615,
+        "optimization_score": -66.26,
+        "ending_equity": 9439.244261289568
+      },
+      "holdout": {
+        "return_pct": -0.1001903172548191,
+        "total_trades": 17,
+        "win_rate": 0.4117647058823529,
+        "profit_factor": 1.1434969849995378,
+        "sharpe_ratio": 0.9622941845488807,
+        "max_drawdown_pct": 3.539521600418312,
+        "optimization_score": 4.09,
+        "ending_equity": 9989.980968274518
+      }
+    },
+    {
+      "adx_period": 14,
+      "min_adx": 20.0,
+      "min_di_spread": 8.0,
+      "verdict": "drop",
+      "train": {
+        "return_pct": 6.299617129408361,
+        "total_trades": 22,
+        "win_rate": 0.5454545454545454,
+        "profit_factor": 1.6220259996340876,
+        "sharpe_ratio": 3.079594390619299,
+        "max_drawdown_pct": 5.2213198122093285,
+        "optimization_score": 54.32,
+        "ending_equity": 10629.961712940836
+      },
+      "test": {
+        "return_pct": -5.6075573871043165,
+        "total_trades": 5,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "sharpe_ratio": -517.2352232775135,
+        "max_drawdown_pct": 4.014520790061615,
+        "optimization_score": -66.26,
+        "ending_equity": 9439.244261289568
+      },
+      "holdout": {
+        "return_pct": -0.3608483370989779,
+        "total_trades": 18,
+        "win_rate": 0.3888888888888889,
+        "profit_factor": 1.0912741217138866,
+        "sharpe_ratio": 0.6730764598197667,
+        "max_drawdown_pct": 3.9172987412867157,
+        "optimization_score": -2.28,
+        "ending_equity": 9963.915166290102
+      }
+    },
+    {
+      "adx_period": 14,
+      "min_adx": 25.0,
+      "min_di_spread": 3.0,
+      "verdict": "keep",
+      "train": {
+        "return_pct": 6.194125234492276,
+        "total_trades": 21,
+        "win_rate": 0.5238095238095238,
+        "profit_factor": 1.7633332481065038,
+        "sharpe_ratio": 3.4899758727371584,
+        "max_drawdown_pct": 4.3766397341691565,
+        "optimization_score": 57.29,
+        "ending_equity": 10619.412523449228
+      },
+      "test": {
+        "return_pct": -0.30862567875003155,
+        "total_trades": 16,
+        "win_rate": 0.375,
+        "profit_factor": 1.1200068517779111,
+        "sharpe_ratio": 0.8039877111139846,
+        "max_drawdown_pct": 5.326942586372138,
+        "optimization_score": -2.69,
+        "ending_equity": 9969.137432124997
+      },
+      "holdout": {
+        "return_pct": 0.4527829838354773,
+        "total_trades": 16,
+        "win_rate": 0.375,
+        "profit_factor": 1.1614051971044481,
+        "sharpe_ratio": 1.1229613082372405,
+        "max_drawdown_pct": 4.486792277953832,
+        "optimization_score": 6.02,
+        "ending_equity": 10045.278298383548
+      }
+    },
+    {
+      "adx_period": 14,
+      "min_adx": 25.0,
+      "min_di_spread": 5.0,
+      "verdict": "keep",
+      "train": {
+        "return_pct": 6.194125234492276,
+        "total_trades": 21,
+        "win_rate": 0.5238095238095238,
+        "profit_factor": 1.7633332481065038,
+        "sharpe_ratio": 3.4899758727371584,
+        "max_drawdown_pct": 4.3766397341691565,
+        "optimization_score": 57.29,
+        "ending_equity": 10619.412523449228
+      },
+      "test": {
+        "return_pct": -0.2516122133681893,
+        "total_trades": 16,
+        "win_rate": 0.375,
+        "profit_factor": 1.1215183060605296,
+        "sharpe_ratio": 0.8114165469488429,
+        "max_drawdown_pct": 5.315529813486918,
+        "optimization_score": -2.31,
+        "ending_equity": 9974.838778663181
+      },
+      "holdout": {
+        "return_pct": 0.4527829838354773,
+        "total_trades": 16,
+        "win_rate": 0.375,
+        "profit_factor": 1.1614051971044481,
+        "sharpe_ratio": 1.1229613082372405,
+        "max_drawdown_pct": 4.486792277953832,
+        "optimization_score": 6.02,
+        "ending_equity": 10045.278298383548
+      }
+    },
+    {
+      "adx_period": 14,
+      "min_adx": 25.0,
+      "min_di_spread": 8.0,
+      "verdict": "keep",
+      "train": {
+        "return_pct": 6.194125234492276,
+        "total_trades": 21,
+        "win_rate": 0.5238095238095238,
+        "profit_factor": 1.7633332481065038,
+        "sharpe_ratio": 3.4899758727371584,
+        "max_drawdown_pct": 4.3766397341691565,
+        "optimization_score": 57.29,
+        "ending_equity": 10619.412523449228
+      },
+      "test": {
+        "return_pct": -0.049463356584928994,
+        "total_trades": 16,
+        "win_rate": 0.375,
+        "profit_factor": 1.1228849968368373,
+        "sharpe_ratio": 0.7980029742061824,
+        "max_drawdown_pct": 5.305236580024923,
+        "optimization_score": -1.49,
+        "ending_equity": 9995.053664341507
+      },
+      "holdout": {
+        "return_pct": 0.8075089505086362,
+        "total_trades": 16,
+        "win_rate": 0.375,
+        "profit_factor": 1.1856344506690868,
+        "sharpe_ratio": 1.2548012701926992,
+        "max_drawdown_pct": 4.316146892289876,
+        "optimization_score": 9.67,
+        "ending_equity": 10080.750895050864
+      }
+    },
+    {
+      "adx_period": 14,
+      "min_adx": 30.0,
+      "min_di_spread": 3.0,
+      "verdict": "drop",
+      "train": {
+        "return_pct": 12.460987898946115,
+        "total_trades": 21,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 2.387735756546875,
+        "sharpe_ratio": 5.938537337415913,
+        "max_drawdown_pct": 3.410337008046823,
+        "optimization_score": 84.88,
+        "ending_equity": 11246.098789894611
+      },
+      "test": {
+        "return_pct": -3.07372965564231,
+        "total_trades": 13,
+        "win_rate": 0.3076923076923077,
+        "profit_factor": 0.7736167020593105,
+        "sharpe_ratio": -1.2070363042134287,
+        "max_drawdown_pct": 5.323949726306251,
+        "optimization_score": -39.66,
+        "ending_equity": 9692.627034435769
+      },
+      "holdout": {
+        "return_pct": -2.369856501784816,
+        "total_trades": 12,
+        "win_rate": 0.3333333333333333,
+        "profit_factor": 0.7431448924209804,
+        "sharpe_ratio": -2.0353244348356854,
+        "max_drawdown_pct": 3.673134111755861,
+        "optimization_score": -41.17,
+        "ending_equity": 9763.014349821518
+      }
+    },
+    {
+      "adx_period": 14,
+      "min_adx": 30.0,
+      "min_di_spread": 5.0,
+      "verdict": "drop",
+      "train": {
+        "return_pct": 12.460987898946115,
+        "total_trades": 21,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 2.387735756546875,
+        "sharpe_ratio": 5.938537337415913,
+        "max_drawdown_pct": 3.410337008046823,
+        "optimization_score": 84.88,
+        "ending_equity": 11246.098789894611
+      },
+      "test": {
+        "return_pct": -3.0182976590880934,
+        "total_trades": 13,
+        "win_rate": 0.3076923076923077,
+        "profit_factor": 0.7747807734768238,
+        "sharpe_ratio": -1.1983944365305488,
+        "max_drawdown_pct": 5.312528900046354,
+        "optimization_score": -39.3,
+        "ending_equity": 9698.17023409119
+      },
+      "holdout": {
+        "return_pct": -2.369856501784816,
+        "total_trades": 12,
+        "win_rate": 0.3333333333333333,
+        "profit_factor": 0.7431448924209804,
+        "sharpe_ratio": -2.0353244348356854,
+        "max_drawdown_pct": 3.673134111755861,
+        "optimization_score": -41.17,
+        "ending_equity": 9763.014349821518
+      }
+    },
+    {
+      "adx_period": 14,
+      "min_adx": 30.0,
+      "min_di_spread": 8.0,
+      "verdict": "drop",
+      "train": {
+        "return_pct": 12.460987898946115,
+        "total_trades": 21,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 2.387735756546875,
+        "sharpe_ratio": 5.938537337415913,
+        "max_drawdown_pct": 3.410337008046823,
+        "optimization_score": 84.88,
+        "ending_equity": 11246.098789894611
+      },
+      "test": {
+        "return_pct": -0.3654385749472567,
+        "total_trades": 11,
+        "win_rate": 0.36363636363636365,
+        "profit_factor": 1.0492367427138667,
+        "sharpe_ratio": 0.4193424400080897,
+        "max_drawdown_pct": 3.327152172399321,
+        "optimization_score": -5.55,
+        "ending_equity": 9963.456142505274
+      },
+      "holdout": {
+        "return_pct": -2.369856501784816,
+        "total_trades": 12,
+        "win_rate": 0.3333333333333333,
+        "profit_factor": 0.7431448924209804,
+        "sharpe_ratio": -2.0353244348356854,
+        "max_drawdown_pct": 3.673134111755861,
+        "optimization_score": -41.17,
+        "ending_equity": 9763.014349821518
+      }
+    }
+  ],
+  "summary": {
+    "keep": 10,
+    "watch": 0,
+    "drop": 8
+  }
+}
