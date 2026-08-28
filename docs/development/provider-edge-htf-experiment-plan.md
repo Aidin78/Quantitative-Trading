@@ -1,9 +1,9 @@
 # Provider Edge Scorecard — Higher-Timeframe Experiment Plan
 
-**Date:** 2026-08-25 (updated same day — §9 added)
-**Status:** 4h/1d scorecard executed; **ADX parameter sweep (§9) found a robust edge on BTC/USDT 1d** pending longer-history/ETH confirmation (blocked by no network access in this environment)
+**Date:** 2026-08-25 (updated 2026-08-28 — §10 added: full-history confirmation)
+**Status:** **CLOSED — classic TA rejected on every timeframe.** The §9 "robust ADX 1d edge" was a ~18-month artifact: on the full 2017–2026 BTC *and* ETH 1d history (§10) it is **0 keep, uniformly negative train** on both symbols. No classic-TA lead remains; next step is a different hypothesis class (§7 item 3), not another parameter grid.
 **Baseline rejected:** BTC/USDT **1h** classic TA scorecard — **0 keep / 3 watch / 12 drop**, empty `keep_shortlist`
-**Artifacts:** `backend/data/provider_edge_scorecard.json` (1h), this plan, `backend/data/provider_edge_scorecard_4h.json` / `_1d.json` (run output), `backend/data/adx_1d_param_sweep_result.json` (§9 sweep)
+**Artifacts:** `backend/data/provider_edge_scorecard.json` (1h), this plan, `backend/data/provider_edge_scorecard_4h.json` / `_1d.json` (run output), `backend/data/adx_1d_param_sweep_result.json` (§9 sweep, 18-month), `backend/data/adx_1d_param_sweep_btc_fullhist.json` / `_eth_fullhist.json` (§10 full-history confirmation)
 
 ---
 
@@ -206,6 +206,47 @@ ADX is structurally different from every signal tested in `candidate-stability-f
 ### Verdict on plan item 7.2
 
 **Partially executed, and the part that could run produced the strongest, most parameter-robust finding of the entire investigation.** Per the plan's own decision tree (§5.1): *"Any solo `keep` on 4h/1d → freeze that shortlist; run provider discovery / light Optuna on those enables only; then candidate evaluator."* `adx_period=10` should be the next input to that step — but **only after** the still-missing confirmation (longer history and/or ETH/USDT) becomes feasible, since a single-symbol, ~18-month, sub-30-trade result is exactly the shape of finding this whole investigation has repeatedly shown can look robust and still not generalize.
+
+> **Update 2026-08-28:** the confirmation ran (§10) and the finding was **rejected**. Do not use `adx_period=10` as an input to §5.1.
+
+---
+
+## 10. Full-history confirmation of the §9 ADX 1d finding — REJECTED (executed 2026-08-28)
+
+Network access was restored. Downloaded the full Binance 1d history for **BTC/USDT and ETH/USDT** (2017-08-17 → 2026-08-27, 3298 bars each, vs the 565 bars §9 had) via `market_cache.download_csv(force=True)` — the overlapping 2025-01→2026-07 range came back byte-identical to the old cache, so the §9 numbers remain reproducible; this only *extends* the window. Re-ran the exact §9 sweep (`run_adx_1d_param_sweep.py`, same `evaluate_params_scorecard` / `split_scorecard_windows` / `verdict_for_windows`) on the full range.
+
+Over 9 years the scorecard split is roughly: train 2017-08 → 2023-01, test 2023-01 → 2025-05, holdout 2025-05 → 2026-08 (the holdout ≈ the window §9 lived in).
+
+### Result: 0 keep on both symbols; every combo has a negative train return
+
+| symbol | `adx_period` | §9 (18-month) | full history (9-year) |
+|---|---|---|---|
+| BTC/USDT | 10 | 7/9 keep, 9/9 test+holdout positive | **0/9 keep** — train −1.1% to −10.5% on *every* combo |
+| BTC/USDT | 14 | 1/9 keep | 0/9 keep |
+| ETH/USDT | 10 | (not run in §9) | **0/9 keep** — train −3.0% to −7.8% on every combo |
+| ETH/USDT | 14 | (not run in §9) | 0/9 keep |
+
+BTC full-history summary: **0 keep / 8 watch / 10 drop / 9 error** (the 9 errors are all `adx_period=20` — see infra note below). ETH: **0 keep / 13 watch / 5 drop**.
+
+Every `watch` verdict is an artifact, not an edge:
+- **BTC** `watch` rows (`adx_period` 10 & 14, `min_adx=30`): train ≈ −6.9% on only **6–7 trades**, holdout barely positive (+0.3% to +1.2%). The `p=14 min_adx=30` rows show holdout +8% / 47–49 trades — but on 7 train trades that is one lucky holdout regime, and `verdict_for_windows` correctly refuses it `keep` because train is deeply negative.
+- **ETH** `watch` rows: holdout returns of +13% to **+29%** — but train −6.5% on **5–7 trades** and test *also* negative in all 13. ETH's 2025-05→2026-08 holdout had a strong directional run that any trend-strength gate rode; with a near-empty, negative train window that is noise, not signal.
+
+### Why the §9 result looked robust and was not
+
+§9's "full parameter neighborhood is positive" was measured entirely inside a single 18-month window (2025-01 → 2026-07) that, in hindsight, was one favorable BTC trend regime sliced three ways. A shorter ADX lookback (10) is *more* responsive to exactly that kind of sustained-trend window — which is why the whole `min_adx`×`min_di_spread` grid moved together and looked stable. Extend the train window to include 2018, 2019, the 2021 double-top, and the 2022 bear, and the gate has no edge in any of them: solo-ADX on 1d is a **trend-strength filter with no directional or timing edge across regimes**, and the fee/slippage drag (`candidate-stability-findings.md` — ~0.3% round trip) does the rest.
+
+### Structural dead-end, independent of the edge question
+
+Even with 3298 bars, solo-ADX on 1d produces only **6–33 trades per multi-year window** (`min_confidence=0.65`, `max_bars_in_trade=24`, gate rarely open). It can never reach the ">100 trades" bar `docs/backend/backtesting.md` wants for trustworthy outcome metrics. 1d + a single gated provider is structurally trade-starved regardless of parameters.
+
+### Infra note (not blocking, worth fixing separately)
+
+`ValidationHarness.run` computes its warm-up skip via `compute_min_lookback_bars()` with **no argument**, so it reads `config/features.yaml` from disk (`adx_period=14` → skip 29) and ignores the trial's `features_config` override. Any trial with `adx_period=20` (needs `2*period = 40` bars) therefore raises `InsufficientDataError` on the first cycle regardless of how much data is loaded. The sweep script now records these as `verdict:"error"` instead of aborting. Real fix: pass the runtime's actual `FeatureBuilder.config` into the lookback calc (`compute_min_lookback_bars` already takes an optional arg; it just needs a `FeaturesConfig` overload and a call-site change in `harness.py:106`).
+
+### Verdict
+
+**The §9 ADX 1d edge is rejected.** Combined with the 1h (0 keep) and 4h (0 keep) scorecards and the entire `candidate-stability-findings.md` investigation, **classic TA on BTC/USDT (and ETH/USDT) across 1h/4h/1d is exhausted as an edge source under the real `next_open_v1` fill/fee model.** Per the §5 decision tree (item 3) and §7 (item 3), the only remaining move is to **change the hypothesis class** — regime detection / volatility targeting / a non-TA feature (funding, basis, on-chain, cross-asset) — not another period grid on the same providers.
 
 ---
 

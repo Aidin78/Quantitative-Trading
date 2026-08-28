@@ -49,12 +49,23 @@ MIN_ADX_GRID = (20.0, 25.0, 30.0)
 MIN_DI_SPREAD_GRID = (3.0, 5.0, 8.0)
 
 
+def _int_list(raw: str) -> tuple[int, ...]:
+    return tuple(int(x) for x in raw.split(","))
+
+
+def _float_list(raw: str) -> tuple[float, ...]:
+    return tuple(float(x) for x in raw.split(","))
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Bounded ADX param sweep on BTC/USDT 1d")
     parser.add_argument("--symbol", default="BTC/USDT")
     parser.add_argument("--timeframe", default="1d")
     parser.add_argument("--start", default="2025-01-01")
     parser.add_argument("--end", default="2026-07-18")
+    parser.add_argument("--adx-periods", type=_int_list, default=ADX_PERIOD_GRID)
+    parser.add_argument("--min-adx", type=_float_list, default=MIN_ADX_GRID)
+    parser.add_argument("--min-di-spread", type=_float_list, default=MIN_DI_SPREAD_GRID)
     parser.add_argument(
         "--out",
         default=str(_BACKEND / "data" / "adx_1d_param_sweep_result.json"),
@@ -67,9 +78,12 @@ async def _run() -> int:
     start = datetime.fromisoformat(args.start).replace(tzinfo=UTC)
     end = datetime.fromisoformat(args.end).replace(tzinfo=UTC)
 
-    grid = list(itertools.product(ADX_PERIOD_GRID, MIN_ADX_GRID, MIN_DI_SPREAD_GRID))
+    grid = list(itertools.product(args.adx_periods, args.min_adx, args.min_di_spread))
     print(f"Sweeping {len(grid)} ADX parameter combinations on {args.symbol} {args.timeframe}")
-    print(f"adx_period={ADX_PERIOD_GRID} min_adx={MIN_ADX_GRID} min_di_spread={MIN_DI_SPREAD_GRID}")
+    print(
+        f"adx_period={args.adx_periods} min_adx={args.min_adx} "
+        f"min_di_spread={args.min_di_spread}"
+    )
 
     results: list[dict] = []
     for adx_period, min_adx, min_di_spread in grid:
@@ -83,13 +97,29 @@ async def _run() -> int:
         }
         label = f"adx_period={adx_period} min_adx={min_adx} min_di_spread={min_di_spread}"
         print(f"\n=== {label} ===", flush=True)
-        payload = await evaluate_params_scorecard(
-            params,
-            start=start,
-            end=end,
-            symbol=args.symbol,
-            timeframe=args.timeframe,
-        )
+        try:
+            payload = await evaluate_params_scorecard(
+                params,
+                start=start,
+                end=end,
+                symbol=args.symbol,
+                timeframe=args.timeframe,
+            )
+        except Exception as exc:  # noqa: BLE001 - one bad combo must not abort the sweep
+            print(f"  ERROR ({type(exc).__name__}): {exc}", flush=True)
+            results.append(
+                {
+                    "adx_period": adx_period,
+                    "min_adx": min_adx,
+                    "min_di_spread": min_di_spread,
+                    "verdict": "error",
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "train": {},
+                    "test": {},
+                    "holdout": {},
+                }
+            )
+            continue
         row = payload["result"]
         train = row.get("train") or {}
         test = row.get("test") or {}
@@ -116,9 +146,10 @@ async def _run() -> int:
     keep_count = sum(1 for r in results if r["verdict"] == "keep")
     watch_count = sum(1 for r in results if r["verdict"] == "watch")
     drop_count = sum(1 for r in results if r["verdict"] == "drop")
+    error_count = sum(1 for r in results if r["verdict"] == "error")
     print(
         f"\n=== SUMMARY: {keep_count} keep / {watch_count} watch / {drop_count} drop "
-        f"out of {len(results)} ===",
+        f"/ {error_count} error out of {len(results)} ===",
         flush=True,
     )
     for r in results:
@@ -141,12 +172,17 @@ async def _run() -> int:
                 "start": args.start,
                 "end": args.end,
                 "grid": {
-                    "adx_period": ADX_PERIOD_GRID,
-                    "min_adx": MIN_ADX_GRID,
-                    "min_di_spread": MIN_DI_SPREAD_GRID,
+                    "adx_period": list(args.adx_periods),
+                    "min_adx": list(args.min_adx),
+                    "min_di_spread": list(args.min_di_spread),
                 },
                 "results": results,
-                "summary": {"keep": keep_count, "watch": watch_count, "drop": drop_count},
+                "summary": {
+                    "keep": keep_count,
+                    "watch": watch_count,
+                    "drop": drop_count,
+                    "error": error_count,
+                },
             },
             default=str,
             indent=2,
