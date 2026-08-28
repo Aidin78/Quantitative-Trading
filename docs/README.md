@@ -35,6 +35,8 @@
 | | [conventions.md](./development/conventions.md) | قراردادها و استانداردها |
 | | [edge-investigation-findings.md](./development/edge-investigation-findings.md) | بررسی ریشه‌ای باگ‌های ادج/بک‌تست |
 | | [candidate-stability-findings.md](./development/candidate-stability-findings.md) | پایداری candidateهای Phase 3 (research) |
+| | [provider-edge-htf-experiment-plan.md](./development/provider-edge-htf-experiment-plan.md) | scorecard تایم‌فریم بالا + رد نهایی TA کلاسیک (§10) |
+| | [funding-signal-findings.md](./development/funding-signal-findings.md) | فرضیه‌ی نرخ funding پرپچوال — رد شد |
 
 ## خلاصه Stack
 
