@@ -1,0 +1,1828 @@
+{
+  "start": "2017-08-17",
+  "end": "2026-08-27",
+  "timeframe": "1d",
+  "annualization_days": 365,
+  "one_way_cost": 0.0015,
+  "grid": {
+    "vol_window": [
+      10,
+      20,
+      30,
+      60
+    ],
+    "target_ann_vol": [
+      0.4,
+      0.6,
+      0.8
+    ],
+    "leverage_cap": [
+      1.0,
+      2.0
+    ]
+  },
+  "pass_sharpe_margin": 0.15,
+  "symbols": {
+    "BTC/USDT": {
+      "buyhold": {
+        "ann_return": 0.552,
+        "ann_vol": 0.6706,
+        "sharpe": 0.823,
+        "max_dd": 0.8319,
+        "calmar": 0.664
+      },
+      "rows": [
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.964,
+          "ann_turnover": 0.6,
+          "strat_ann_return": 0.4949,
+          "strat_ann_vol": 0.6131,
+          "strat_sharpe": 0.807,
+          "strat_max_dd": 0.7664,
+          "strat_calmar": 0.646,
+          "buyhold_sharpe": 0.784,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": 0.023,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.714,
+              "buyhold_sharpe": 0.679,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.769,
+              "buyhold_sharpe": 0.782,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.04,
+              "buyhold_sharpe": 1.04,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.959,
+          "ann_turnover": 1.9,
+          "strat_ann_return": 0.506,
+          "strat_ann_vol": 0.6132,
+          "strat_sharpe": 0.825,
+          "strat_max_dd": 0.7595,
+          "strat_calmar": 0.666,
+          "buyhold_sharpe": 0.814,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": 0.011,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.755,
+              "buyhold_sharpe": 0.788,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.805,
+              "buyhold_sharpe": 0.772,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.007,
+              "buyhold_sharpe": 1.003,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.706,
+          "ann_turnover": 2.8,
+          "strat_ann_return": 0.3327,
+          "strat_ann_vol": 0.4231,
+          "strat_sharpe": 0.786,
+          "strat_max_dd": 0.6086,
+          "strat_calmar": 0.547,
+          "buyhold_sharpe": 0.784,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": 0.002,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.595,
+              "buyhold_sharpe": 0.679,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.806,
+              "buyhold_sharpe": 0.782,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.977,
+              "buyhold_sharpe": 1.04,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.411,
+          "ann_turnover": 5.6,
+          "strat_ann_return": 0.6653,
+          "strat_ann_vol": 0.8463,
+          "strat_sharpe": 0.786,
+          "strat_max_dd": 0.8744,
+          "strat_calmar": 0.761,
+          "buyhold_sharpe": 0.784,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": 0.002,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.595,
+              "buyhold_sharpe": 0.679,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.806,
+              "buyhold_sharpe": 0.782,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.977,
+              "buyhold_sharpe": 1.04,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.096,
+          "ann_turnover": 5.6,
+          "strat_ann_return": 0.5101,
+          "strat_ann_vol": 0.6525,
+          "strat_sharpe": 0.782,
+          "strat_max_dd": 0.7726,
+          "strat_calmar": 0.66,
+          "buyhold_sharpe": 0.784,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.002,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.563,
+              "buyhold_sharpe": 0.679,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.833,
+              "buyhold_sharpe": 0.782,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.96,
+              "buyhold_sharpe": 1.04,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.898,
+          "ann_turnover": 1.6,
+          "strat_ann_return": 0.4331,
+          "strat_ann_vol": 0.5561,
+          "strat_sharpe": 0.779,
+          "strat_max_dd": 0.7517,
+          "strat_calmar": 0.576,
+          "buyhold_sharpe": 0.784,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.005,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.646,
+              "buyhold_sharpe": 0.679,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.719,
+              "buyhold_sharpe": 0.782,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.046,
+              "buyhold_sharpe": 1.04,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.88,
+          "ann_turnover": 29.0,
+          "strat_ann_return": 0.4229,
+          "strat_ann_vol": 0.5229,
+          "strat_sharpe": 0.809,
+          "strat_max_dd": 0.7366,
+          "strat_calmar": 0.574,
+          "buyhold_sharpe": 0.824,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.015,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.695,
+              "buyhold_sharpe": 0.818,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.759,
+              "buyhold_sharpe": 0.745,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.999,
+              "buyhold_sharpe": 1.031,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.962,
+          "ann_turnover": 1.3,
+          "strat_ann_return": 0.5104,
+          "strat_ann_vol": 0.6091,
+          "strat_sharpe": 0.838,
+          "strat_max_dd": 0.7678,
+          "strat_calmar": 0.665,
+          "buyhold_sharpe": 0.853,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.015,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.779,
+              "buyhold_sharpe": 0.833,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.785,
+              "buyhold_sharpe": 0.803,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.041,
+              "buyhold_sharpe": 1.041,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.894,
+          "ann_turnover": 4.4,
+          "strat_ann_return": 0.4389,
+          "strat_ann_vol": 0.5566,
+          "strat_sharpe": 0.788,
+          "strat_max_dd": 0.7465,
+          "strat_calmar": 0.588,
+          "buyhold_sharpe": 0.814,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.026,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.688,
+              "buyhold_sharpe": 0.788,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.751,
+              "buyhold_sharpe": 0.772,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.002,
+              "buyhold_sharpe": 1.003,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.777,
+          "ann_turnover": 8.7,
+          "strat_ann_return": 0.3823,
+          "strat_ann_vol": 0.4621,
+          "strat_sharpe": 0.827,
+          "strat_max_dd": 0.6445,
+          "strat_calmar": 0.593,
+          "buyhold_sharpe": 0.853,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.026,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.782,
+              "buyhold_sharpe": 0.833,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.705,
+              "buyhold_sharpe": 0.803,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.002,
+              "buyhold_sharpe": 1.041,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.146,
+          "ann_turnover": 10.9,
+          "strat_ann_return": 0.5563,
+          "strat_ann_vol": 0.6757,
+          "strat_sharpe": 0.823,
+          "strat_max_dd": 0.8087,
+          "strat_calmar": 0.688,
+          "buyhold_sharpe": 0.853,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.03,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.726,
+              "buyhold_sharpe": 0.833,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.747,
+              "buyhold_sharpe": 0.803,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.01,
+              "buyhold_sharpe": 1.041,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.748,
+          "ann_turnover": 13.9,
+          "strat_ann_return": 0.3541,
+          "strat_ann_vol": 0.4475,
+          "strat_sharpe": 0.791,
+          "strat_max_dd": 0.6582,
+          "strat_calmar": 0.538,
+          "buyhold_sharpe": 0.824,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.033,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.753,
+              "buyhold_sharpe": 0.818,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.7,
+              "buyhold_sharpe": 0.745,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.951,
+              "buyhold_sharpe": 1.031,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.497,
+          "ann_turnover": 27.8,
+          "strat_ann_return": 0.7082,
+          "strat_ann_vol": 0.8949,
+          "strat_sharpe": 0.791,
+          "strat_max_dd": 0.905,
+          "strat_calmar": 0.783,
+          "buyhold_sharpe": 0.824,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.033,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.753,
+              "buyhold_sharpe": 0.818,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.7,
+              "buyhold_sharpe": 0.745,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.951,
+              "buyhold_sharpe": 1.031,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.894,
+          "ann_turnover": 8.3,
+          "strat_ann_return": 0.4393,
+          "strat_ann_vol": 0.5558,
+          "strat_sharpe": 0.79,
+          "strat_max_dd": 0.7565,
+          "strat_calmar": 0.581,
+          "buyhold_sharpe": 0.824,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.034,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.713,
+              "buyhold_sharpe": 0.818,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.722,
+              "buyhold_sharpe": 0.745,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.01,
+              "buyhold_sharpe": 1.031,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.72,
+          "ann_turnover": 5.1,
+          "strat_ann_return": 0.3486,
+          "strat_ann_vol": 0.4265,
+          "strat_sharpe": 0.817,
+          "strat_max_dd": 0.6454,
+          "strat_calmar": 0.54,
+          "buyhold_sharpe": 0.853,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.036,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.709,
+              "buyhold_sharpe": 0.833,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.701,
+              "buyhold_sharpe": 0.803,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.07,
+              "buyhold_sharpe": 1.041,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.439,
+          "ann_turnover": 10.3,
+          "strat_ann_return": 0.6973,
+          "strat_ann_vol": 0.8529,
+          "strat_sharpe": 0.817,
+          "strat_max_dd": 0.8985,
+          "strat_calmar": 0.776,
+          "buyhold_sharpe": 0.853,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.036,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.709,
+              "buyhold_sharpe": 0.833,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.701,
+              "buyhold_sharpe": 0.803,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.07,
+              "buyhold_sharpe": 1.041,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.894,
+          "ann_turnover": 3.0,
+          "strat_ann_return": 0.4495,
+          "strat_ann_vol": 0.5511,
+          "strat_sharpe": 0.816,
+          "strat_max_dd": 0.7486,
+          "strat_calmar": 0.6,
+          "buyhold_sharpe": 0.853,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.037,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.718,
+              "buyhold_sharpe": 0.833,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.736,
+              "buyhold_sharpe": 0.803,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.069,
+              "buyhold_sharpe": 1.041,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.956,
+          "ann_turnover": 4.0,
+          "strat_ann_return": 0.4805,
+          "strat_ann_vol": 0.6131,
+          "strat_sharpe": 0.784,
+          "strat_max_dd": 0.8088,
+          "strat_calmar": 0.594,
+          "buyhold_sharpe": 0.824,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.04,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.667,
+              "buyhold_sharpe": 0.818,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.767,
+              "buyhold_sharpe": 0.745,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 1.031,
+              "buyhold_sharpe": 1.031,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.233,
+          "ann_turnover": 31.6,
+          "strat_ann_return": 0.5671,
+          "strat_ann_vol": 0.7276,
+          "strat_sharpe": 0.779,
+          "strat_max_dd": 0.85,
+          "strat_calmar": 0.667,
+          "buyhold_sharpe": 0.824,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.045,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.693,
+              "buyhold_sharpe": 0.818,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.704,
+              "buyhold_sharpe": 0.745,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.966,
+              "buyhold_sharpe": 1.031,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.811,
+          "ann_turnover": 13.4,
+          "strat_ann_return": 0.3656,
+          "strat_ann_vol": 0.4865,
+          "strat_sharpe": 0.751,
+          "strat_max_dd": 0.6534,
+          "strat_calmar": 0.559,
+          "buyhold_sharpe": 0.814,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.063,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.712,
+              "buyhold_sharpe": 0.788,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.718,
+              "buyhold_sharpe": 0.772,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.837,
+              "buyhold_sharpe": 1.003,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.73,
+          "ann_turnover": 7.4,
+          "strat_ann_return": 0.3266,
+          "strat_ann_vol": 0.4353,
+          "strat_sharpe": 0.75,
+          "strat_max_dd": 0.6564,
+          "strat_calmar": 0.498,
+          "buyhold_sharpe": 0.814,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.064,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.665,
+              "buyhold_sharpe": 0.788,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.661,
+              "buyhold_sharpe": 0.772,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.951,
+              "buyhold_sharpe": 1.003,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.459,
+          "ann_turnover": 14.8,
+          "strat_ann_return": 0.6532,
+          "strat_ann_vol": 0.8707,
+          "strat_sharpe": 0.75,
+          "strat_max_dd": 0.9057,
+          "strat_calmar": 0.721,
+          "buyhold_sharpe": 0.814,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.064,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.665,
+              "buyhold_sharpe": 0.788,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.661,
+              "buyhold_sharpe": 0.772,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.951,
+              "buyhold_sharpe": 1.003,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.177,
+          "ann_turnover": 15.9,
+          "strat_ann_return": 0.5169,
+          "strat_ann_vol": 0.6937,
+          "strat_sharpe": 0.745,
+          "strat_max_dd": 0.8207,
+          "strat_calmar": 0.63,
+          "buyhold_sharpe": 0.814,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": -0.069,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.691,
+              "buyhold_sharpe": 0.788,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.671,
+              "buyhold_sharpe": 0.772,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.885,
+              "buyhold_sharpe": 1.003,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.732,
+          "ann_turnover": 3.9,
+          "strat_ann_return": 0.3415,
+          "strat_ann_vol": 0.4357,
+          "strat_sharpe": 0.784,
+          "strat_max_dd": 0.6086,
+          "strat_calmar": 0.561,
+          "buyhold_sharpe": 0.784,
+          "buyhold_max_dd": 0.8319,
+          "sharpe_gain": 0.0,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.563,
+              "buyhold_sharpe": 0.679,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.838,
+              "buyhold_sharpe": 0.782,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.961,
+              "buyhold_sharpe": 1.04,
+              "beats": false
+            }
+          ],
+          "passes": false
+        }
+      ],
+      "pass_count": 0
+    },
+    "ETH/USDT": {
+      "buyhold": {
+        "ann_return": 0.6145,
+        "ann_vol": 0.8661,
+        "sharpe": 0.709,
+        "max_dd": 0.9397,
+        "calmar": 0.654
+      },
+      "rows": [
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.661,
+          "ann_turnover": 22.8,
+          "strat_ann_return": 0.401,
+          "strat_ann_vol": 0.533,
+          "strat_sharpe": 0.752,
+          "strat_max_dd": 0.8158,
+          "strat_calmar": 0.492,
+          "buyhold_sharpe": 0.692,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": 0.06,
+          "subwindows_beat": "1/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.333,
+              "buyhold_sharpe": 0.558,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.998,
+              "buyhold_sharpe": 0.994,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.931,
+              "buyhold_sharpe": 0.536,
+              "beats": true
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.549,
+          "ann_turnover": 2.8,
+          "strat_ann_return": 0.3136,
+          "strat_ann_vol": 0.43,
+          "strat_sharpe": 0.729,
+          "strat_max_dd": 0.6441,
+          "strat_calmar": 0.487,
+          "buyhold_sharpe": 0.699,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": 0.03,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.652,
+              "buyhold_sharpe": 0.541,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.879,
+              "buyhold_sharpe": 1.019,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.664,
+              "buyhold_sharpe": 0.556,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.823,
+          "ann_turnover": 4.2,
+          "strat_ann_return": 0.4704,
+          "strat_ann_vol": 0.645,
+          "strat_sharpe": 0.729,
+          "strat_max_dd": 0.7998,
+          "strat_calmar": 0.588,
+          "buyhold_sharpe": 0.699,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": 0.03,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.652,
+              "buyhold_sharpe": 0.541,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.879,
+              "buyhold_sharpe": 1.019,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.664,
+              "buyhold_sharpe": 0.556,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.964,
+          "ann_turnover": 29.9,
+          "strat_ann_return": 0.5436,
+          "strat_ann_vol": 0.7588,
+          "strat_sharpe": 0.716,
+          "strat_max_dd": 0.927,
+          "strat_calmar": 0.586,
+          "buyhold_sharpe": 0.692,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": 0.024,
+          "subwindows_beat": "1/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.338,
+              "buyhold_sharpe": 0.558,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 1.03,
+              "buyhold_sharpe": 0.994,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.814,
+              "buyhold_sharpe": 0.536,
+              "beats": true
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.543,
+          "ann_turnover": 2.6,
+          "strat_ann_return": 0.3083,
+          "strat_ann_vol": 0.4273,
+          "strat_sharpe": 0.722,
+          "strat_max_dd": 0.6441,
+          "strat_calmar": 0.479,
+          "buyhold_sharpe": 0.699,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": 0.023,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.652,
+              "buyhold_sharpe": 0.541,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.899,
+              "buyhold_sharpe": 1.019,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.622,
+              "buyhold_sharpe": 0.556,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.087,
+          "ann_turnover": 5.3,
+          "strat_ann_return": 0.6166,
+          "strat_ann_vol": 0.8546,
+          "strat_sharpe": 0.722,
+          "strat_max_dd": 0.8918,
+          "strat_calmar": 0.691,
+          "buyhold_sharpe": 0.699,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": 0.023,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.652,
+              "buyhold_sharpe": 0.541,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.899,
+              "buyhold_sharpe": 1.019,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.622,
+              "buyhold_sharpe": 0.556,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.769,
+          "ann_turnover": 2.7,
+          "strat_ann_return": 0.4401,
+          "strat_ann_vol": 0.6159,
+          "strat_sharpe": 0.715,
+          "strat_max_dd": 0.7998,
+          "strat_calmar": 0.55,
+          "buyhold_sharpe": 0.699,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": 0.016,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.641,
+              "buyhold_sharpe": 0.541,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.926,
+              "buyhold_sharpe": 1.019,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.584,
+              "buyhold_sharpe": 0.556,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.566,
+          "ann_turnover": 5.2,
+          "strat_ann_return": 0.3227,
+          "strat_ann_vol": 0.438,
+          "strat_sharpe": 0.737,
+          "strat_max_dd": 0.718,
+          "strat_calmar": 0.449,
+          "buyhold_sharpe": 0.735,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": 0.002,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.597,
+              "buyhold_sharpe": 0.631,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.966,
+              "buyhold_sharpe": 1.029,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.659,
+              "buyhold_sharpe": 0.545,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.132,
+          "ann_turnover": 10.4,
+          "strat_ann_return": 0.6455,
+          "strat_ann_vol": 0.876,
+          "strat_sharpe": 0.737,
+          "strat_max_dd": 0.9339,
+          "strat_calmar": 0.691,
+          "buyhold_sharpe": 0.735,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": 0.002,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.597,
+              "buyhold_sharpe": 0.631,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.966,
+              "buyhold_sharpe": 1.029,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.659,
+              "buyhold_sharpe": 0.545,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.865,
+          "ann_turnover": 8.9,
+          "strat_ann_return": 0.4859,
+          "strat_ann_vol": 0.67,
+          "strat_sharpe": 0.725,
+          "strat_max_dd": 0.8601,
+          "strat_calmar": 0.565,
+          "buyhold_sharpe": 0.735,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.01,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.597,
+              "buyhold_sharpe": 0.631,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.937,
+              "buyhold_sharpe": 1.029,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.652,
+              "buyhold_sharpe": 0.545,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.614,
+          "ann_turnover": 16.2,
+          "strat_ann_return": 0.3232,
+          "strat_ann_vol": 0.4814,
+          "strat_sharpe": 0.671,
+          "strat_max_dd": 0.8018,
+          "strat_calmar": 0.403,
+          "buyhold_sharpe": 0.692,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.021,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.376,
+              "buyhold_sharpe": 0.558,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.99,
+              "buyhold_sharpe": 0.994,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.682,
+              "buyhold_sharpe": 0.536,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.227,
+          "ann_turnover": 32.3,
+          "strat_ann_return": 0.6464,
+          "strat_ann_vol": 0.9629,
+          "strat_sharpe": 0.671,
+          "strat_max_dd": 0.9695,
+          "strat_calmar": 0.667,
+          "buyhold_sharpe": 0.692,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.021,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.376,
+              "buyhold_sharpe": 0.558,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.99,
+              "buyhold_sharpe": 0.994,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.682,
+              "buyhold_sharpe": 0.536,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 60,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.909,
+          "ann_turnover": 1.7,
+          "strat_ann_return": 0.5033,
+          "strat_ann_vol": 0.7456,
+          "strat_sharpe": 0.675,
+          "strat_max_dd": 0.8886,
+          "strat_calmar": 0.566,
+          "buyhold_sharpe": 0.699,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.024,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.521,
+              "buyhold_sharpe": 0.541,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.969,
+              "buyhold_sharpe": 1.019,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.544,
+              "buyhold_sharpe": 0.556,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.578,
+          "ann_turnover": 6.2,
+          "strat_ann_return": 0.3165,
+          "strat_ann_vol": 0.4485,
+          "strat_sharpe": 0.706,
+          "strat_max_dd": 0.718,
+          "strat_calmar": 0.441,
+          "buyhold_sharpe": 0.735,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.029,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.597,
+              "buyhold_sharpe": 0.631,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.878,
+              "buyhold_sharpe": 1.029,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.648,
+              "buyhold_sharpe": 0.545,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.896,
+          "ann_turnover": 14.1,
+          "strat_ann_return": 0.4652,
+          "strat_ann_vol": 0.6994,
+          "strat_sharpe": 0.665,
+          "strat_max_dd": 0.8675,
+          "strat_calmar": 0.536,
+          "buyhold_sharpe": 0.697,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.032,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.501,
+              "buyhold_sharpe": 0.611,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.955,
+              "buyhold_sharpe": 0.957,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.56,
+              "buyhold_sharpe": 0.523,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.583,
+          "ann_turnover": 7.9,
+          "strat_ann_return": 0.3006,
+          "strat_ann_vol": 0.4538,
+          "strat_sharpe": 0.662,
+          "strat_max_dd": 0.728,
+          "strat_calmar": 0.413,
+          "buyhold_sharpe": 0.697,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.035,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.52,
+              "buyhold_sharpe": 0.611,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.915,
+              "buyhold_sharpe": 0.957,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.571,
+              "buyhold_sharpe": 0.523,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.4,
+          "leverage_cap": 2.0,
+          "avg_weight": 0.602,
+          "ann_turnover": 10.0,
+          "strat_ann_return": 0.3132,
+          "strat_ann_vol": 0.4728,
+          "strat_sharpe": 0.662,
+          "strat_max_dd": 0.7272,
+          "strat_calmar": 0.431,
+          "buyhold_sharpe": 0.697,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.035,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.501,
+              "buyhold_sharpe": 0.611,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.931,
+              "buyhold_sharpe": 0.957,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.574,
+              "buyhold_sharpe": 0.523,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 2.0,
+          "avg_weight": 1.165,
+          "ann_turnover": 15.8,
+          "strat_ann_return": 0.6012,
+          "strat_ann_vol": 0.9076,
+          "strat_sharpe": 0.662,
+          "strat_max_dd": 0.9391,
+          "strat_calmar": 0.64,
+          "buyhold_sharpe": 0.697,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.035,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.52,
+              "buyhold_sharpe": 0.611,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.915,
+              "buyhold_sharpe": 0.957,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.571,
+              "buyhold_sharpe": 0.523,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.781,
+          "ann_turnover": 4.9,
+          "strat_ann_return": 0.4306,
+          "strat_ann_vol": 0.6161,
+          "strat_sharpe": 0.699,
+          "strat_max_dd": 0.8502,
+          "strat_calmar": 0.506,
+          "buyhold_sharpe": 0.735,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.036,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.566,
+              "buyhold_sharpe": 0.631,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.947,
+              "buyhold_sharpe": 1.029,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.594,
+              "buyhold_sharpe": 0.545,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.787,
+          "ann_turnover": 6.9,
+          "strat_ann_return": 0.4019,
+          "strat_ann_vol": 0.6254,
+          "strat_sharpe": 0.643,
+          "strat_max_dd": 0.8592,
+          "strat_calmar": 0.468,
+          "buyhold_sharpe": 0.697,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.054,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.522,
+              "buyhold_sharpe": 0.611,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.905,
+              "buyhold_sharpe": 0.957,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.512,
+              "buyhold_sharpe": 0.523,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 20,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.904,
+          "ann_turnover": 4.3,
+          "strat_ann_return": 0.474,
+          "strat_ann_vol": 0.7372,
+          "strat_sharpe": 0.643,
+          "strat_max_dd": 0.9137,
+          "strat_calmar": 0.519,
+          "buyhold_sharpe": 0.697,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.054,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.491,
+              "buyhold_sharpe": 0.611,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.93,
+              "buyhold_sharpe": 0.957,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.513,
+              "buyhold_sharpe": 0.523,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 30,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.905,
+          "ann_turnover": 3.1,
+          "strat_ann_return": 0.4997,
+          "strat_ann_vol": 0.7344,
+          "strat_sharpe": 0.68,
+          "strat_max_dd": 0.9083,
+          "strat_calmar": 0.55,
+          "buyhold_sharpe": 0.735,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.055,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.482,
+              "buyhold_sharpe": 0.631,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 1.022,
+              "buyhold_sharpe": 1.029,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.549,
+              "buyhold_sharpe": 0.545,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.6,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.801,
+          "ann_turnover": 12.7,
+          "strat_ann_return": 0.4028,
+          "strat_ann_vol": 0.6393,
+          "strat_sharpe": 0.63,
+          "strat_max_dd": 0.8917,
+          "strat_calmar": 0.452,
+          "buyhold_sharpe": 0.692,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.062,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.354,
+              "buyhold_sharpe": 0.558,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.985,
+              "buyhold_sharpe": 0.994,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.582,
+              "buyhold_sharpe": 0.536,
+              "beats": false
+            }
+          ],
+          "passes": false
+        },
+        {
+          "vol_window": 10,
+          "target_ann_vol": 0.8,
+          "leverage_cap": 1.0,
+          "avg_weight": 0.902,
+          "ann_turnover": 8.1,
+          "strat_ann_return": 0.4479,
+          "strat_ann_vol": 0.7329,
+          "strat_sharpe": 0.611,
+          "strat_max_dd": 0.9194,
+          "strat_calmar": 0.487,
+          "buyhold_sharpe": 0.692,
+          "buyhold_max_dd": 0.9397,
+          "sharpe_gain": -0.081,
+          "subwindows_beat": "0/3",
+          "subwindows": [
+            {
+              "window": "1/3",
+              "strat_sharpe": 0.347,
+              "buyhold_sharpe": 0.558,
+              "beats": false
+            },
+            {
+              "window": "2/3",
+              "strat_sharpe": 0.941,
+              "buyhold_sharpe": 0.994,
+              "beats": false
+            },
+            {
+              "window": "3/3",
+              "strat_sharpe": 0.576,
+              "buyhold_sharpe": 0.536,
+              "beats": false
+            }
+          ],
+          "passes": false
+        }
+      ],
+      "pass_count": 0
+    }
+  },
+  "shared_pass_configs": []
+}
