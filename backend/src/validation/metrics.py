@@ -94,6 +94,83 @@ def compute_daily_equity_returns(
     return daily_returns, sorted(by_day.keys())
 
 
+def compute_mark_to_market_series(
+    events: list[EventEnvelope],
+    *,
+    initial_capital: float = 10000.0,
+) -> tuple[list[float], list[str]]:
+    """Daily equity curve marked to market against each bar's close.
+
+    The closed-trade-only curve (``compute_daily_equity_returns``) is flat for
+    as long as a position stays open, so a position held straight through a
+    crash reports almost no drawdown. This walks ``CANDLE_RECEIVED`` events and
+    marks any open position to the latest close, so the curve reflects
+    unrealized swings too.
+
+    Needs ``CANDLE_RECEIVED`` events — i.e. the run emitted the full event
+    stream (``persist_db`` or ``retain_events=True``). Returns ``([], [])``
+    when they are absent, and callers fall back to the trade-realized metrics.
+    """
+    relevant = sorted(
+        (
+            e
+            for e in events
+            if e.event_type
+            in (
+                MarketEventType.CANDLE_RECEIVED,
+                ExecutionEventType.POSITION_OPENED,
+                ExecutionEventType.POSITION_CLOSED,
+            )
+        ),
+        key=lambda e: e.event_time,
+    )
+    if not any(e.event_type == MarketEventType.CANDLE_RECEIVED for e in relevant):
+        return [], []
+
+    cash = initial_capital
+    qty = 0.0
+    sign = 0
+    invested = 0.0
+    last_close = 0.0
+    by_day: dict[str, float] = {}
+
+    for event in relevant:
+        if event.event_type == MarketEventType.CANDLE_RECEIVED:
+            last_close = float(event.payload.get("close", last_close))
+        elif event.event_type == ExecutionEventType.POSITION_OPENED:
+            position = event.payload.get("position", {})
+            qty = float(position.get("quantity", 0.0))
+            sign = 1 if position.get("side") == "LONG" else -1
+            entry = float(position.get("entry_price", last_close))
+            invested = sign * qty * entry
+            cash -= invested
+        elif event.event_type == ExecutionEventType.POSITION_CLOSED:
+            pnl = float(event.payload.get("pnl", 0.0))
+            cash += invested + pnl
+            qty, sign, invested = 0.0, 0, 0.0
+        equity = cash + sign * qty * last_close
+        by_day[event.event_time.date().isoformat()] = equity
+
+    days = sorted(by_day)
+    equity_curve = [initial_capital] + [by_day[d] for d in days]
+    returns: list[float] = []
+    for i in range(1, len(equity_curve)):
+        prev = equity_curve[i - 1]
+        if prev > 0:
+            returns.append((equity_curve[i] - prev) / prev)
+    return equity_curve, returns
+
+
+def _max_drawdown_pct(equity_curve: list[float]) -> float:
+    peak = equity_curve[0] if equity_curve else 0.0
+    max_dd_pct = 0.0
+    for value in equity_curve:
+        peak = max(peak, value)
+        if peak > 0:
+            max_dd_pct = max(max_dd_pct, (peak - value) / peak * 100)
+    return max_dd_pct
+
+
 def compute_monthly_breakdown(
     events: list[EventEnvelope],
     *,
@@ -504,6 +581,14 @@ def compute_outcome_metrics(
         "positions_opened": len(opened),
         "positions_closed": len(closed),
     }
+    mtm_curve, mtm_returns = compute_mark_to_market_series(events, initial_capital=initial_capital)
+    if mtm_curve:
+        outcome["mtm_equity_curve"] = mtm_curve
+        outcome["mtm_return_pct"] = (mtm_curve[-1] - initial_capital) / initial_capital * 100
+        outcome["mtm_max_drawdown_pct"] = _max_drawdown_pct(mtm_curve)
+        outcome["mtm_sharpe_ratio"] = _annualized_sharpe(mtm_returns) if mtm_returns else 0.0
+        outcome["mtm_sortino_ratio"] = _annualized_sortino(mtm_returns) if mtm_returns else 0.0
+
     outcome["monthly_breakdown"] = compute_monthly_breakdown(
         events, initial_capital=initial_capital
     )

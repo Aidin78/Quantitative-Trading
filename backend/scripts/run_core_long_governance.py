@@ -248,14 +248,23 @@ async def _run() -> int:
     holdout_valid = h_trades >= 10 and h_return >= 0.0
 
     # ---- full-history metrics_summary for the ExperimentRun ----
+    # Prefer mark-to-market: the trade-realized max_drawdown_pct / sharpe under-
+    # report risk for a hold-the-core strategy (position held through a crash
+    # shows a near-flat curve). mtm_* comes from CANDLE_RECEIVED marks.
     full_summary: dict[str, float] = {}
     for symbol in _SYMBOLS:
         outcome = await _run_span(symbol, start, end, features_config, params)
         tag = symbol.split("/")[0].lower()
         full_summary[f"{tag}_total_trades"] = float(outcome.get("total_trades", 0))
-        full_summary[f"{tag}_return_pct"] = float(outcome.get("return_pct", 0))
-        full_summary[f"{tag}_max_drawdown_pct"] = float(outcome.get("max_drawdown_pct", 0))
-        full_summary[f"{tag}_sharpe_ratio"] = float(outcome.get("sharpe_ratio", 0))
+        full_summary[f"{tag}_return_pct"] = float(
+            outcome.get("mtm_return_pct", outcome.get("return_pct", 0))
+        )
+        full_summary[f"{tag}_max_drawdown_pct"] = float(
+            outcome.get("mtm_max_drawdown_pct", outcome.get("max_drawdown_pct", 0))
+        )
+        full_summary[f"{tag}_sharpe_ratio"] = float(
+            outcome.get("mtm_sharpe_ratio", outcome.get("sharpe_ratio", 0))
+        )
 
     result = OptimizationResult(
         sweep_id=f"sweep_core_long_{datetime.now(UTC):%Y%m%d}",

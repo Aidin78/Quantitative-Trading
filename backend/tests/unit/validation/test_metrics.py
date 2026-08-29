@@ -198,3 +198,92 @@ def test_outcome_metrics_daily_sharpe_sortino() -> None:
     assert om["sharpe_ratio"] != 0.0
     assert om["sortino_ratio"] != 0.0
     assert "trade_sharpe_ratio" in om
+
+
+def test_mtm_drawdown_captures_unrealized_swing() -> None:
+    """A position held straight through a crash: trade-realized DD is ~0,
+    mark-to-market DD reflects the real peak-to-trough."""
+    from datetime import timedelta
+
+    from src.events.envelopes import (
+        ExecutionEventType,
+        MarketEventType,
+        build_envelope,
+    )
+
+    base = utc_now()
+
+    def candle(day: int, close: float):
+        t = base + timedelta(days=day)
+        return build_envelope(
+            event_family=EventFamily.MARKET,
+            event_type=MarketEventType.CANDLE_RECEIVED,
+            event_time=t,
+            processing_time=t,
+            correlation_id=f"c{day}",
+            symbol="BTC/USDT",
+            timeframe="1d",
+            mode="validation",
+            payload={"open": close, "high": close, "low": close, "close": close, "volume": 1.0},
+        )
+
+    opened = build_envelope(
+        event_family=EventFamily.EXECUTION,
+        event_type=ExecutionEventType.POSITION_OPENED,
+        event_time=base,
+        processing_time=base,
+        correlation_id="c0",
+        symbol="BTC/USDT",
+        timeframe="1d",
+        mode="validation",
+        payload={
+            "position_id": "p1",
+            "position": {"quantity": 1.0, "entry_price": 100.0, "side": "LONG"},
+        },
+    )
+    closed = build_envelope(
+        event_family=EventFamily.EXECUTION,
+        event_type=ExecutionEventType.POSITION_CLOSED,
+        event_time=base + timedelta(days=4),
+        processing_time=base + timedelta(days=4),
+        correlation_id="c4",
+        symbol="BTC/USDT",
+        timeframe="1d",
+        mode="validation",
+        payload={"pnl": 5.0, "position_id": "p1", "exit_reason": "signal", "side": "LONG"},
+    )
+    # 100 -> 50 (-50%) -> 105 close
+    events = [
+        candle(0, 100.0),
+        opened,
+        candle(1, 80.0),
+        candle(2, 50.0),
+        candle(3, 90.0),
+        candle(4, 105.0),
+        closed,
+    ]
+    om = compute_outcome_metrics(events, initial_capital=100.0)
+    assert om["max_drawdown_pct"] == pytest.approx(0.0, abs=1e-9)  # trade-realized: flat then +5
+    assert om["mtm_max_drawdown_pct"] == pytest.approx(50.0, rel=1e-6)
+    assert om["mtm_return_pct"] == pytest.approx(5.0, rel=1e-6)
+
+
+def test_mtm_series_absent_without_candles() -> None:
+    from src.events.envelopes import ExecutionEventType, build_envelope
+
+    now = utc_now()
+    events = [
+        build_envelope(
+            event_family=EventFamily.EXECUTION,
+            event_type=ExecutionEventType.POSITION_CLOSED,
+            event_time=now,
+            processing_time=now,
+            correlation_id="c1",
+            symbol="BTC/USDT",
+            timeframe="1h",
+            mode="validation",
+            payload={"pnl": 10.0, "position_id": "p1", "exit_reason": "tp"},
+        )
+    ]
+    om = compute_outcome_metrics(events, initial_capital=10_000.0)
+    assert "mtm_max_drawdown_pct" not in om
