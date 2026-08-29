@@ -63,9 +63,18 @@ leg اول فوراً unwind و `PartialCarryFill` raise می‌شود (کتاب
 testnet جواب می‌دهد) — یک retry محدود روی فراخوانی‌های خواندنی گذاشته شد؛ سفارش هیچ‌وقت
 retry نمی‌شود. برای `--loop` پایدار به VPS خارج نیاز است.
 
+### مانیتورینگ سبک — ساخته شد ✓ (۲۰۲۶-۰۸-۲۹)
+- runner در هر سیکل یک بلوک `mark` (قیمت‌ها، funding، equity، action) در
+  `data/carry_live_state.json` می‌نویسد (`src/carry/live_state.py`).
+- `GET /api/v1/portfolio` این state + وضعیت موتور live را می‌خواند و net delta،
+  notional و funding APR را مشتق می‌کند (بدون تماس با صرافی).
+- صفحهٔ **Book** در داشبورد (`/portfolio`): sleeve کری + sleeve هسته + blend هدف ۷۰/۳۰.
+
 ### باقی‌مانده (بعد از تأیید testnet)
-- مانیتورینگ Prometheus/Telegram (`carry_net_delta`, `carry_leverage`, هشدار اجرای ناقص)
-- کتاب ترکیبی: تخصیص ۷۰/۳۰ در سطح حساب + overlay هدف-نوسان روی مجموع (runner هسته جداست)
+- هشدار push (Telegram) روی `PartialCarryFill` / انحراف basis / نزدیکی liquidation —
+  الان فقط pull است (باید صفحه را باز کنی)
+- equity sleeve هسته هنوز در `/portfolio` ردیابی نمی‌شود (فقط وضعیت موتور)
+- کتاب ترکیبی: overlay هدف-نوسان روی مجموع دو sleeve در سطح حساب
 - سوییچ live واقعی: `CARRY_SANDBOX=false` + کلیدهای واقعی + سرمایهٔ کوچک اول
 
 ## ریسک‌هایی که بک‌تست نمی‌گیرد (در live باید مدیریت شوند)
