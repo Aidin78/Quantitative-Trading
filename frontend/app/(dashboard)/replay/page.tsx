@@ -97,7 +97,7 @@ function ReplayContent() {
       {!submittedId && !isFetching ? (
         <EmptyState
           message="No replay loaded"
-          hint="Paste a correlation_id from Decision Monitor or Signals, then load the timeline"
+          hint="Paste a correlation_id from Decision Monitor or a decision's detail page, then load the timeline"
         />
       ) : null}
     </div>

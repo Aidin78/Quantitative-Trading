@@ -74,7 +74,7 @@ export default function AnalyticsPage() {
     <div className="page-container">
       <PageHeader
         title="Analytics"
-        description="Decision trends, provider contribution, and outcome summary."
+        description="Live/paper decision trends, provider contribution, and outcome summary. Backtest analytics are on each run's page under Validation."
         action={
           <select
             className="input-field text-sm"
@@ -94,8 +94,11 @@ export default function AnalyticsPage() {
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-accent" />
         </div>
-      ) : !data ? (
-        <EmptyState message="No analytics data" />
+      ) : !data || data.total_decisions === 0 ? (
+        <EmptyState
+          message="No live/paper activity in this period"
+          hint="Analytics aggregates the live/paper engine. Start it from the Decision Monitor, or open a run under Validation for backtest analytics."
+        />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -190,8 +190,8 @@ export default function DecisionMonitorPage() {
             ))}
             {!decisions?.items.length && (
               <EmptyState
-                message="No decisions recorded yet"
-                hint="Run a validation job to populate the feed"
+                message="No live or paper decisions yet"
+                hint="This feed tracks the live/paper engine — start it from the Live Engine panel. Backtest results live on the Validation page."
               />
             )}
           </div>
@@ -304,7 +304,7 @@ function Breakdown({ stats }: { stats?: EngineStats }) {
     return (
       <EmptyState
         message="No rejection data yet"
-        hint="Rejections appear after validation runs"
+        hint="Populated once the live/paper engine starts making decisions"
       />
     );
   }

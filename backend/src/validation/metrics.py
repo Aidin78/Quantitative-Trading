@@ -127,10 +127,13 @@ def compute_mark_to_market_series(
     if not any(e.event_type == MarketEventType.CANDLE_RECEIVED for e in relevant):
         return [], []
 
-    cash = initial_capital
-    qty = 0.0
-    sign = 0
-    invested = 0.0
+    # equity = initial_capital + realised P&L so far + unrealised P&L of every
+    # currently-open position marked to the latest close. Tracking positions in
+    # a dict keyed by position_id keeps this correct when several are open at
+    # once (max_open_positions > 1) and for shorts — a single scalar slot
+    # silently loses every position but the last.
+    realised = 0.0
+    open_positions: dict[str, tuple[float, int, float]] = {}  # id -> (qty, sign, entry)
     last_close = 0.0
     by_day: dict[str, float] = {}
 
@@ -139,17 +142,19 @@ def compute_mark_to_market_series(
             last_close = float(event.payload.get("close", last_close))
         elif event.event_type == ExecutionEventType.POSITION_OPENED:
             position = event.payload.get("position", {})
+            pid = event.payload.get("position_id") or position.get("position_id") or ""
             qty = float(position.get("quantity", 0.0))
             sign = 1 if position.get("side") == "LONG" else -1
             entry = float(position.get("entry_price", last_close))
-            invested = sign * qty * entry
-            cash -= invested
+            open_positions[pid] = (qty, sign, entry)
         elif event.event_type == ExecutionEventType.POSITION_CLOSED:
-            pnl = float(event.payload.get("pnl", 0.0))
-            cash += invested + pnl
-            qty, sign, invested = 0.0, 0, 0.0
-        equity = cash + sign * qty * last_close
-        by_day[event.event_time.date().isoformat()] = equity
+            realised += float(event.payload.get("pnl", 0.0))
+            pid = event.payload.get("position_id") or ""
+            open_positions.pop(pid, None)
+        unrealised = sum(
+            sign * qty * (last_close - entry) for qty, sign, entry in open_positions.values()
+        )
+        by_day[event.event_time.date().isoformat()] = initial_capital + realised + unrealised
 
     days = sorted(by_day)
     equity_curve = [initial_capital] + [by_day[d] for d in days]

@@ -268,6 +268,76 @@ def test_mtm_drawdown_captures_unrealized_swing() -> None:
     assert om["mtm_return_pct"] == pytest.approx(5.0, rel=1e-6)
 
 
+def test_mtm_handles_overlapping_positions() -> None:
+    """Two positions open at once: the equity curve must reflect both, not just
+    whichever opened last (a scalar tracker double-debits cash and blows up)."""
+    from datetime import timedelta
+
+    from src.events.envelopes import ExecutionEventType, MarketEventType, build_envelope
+
+    base = utc_now()
+
+    def candle(day: int, close: float):
+        t = base + timedelta(days=day)
+        return build_envelope(
+            event_family=EventFamily.MARKET,
+            event_type=MarketEventType.CANDLE_RECEIVED,
+            event_time=t,
+            processing_time=t,
+            correlation_id=f"c{day}",
+            symbol="BTC/USDT",
+            timeframe="1d",
+            mode="validation",
+            payload={"open": close, "high": close, "low": close, "close": close, "volume": 1.0},
+        )
+
+    def opened(day: int, pid: str, entry: float):
+        t = base + timedelta(days=day)
+        return build_envelope(
+            event_family=EventFamily.EXECUTION,
+            event_type=ExecutionEventType.POSITION_OPENED,
+            event_time=t,
+            processing_time=t,
+            correlation_id=f"c{day}",
+            symbol="BTC/USDT",
+            timeframe="1d",
+            mode="validation",
+            payload={
+                "position_id": pid,
+                "position": {"quantity": 1.0, "entry_price": entry, "side": "LONG"},
+            },
+        )
+
+    def closed(day: int, pid: str, pnl: float):
+        t = base + timedelta(days=day)
+        return build_envelope(
+            event_family=EventFamily.EXECUTION,
+            event_type=ExecutionEventType.POSITION_CLOSED,
+            event_time=t,
+            processing_time=t,
+            correlation_id=f"c{day}",
+            symbol="BTC/USDT",
+            timeframe="1d",
+            mode="validation",
+            payload={"pnl": pnl, "position_id": pid, "exit_reason": "signal", "side": "LONG"},
+        )
+
+    events = [
+        candle(0, 100.0),
+        opened(0, "p1", 100.0),
+        candle(1, 110.0),
+        opened(1, "p2", 110.0),  # second position, both now open
+        candle(2, 120.0),  # p1 +20, p2 +10 => equity 100 + 30
+        closed(2, "p1", 20.0),
+        candle(3, 120.0),  # only p2 open, still +10 unrealised
+        closed(3, "p2", 10.0),
+    ]
+    om = compute_outcome_metrics(events, initial_capital=100.0)
+    assert om["mtm_equity_curve"][-1] == pytest.approx(130.0, rel=1e-6)
+    assert om["mtm_return_pct"] == pytest.approx(30.0, rel=1e-6)
+    assert om["mtm_max_drawdown_pct"] == pytest.approx(0.0, abs=1e-6)
+
+
 def test_mtm_series_absent_without_candles() -> None:
     from src.events.envelopes import ExecutionEventType, build_envelope
 
