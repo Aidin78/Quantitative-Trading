@@ -216,6 +216,10 @@ def build_execution_config_from_trial(
         update={
             "max_bars_in_trade": int(trial.get("max_bars_in_trade", cfg.max_bars_in_trade)),
             "risk_pct_per_trade": float(trial.get("risk_pct_per_trade", cfg.risk_pct_per_trade)),
+            "long_only": bool(trial.get("long_only", cfg.long_only)),
+            "exposure_pct_per_trade": float(
+                trial.get("exposure_pct_per_trade", cfg.exposure_pct_per_trade)
+            ),
         }
     )
 

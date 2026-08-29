@@ -6,7 +6,7 @@ from src.core.contracts.state import PositionState
 from src.state.store import InMemoryStateStore
 from src.state.transitions import StateTransitionEvent
 from tests.mocks.fixtures import make_context, make_snapshot, make_snapshot_with_open_positions
-from tests.mocks.mock_signals import consensus_buy_signals
+from tests.mocks.mock_signals import consensus_buy_signals, make_signal
 
 
 def test_max_daily_drawdown_rejected(engine, times: dict) -> None:
@@ -100,6 +100,22 @@ def test_max_open_positions_rejected(engine, times: dict) -> None:
     )
     assert not decision.is_approved
     assert decision.result.rejection_reason == "max_open_positions"
+
+
+def test_opposing_exit_not_blocked_by_max_open_positions(engine, times: dict) -> None:
+    """A SELL that closes an open LONG must not be rejected at the position cap."""
+    decision = engine.process(
+        [
+            make_signal("ema_crossover", "SELL", 0.78, event_time=times["event_time"]),
+            make_signal("rsi_divergence", "SELL", 0.72, event_time=times["event_time"]),
+        ],
+        make_context(),
+        make_snapshot_with_open_positions(3),  # 3 LONGs, cap 3
+        correlation_id="cycle_opposing_exit",
+        event_time=times["event_time"],
+        decision_time=times["decision_time"],
+    )
+    assert decision.result.rejection_reason != "max_open_positions"
 
 
 def test_max_exposure_rejected(engine, times: dict) -> None:

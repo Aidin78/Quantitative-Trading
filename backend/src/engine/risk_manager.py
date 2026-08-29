@@ -41,14 +41,24 @@ class RiskManager:
         )
 
         open_count = len(portfolio.open_positions)
+        # A decision whose side opposes an open position closes/reduces it — the
+        # open-positions limit gates *opening*, not *exiting*, so such a decision
+        # must not be rejected here (otherwise a strategy at the position cap can
+        # never act on its own exit signal).
+        opposing_exit = any(
+            (p.side == "LONG" and aggregated.side == "SELL")
+            or (p.side == "SHORT" and aggregated.side == "BUY")
+            for p in portfolio.open_positions
+        )
+        open_positions_ok = opposing_exit or open_count < self._config.max_open_positions
         checks.append(
             RiskCheckResult(
                 check_name="max_open_positions",
-                passed=open_count < self._config.max_open_positions,
+                passed=open_positions_ok,
                 current_value=float(open_count),
                 threshold=float(self._config.max_open_positions),
                 message="open positions within limit"
-                if open_count < self._config.max_open_positions
+                if open_positions_ok
                 else "max open positions reached",
             )
         )

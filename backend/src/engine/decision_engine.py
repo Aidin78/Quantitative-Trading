@@ -165,6 +165,8 @@ class DecisionEngine:
             snapshot,
             decision_time=decision_time,
             revision_id=revision_id,
+            vol_target_atr_pct=self._config.risk.vol_target_atr_pct,
+            vol_target_cap=self._config.risk.vol_target_cap,
         )
         risk_verdict = self._risk_manager.finalize_verdict(risk_verdict, final_signal, snapshot)
         if not risk_verdict.passed:

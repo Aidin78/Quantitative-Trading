@@ -77,3 +77,44 @@
 5. تست‌های unit برای provider و سیاست سایزینگ.
 
 این تنها کلاس فرضیه‌ای است که از کل تحقیق جان به‌در برد. اگر پورت، نتیجهٔ research را در پلتفرم واقعی بازتولید کند، **این استراتژی قابل‌عرضهٔ پروژه است.**
+
+---
+
+## پورت به پلتفرم (۲۰۲۶-۰۸-۲۸) — انجام شد؛ جهتِ نتیجه بازتولید شد
+
+قطعات ساخته‌شده:
+
+| قطعه | فایل |
+|---|---|
+| اندیکاتور `sma` | `src/features/indicators/sma.py` |
+| تحمل `InsufficientDataError` در warmup | `src/features/builder.py` |
+| `CoreLongProvider` (گیت رژیم BUY/SELL) | `src/providers/core_long.py` + `config/providers/core_long.yaml` |
+| feature config اختصاصی (`sma_200`) | `config/features.core_long.yaml` + `load_features_config_file()` |
+| حالت `long_only` (SELL می‌بندد، short باز نمی‌کند) | `ValidationExecutionConfig.long_only` |
+| سایزینگ notional-target (`exposure_pct_per_trade`) | `simulated_pricing.position_size` |
+| سایزینگ vol-regime (`RiskConfig.vol_target_atr_pct` → `FinalSignal.size_multiplier`) | `final_signal_builder.py` |
+| فیکس: تصمیم exit مخالف نباید با سقف `max_open_positions` رد شود | `engine/risk_manager.py` |
+| override کامل `risk_limits` در `run_validation_job` (breaker پیش‌فرض ۵ ضرر متوالی استراتژی hold-the-core را وسط اجرا می‌خواباند) | `validation/job_runner.py` |
+| اسکریپت اجرا + بازسازی equity mark-to-market | `scripts/run_core_long_validation.py` |
+
+### نتیجهٔ اجرای واقعی (BTC/ETH 1d، ۲۰۱۸–۲۰۲۶، `vol_target_atr_pct=3.0`)
+
+| | buy & hold | استراتژی روی پلتفرم |
+|---|---|---|
+| **BTC** بازده کل / Sharpe / MaxDD / Calmar | +۵۰۰٪ / 0.65 / **۸۱٪** / 0.52 | **+۶۳۵٪** / **0.81** / **۵۱٪** / **0.58** |
+| **ETH** بازده کل / Sharpe / MaxDD / Calmar | +۲۳۳٪ / 0.59 / **۹۴٪** / 0.54 | **+۴۲۴٪** / **0.63** / **۶۳٪** / 0.52 |
+
+**جهتِ نتیجهٔ research بازتولید شد:** MaxDD تقریباً نصف، Sharpe بهتر، بازده حفظ یا بهتر. اعداد دقیقاً با research یکی نیستند (research کل‌تاریخچه BTC: Calmar ~0.94، MaxDD ~۴۲٪) چون پورت پلتفرم **درشت‌تر** است:
+
+- **بدون اهرم** (spot؛ `max_cash_qty` مانع notional > 1x است) — پس ضریب vol فقط de-risk می‌کند، بر خلاف research که cap ۱.۵ داشت.
+- **سایز فقط در ورود** تعیین می‌شود، نه rescale روزانه (research روزانه).
+- **fill واقعی + whipsaw**: ۱۶–۱۷ معامله، win-rate ~۱۷–۳۱٪ (هر crossing نزدیک SMA هزینهٔ fee+slippage رفت‌وبرگشت دارد که در research فقط `|Δw|×cost` بود).
+
+### باقی‌مانده (اختیاری)
+
+1. **rescale روزانهٔ سایز** — الان فقط در ورود.
+2. **rebalance band** روی ضریب vol برای کم‌کردن turnover.
+3. **تست پارامتری** `vol_target_atr_pct` / SMA period به‌جای مقادیر دستی.
+4. اجرا از طریق `Experiment`/`ConfigRevision` رسمی governance به‌جای اسکریپت.
+
+**وضعیت: استراتژی روی پلتفرم اجرا می‌شود و یک وسیلهٔ نقلیهٔ به‌طور مادی بهترِ ریسک-تعدیل از buy&hold است.** آمادهٔ promote به `candidate` از مسیر governance.

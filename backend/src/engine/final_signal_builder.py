@@ -18,6 +18,8 @@ class FinalSignalBuilder:
         *,
         decision_time,
         revision_id: str | None = None,
+        vol_target_atr_pct: float = 0.0,
+        vol_target_cap: float = 1.5,
     ) -> FinalSignal:
         winners = [s for s in signals if s.provider_id in aggregated.weights]
         entry = context.current_price
@@ -28,6 +30,10 @@ class FinalSignalBuilder:
             aggregated.weights,
         )
         risk_reward = self._risk_reward(aggregated.side, entry, stop_loss, take_profit)
+
+        size_multiplier = 1.0
+        if vol_target_atr_pct > 0 and context.atr_pct > 0:
+            size_multiplier = min(vol_target_cap, vol_target_atr_pct / context.atr_pct)
 
         return FinalSignal(
             id=f"sig_{uuid.uuid4().hex[:12]}",
@@ -44,6 +50,7 @@ class FinalSignalBuilder:
             contributing_providers=tuple(aggregated.weights.keys()),
             state_snapshot_id=snapshot.snapshot_id,
             revision_id=revision_id,
+            size_multiplier=size_multiplier,
         )
 
     def _merge_levels(

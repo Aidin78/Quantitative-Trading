@@ -60,11 +60,7 @@ def compute_config_hash(content: str) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
-@lru_cache
-def load_features_config(config_dir: Path | None = None) -> tuple[FeaturesConfig, str]:
-    base = config_dir or resolve_config_dir()
-    path = base / "features.yaml"
-    content = path.read_text(encoding="utf-8")
+def _parse_features_yaml(content: str) -> tuple[FeaturesConfig, str]:
     raw = yaml.safe_load(content)
     config = FeaturesConfig(
         version=raw["version"],
@@ -73,3 +69,15 @@ def load_features_config(config_dir: Path | None = None) -> tuple[FeaturesConfig
         context=ContextConfig(**raw["context"]),
     )
     return config, compute_config_hash(content)
+
+
+@lru_cache
+def load_features_config(config_dir: Path | None = None) -> tuple[FeaturesConfig, str]:
+    base = config_dir or resolve_config_dir()
+    return _parse_features_yaml((base / "features.yaml").read_text(encoding="utf-8"))
+
+
+@lru_cache
+def load_features_config_file(path: str | Path) -> tuple[FeaturesConfig, str]:
+    """Load a features config from an explicit path (e.g. ``features.core_long.yaml``)."""
+    return _parse_features_yaml(Path(path).read_text(encoding="utf-8"))

@@ -1,0 +1,24 @@
+# Feature config for the managed long-core strategy (docs/development/managed-long-core-findings.md).
+# Deliberately minimal — the strategy needs only a slow SMA regime reference
+# plus ATR/EMA for MarketContext. Pass this to run_validation_job via
+# features_config= instead of the default config/features.yaml, so the global
+# warm-up requirement is not raised to 200 bars for every other backtest.
+version: v1
+indicators:
+  - name: ema_12
+    type: ema
+    params: { period: 12 }
+  - name: ema_26
+    type: ema
+    params: { period: 26 }
+  - name: atr_14
+    type: atr
+    params: { period: 14 }
+  - name: sma_200
+    type: sma
+    params: { period: 200 }
+flags: []
+context:
+  trend: { method: ema_compare, fast: ema_12, slow: ema_26 }
+  volatility: { method: atr_pct, atr: atr_14, low: 0.3, high: 1.0 }
+  session: { timezone: UTC }

@@ -25,6 +25,11 @@ class RiskConfig(BaseModel, frozen=True):
     min_risk_reward: float = Field(ge=0.0)
     max_open_positions: int = Field(ge=0)
     max_exposure_pct: float = Field(ge=0.0)
+    #: Volatility-regime sizing: when > 0, the final signal's ``size_multiplier``
+    #: is ``clip(vol_target_atr_pct / context.atr_pct, 0, vol_target_cap)`` —
+    #: scale exposure down in high volatility, up in low. 0 disables it.
+    vol_target_atr_pct: float = Field(ge=0.0, default=0.0)
+    vol_target_cap: float = Field(ge=0.0, default=1.5)
 
 
 class EngineConfig(BaseModel, frozen=True):

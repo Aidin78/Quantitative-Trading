@@ -33,14 +33,26 @@ def position_size(
     snapshot: StateSnapshot,
     entry: float,
     stop_loss: float,
+    *,
+    size_multiplier: float = 1.0,
 ) -> float:
     portfolio = snapshot.portfolio
     risk = snapshot.risk
-    risk_amount = portfolio.equity * engine._config.risk_pct_per_trade / 100
-    risk_per_unit = abs(entry - stop_loss)
-    if risk_per_unit <= 0 or entry <= 0:
+    if entry <= 0:
         return 0.0
-    risk_based_qty = risk_amount / risk_per_unit
+
+    exposure_pct = getattr(engine._config, "exposure_pct_per_trade", 0.0)
+    if exposure_pct > 0:
+        # Notional-target sizing: hold ``exposure_pct`` of equity, independent
+        # of stop distance. For "hold the core" strategies where risk-distance
+        # sizing would make the position negligible.
+        base_qty = portfolio.equity * exposure_pct / 100 / entry
+    else:
+        risk_amount = portfolio.equity * engine._config.risk_pct_per_trade / 100
+        risk_per_unit = abs(entry - stop_loss)
+        if risk_per_unit <= 0:
+            return 0.0
+        base_qty = risk_amount / risk_per_unit
 
     max_cash_qty = portfolio.cash / entry if portfolio.cash > 0 else 0.0
     remaining_exposure = max(
@@ -49,5 +61,5 @@ def position_size(
     )
     max_exposure_qty = (remaining_exposure / 100 * portfolio.equity) / entry
 
-    quantity = min(risk_based_qty, max_cash_qty, max_exposure_qty)
+    quantity = min(base_qty * max(size_multiplier, 0.0), max_cash_qty, max_exposure_qty)
     return round(quantity, 8) if quantity > 0 else 0.0

@@ -12,6 +12,7 @@ from src.core.contracts.decision import (
 from src.core.contracts.execution import FillModel
 from src.core.contracts.rationale import RiskVerdict
 from src.core.contracts.signal import FinalSignal
+from src.execution.config import ValidationExecutionConfig
 from src.execution.simulated import SimulatedExecutionEngine
 from src.runtime.clocks import SimulatedClock
 from tests.mocks.fixtures import make_snapshot, utc_now
@@ -64,6 +65,53 @@ def engine() -> SimulatedExecutionEngine:
     fill = FillModel(model_id="test", slippage_bps=10, fee_bps=10, fill_at="close")
     clock = SimulatedClock(event_time=utc_now())
     return SimulatedExecutionEngine(fill, clock)
+
+
+def _sell_decision(snapshot) -> Decision:
+    d = _approved_decision(snapshot)
+    sig = d.final_signal.model_copy(update={"side": "SELL"})
+    log = d.decision_log.model_copy(
+        update={"aggregation": AggregationResult(method="majority", side="SELL", confidence=0.8)}
+    )
+    return d.model_copy(update={"final_signal": sig, "decision_log": log})
+
+
+@pytest.mark.asyncio
+async def test_long_only_suppresses_short_open() -> None:
+    fill = FillModel(model_id="test", slippage_bps=10, fee_bps=10, fill_at="close")
+    engine = SimulatedExecutionEngine(
+        fill, SimulatedClock(event_time=utc_now()), config=ValidationExecutionConfig(long_only=True)
+    )
+    snapshot = make_snapshot(exposure_pct=0.0)
+    bar = {"open": 100, "high": 110, "low": 90, "close": 100, "volume": 1}
+    result = await engine.execute(
+        _sell_decision(snapshot),
+        snapshot,
+        bar,
+        symbol="BTC/USDT",
+        timeframe="1h",
+        correlation_id="cycle_test",
+        processing_time=utc_now(),
+    )
+    assert result.events == ()
+    assert result.transitions == ()
+
+
+@pytest.mark.asyncio
+async def test_exposure_pct_sizing_targets_notional() -> None:
+    fill = FillModel(model_id="test", slippage_bps=0, fee_bps=0, fill_at="close")
+    engine = SimulatedExecutionEngine(
+        fill,
+        SimulatedClock(event_time=utc_now()),
+        config=ValidationExecutionConfig(exposure_pct_per_trade=50.0),
+    )
+    snapshot = make_snapshot(exposure_pct=0.0)
+    # equity is 10_000 in the mock; 50% notional at price 100 => qty 50
+    qty = engine._position_size(snapshot, entry=100.0, stop_loss=1.0)
+    assert qty == pytest.approx(50.0, rel=1e-6)
+    # size_multiplier scales it
+    half = engine._position_size(snapshot, entry=100.0, stop_loss=1.0, size_multiplier=0.5)
+    assert half == pytest.approx(25.0, rel=1e-6)
 
 
 @pytest.mark.asyncio

@@ -78,8 +78,15 @@ class SimulatedExecutionEngine:
             stage=stage,
         )
 
-    def _position_size(self, snapshot: StateSnapshot, entry: float, stop_loss: float) -> float:
-        return position_size(self, snapshot, entry, stop_loss)
+    def _position_size(
+        self,
+        snapshot: StateSnapshot,
+        entry: float,
+        stop_loss: float,
+        *,
+        size_multiplier: float = 1.0,
+    ) -> float:
+        return position_size(self, snapshot, entry, stop_loss, size_multiplier=size_multiplier)
 
     def _fill_price(self, bar: dict[str, Any], side: str, *, use_next_open: bool = False) -> float:
         return fill_price(self, bar, side, use_next_open=use_next_open)
@@ -126,7 +133,16 @@ class SimulatedExecutionEngine:
             return ExecutionResult(events=(), transitions=())
 
         signal = decision.final_signal
-        quantity = self._position_size(snapshot, signal.entry_price, signal.stop_loss)
+        if self._config.long_only and signal.side == "SELL":
+            # Regime-off / exit signal: any open long was already closed in
+            # evaluate_bar; do not open a short.
+            return ExecutionResult(events=(), transitions=())
+        quantity = self._position_size(
+            snapshot,
+            signal.entry_price,
+            signal.stop_loss,
+            size_multiplier=getattr(signal, "size_multiplier", 1.0),
+        )
         if quantity <= 0:
             return ExecutionResult(
                 events=self._filter_events(

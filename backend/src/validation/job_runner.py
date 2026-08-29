@@ -105,6 +105,7 @@ async def run_validation_job(
     execution_config: ValidationExecutionConfig | None = None,
     features_config: tuple[FeaturesConfig, str] | None = None,
     max_consecutive_losses: int | None = None,
+    risk_limits: RiskLimits | None = None,
     on_progress: ValidationProgressCallback | None = None,
 ) -> ValidationResult:
     app = load_app_yaml_config()
@@ -166,22 +167,21 @@ async def run_validation_job(
     )
     clock = SimulatedClock(event_time=start)
     feature_store = InMemoryFeatureStore()
-    # Mirrors InMemoryStateStore's own defaults for the fields we're not
-    # overriding -- it only accepts a full RiskLimits, not a partial one.
-    risk_limits = (
-        RiskLimits(
+    # A full ``risk_limits`` wins; otherwise fall back to the legacy
+    # ``max_consecutive_losses``-only override (mirrors InMemoryStateStore's own
+    # defaults for the fields it does not touch, since it needs a full RiskLimits).
+    effective_limits = risk_limits
+    if effective_limits is None and max_consecutive_losses is not None:
+        effective_limits = RiskLimits(
             max_daily_drawdown_pct=5.0,
             max_open_positions=3,
             max_exposure_pct=50.0,
             max_consecutive_losses=max_consecutive_losses,
         )
-        if max_consecutive_losses is not None
-        else None
-    )
     state_store = InMemoryStateStore(
         portfolio_id="portfolio_default",
         initial_cash=initial_capital,
-        limits=risk_limits,
+        limits=effective_limits,
     )
     fill_model = load_default_fill_model(resolve_config_dir())
     execution_engine = SimulatedExecutionEngine(

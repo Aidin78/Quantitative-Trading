@@ -36,3 +36,7 @@ class FinalSignal(BaseModel, frozen=True):
     contributing_providers: tuple[str, ...]
     state_snapshot_id: str
     revision_id: str | None = None
+    #: Sizing hint applied on top of the execution sizing model (1.0 = neutral).
+    #: Set by the engine for volatility-regime targeting; see
+    #: ``RiskConfig.vol_target_atr_pct`` and ``simulated_pricing.position_size``.
+    size_multiplier: float = Field(default=1.0, ge=0.0)
