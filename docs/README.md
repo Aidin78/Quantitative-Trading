@@ -41,7 +41,8 @@
 | | [cross-sectional-momentum-findings.md](./development/cross-sectional-momentum-findings.md) | فرضیه‌ی cross-sectional momentum سبد — رد شد |
 | | [managed-long-core-findings.md](./development/managed-long-core-findings.md) | هسته‌ی long ریسک‌-منضبط (trend gate + vol targeting) — **PASS**، پورت‌شده، governance `challenger` |
 | | [core-long-portfolio-findings.md](./development/core-long-portfolio-findings.md) | پرتفوی ۵۰/۵۰ BTC+ETH هسته‌ی long — بهتر از تک‌-نماد، buy&hold را روی هر ۴ معیار می‌برد |
-| | [basis-carry-findings.md](./development/basis-carry-findings.md) | کری بازیس دلتا-خنثی — درآمد ماهانهٔ باثبات ~۸–۱۰٪ سالانه؛ «۱۵٪ ماهانه» غیرممکن است |
+| | [basis-carry-findings.md](./development/basis-carry-findings.md) | کری بازیس دلتا-خنثی + کتاب ترکیبی ۷۰/۳۰ — استراتژی متعادل قابل‌عرضه (~۱۵–۲۰٪ سالانه، ~۲/۳ ماه مثبت) |
+| | [live-carry-execution-plan.md](./development/live-carry-execution-plan.md) | نقشهٔ scoped اجرای زندهٔ leg کری (آداپتور پرپ، مدیر پوزیشن دلتا-خنثی، runner) |
 
 ## خلاصه Stack
 
