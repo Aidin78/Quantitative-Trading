@@ -1,0 +1,1913 @@
+{
+  "start": "2019-01-01",
+  "end": "2026-08-27",
+  "universe": [
+    "BTC",
+    "ETH",
+    "BNB",
+    "XRP",
+    "LTC",
+    "ADA",
+    "BCH",
+    "LINK",
+    "XLM",
+    "TRX",
+    "ETC",
+    "EOS",
+    "NEO",
+    "DASH",
+    "XMR",
+    "ZEC",
+    "ATOM",
+    "DOGE",
+    "VET",
+    "WAVES",
+    "ONT",
+    "QTUM",
+    "ICX",
+    "ZIL",
+    "BAT",
+    "IOTA",
+    "ALGO",
+    "MATIC",
+    "THETA",
+    "XTZ",
+    "ENJ",
+    "CHZ",
+    "SOL",
+    "AVAX",
+    "DOT",
+    "UNI",
+    "AAVE",
+    "SUSHI",
+    "YFI",
+    "COMP",
+    "SNX",
+    "MKR",
+    "FIL",
+    "EGLD",
+    "MANA",
+    "SAND",
+    "GRT",
+    "CRV"
+  ],
+  "skip_days": 1,
+  "one_way_cost": 0.0015,
+  "pass_sharpe_margin": 0.3,
+  "survivorship_caveat": "currently-listed Binance coins only; biases results optimistically",
+  "btc_buyhold": {
+    "ann_return": 0.5911,
+    "ann_vol": 0.6158,
+    "sharpe": 0.96,
+    "max_dd": 0.7663
+  },
+  "rows": [
+    {
+      "lookback": 7,
+      "rebalance": 7,
+      "top_n": 3,
+      "rebalances": 398,
+      "long_short": {
+        "ann_return": 0.3458,
+        "ann_vol": 0.8841,
+        "sharpe": 0.391,
+        "max_dd": 0.9029,
+        "subwindow_sharpe": [
+          0.567,
+          -0.194,
+          0.729
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.7653,
+        "ann_vol": 1.034,
+        "sharpe": 0.74,
+        "max_dd": 0.937,
+        "subwindow_sharpe": [
+          1.598,
+          0.033,
+          0.286
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5915,
+        "ann_vol": 0.806,
+        "sharpe": 0.734,
+        "max_dd": 0.8562,
+        "subwindow_sharpe": [
+          1.699,
+          0.201,
+          0.031
+        ]
+      }
+    },
+    {
+      "lookback": 7,
+      "rebalance": 7,
+      "top_n": 5,
+      "rebalances": 398,
+      "long_short": {
+        "ann_return": 0.1071,
+        "ann_vol": 0.6707,
+        "sharpe": 0.16,
+        "max_dd": 0.9125,
+        "subwindow_sharpe": [
+          0.604,
+          -0.777,
+          0.422
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.5985,
+        "ann_vol": 0.9304,
+        "sharpe": 0.643,
+        "max_dd": 0.9641,
+        "subwindow_sharpe": [
+          1.749,
+          -0.239,
+          0.014
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5915,
+        "ann_vol": 0.806,
+        "sharpe": 0.734,
+        "max_dd": 0.8562,
+        "subwindow_sharpe": [
+          1.699,
+          0.201,
+          0.031
+        ]
+      }
+    },
+    {
+      "lookback": 7,
+      "rebalance": 7,
+      "top_n": 8,
+      "rebalances": 398,
+      "long_short": {
+        "ann_return": 0.0015,
+        "ann_vol": 0.5195,
+        "sharpe": 0.003,
+        "max_dd": 0.7846,
+        "subwindow_sharpe": [
+          0.263,
+          -0.555,
+          0.178
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.56,
+        "ann_vol": 0.8603,
+        "sharpe": 0.651,
+        "max_dd": 0.9351,
+        "subwindow_sharpe": [
+          1.795,
+          -0.198,
+          -0.039
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.6077,
+        "ann_vol": 0.8071,
+        "sharpe": 0.753,
+        "max_dd": 0.8562,
+        "subwindow_sharpe": [
+          1.849,
+          0.117,
+          -0.014
+        ]
+      }
+    },
+    {
+      "lookback": 7,
+      "rebalance": 14,
+      "top_n": 3,
+      "rebalances": 199,
+      "long_short": {
+        "ann_return": 0.6075,
+        "ann_vol": 0.8678,
+        "sharpe": 0.7,
+        "max_dd": 0.8945,
+        "subwindow_sharpe": [
+          0.873,
+          0.199,
+          1.005
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 1.0377,
+        "ann_vol": 1.0289,
+        "sharpe": 1.009,
+        "max_dd": 0.8978,
+        "subwindow_sharpe": [
+          1.785,
+          0.441,
+          0.517
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5913,
+        "ann_vol": 0.8057,
+        "sharpe": 0.734,
+        "max_dd": 0.8557,
+        "subwindow_sharpe": [
+          1.699,
+          0.201,
+          0.033
+        ]
+      }
+    },
+    {
+      "lookback": 7,
+      "rebalance": 14,
+      "top_n": 5,
+      "rebalances": 199,
+      "long_short": {
+        "ann_return": 0.4258,
+        "ann_vol": 0.6547,
+        "sharpe": 0.65,
+        "max_dd": 0.7558,
+        "subwindow_sharpe": [
+          0.943,
+          0.035,
+          0.876
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.9087,
+        "ann_vol": 0.9279,
+        "sharpe": 0.979,
+        "max_dd": 0.8947,
+        "subwindow_sharpe": [
+          1.901,
+          0.273,
+          0.425
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5913,
+        "ann_vol": 0.8057,
+        "sharpe": 0.734,
+        "max_dd": 0.8557,
+        "subwindow_sharpe": [
+          1.699,
+          0.201,
+          0.033
+        ]
+      }
+    },
+    {
+      "lookback": 7,
+      "rebalance": 14,
+      "top_n": 8,
+      "rebalances": 199,
+      "long_short": {
+        "ann_return": 0.1881,
+        "ann_vol": 0.5049,
+        "sharpe": 0.373,
+        "max_dd": 0.7121,
+        "subwindow_sharpe": [
+          0.602,
+          -0.284,
+          0.697
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.6948,
+        "ann_vol": 0.8597,
+        "sharpe": 0.808,
+        "max_dd": 0.8974,
+        "subwindow_sharpe": [
+          1.915,
+          -0.104,
+          0.198
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.6078,
+        "ann_vol": 0.8076,
+        "sharpe": 0.753,
+        "max_dd": 0.8557,
+        "subwindow_sharpe": [
+          1.911,
+          0.052,
+          -0.035
+        ]
+      }
+    },
+    {
+      "lookback": 7,
+      "rebalance": 30,
+      "top_n": 3,
+      "rebalances": 93,
+      "long_short": {
+        "ann_return": -0.4324,
+        "ann_vol": 0.7948,
+        "sharpe": -0.544,
+        "max_dd": 0.999,
+        "subwindow_sharpe": [
+          -1.134,
+          -0.772,
+          0.494
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.2278,
+        "ann_vol": 0.9725,
+        "sharpe": 0.234,
+        "max_dd": 0.9702,
+        "subwindow_sharpe": [
+          0.734,
+          -0.389,
+          0.193
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5882,
+        "ann_vol": 0.8052,
+        "sharpe": 0.73,
+        "max_dd": 0.8568,
+        "subwindow_sharpe": [
+          1.693,
+          0.201,
+          0.027
+        ]
+      }
+    },
+    {
+      "lookback": 7,
+      "rebalance": 30,
+      "top_n": 5,
+      "rebalances": 93,
+      "long_short": {
+        "ann_return": -0.3281,
+        "ann_vol": 0.6294,
+        "sharpe": -0.521,
+        "max_dd": 0.9933,
+        "subwindow_sharpe": [
+          -0.963,
+          -0.931,
+          0.546
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.3529,
+        "ann_vol": 0.8989,
+        "sharpe": 0.393,
+        "max_dd": 0.9621,
+        "subwindow_sharpe": [
+          1.107,
+          -0.326,
+          0.139
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5882,
+        "ann_vol": 0.8052,
+        "sharpe": 0.73,
+        "max_dd": 0.8568,
+        "subwindow_sharpe": [
+          1.693,
+          0.201,
+          0.027
+        ]
+      }
+    },
+    {
+      "lookback": 7,
+      "rebalance": 30,
+      "top_n": 8,
+      "rebalances": 93,
+      "long_short": {
+        "ann_return": -0.2548,
+        "ann_vol": 0.4903,
+        "sharpe": -0.52,
+        "max_dd": 0.9665,
+        "subwindow_sharpe": [
+          -0.879,
+          -0.84,
+          0.319
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.4085,
+        "ann_vol": 0.8506,
+        "sharpe": 0.48,
+        "max_dd": 0.9492,
+        "subwindow_sharpe": [
+          1.429,
+          -0.326,
+          0.027
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5893,
+        "ann_vol": 0.8065,
+        "sharpe": 0.731,
+        "max_dd": 0.8568,
+        "subwindow_sharpe": [
+          1.871,
+          0.033,
+          -0.034
+        ]
+      }
+    },
+    {
+      "lookback": 14,
+      "rebalance": 7,
+      "top_n": 3,
+      "rebalances": 397,
+      "long_short": {
+        "ann_return": 0.433,
+        "ann_vol": 1.0357,
+        "sharpe": 0.418,
+        "max_dd": 1.6538,
+        "subwindow_sharpe": [
+          0.537,
+          -0.146,
+          0.867
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 1.0435,
+        "ann_vol": 1.0625,
+        "sharpe": 0.982,
+        "max_dd": 0.9293,
+        "subwindow_sharpe": [
+          1.987,
+          0.011,
+          0.578
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5926,
+        "ann_vol": 0.8054,
+        "sharpe": 0.736,
+        "max_dd": 0.8562,
+        "subwindow_sharpe": [
+          1.756,
+          0.156,
+          0.014
+        ]
+      }
+    },
+    {
+      "lookback": 14,
+      "rebalance": 7,
+      "top_n": 5,
+      "rebalances": 397,
+      "long_short": {
+        "ann_return": 0.4178,
+        "ann_vol": 0.7486,
+        "sharpe": 0.558,
+        "max_dd": 0.8904,
+        "subwindow_sharpe": [
+          1.062,
+          -0.235,
+          0.553
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.952,
+        "ann_vol": 0.9461,
+        "sharpe": 1.006,
+        "max_dd": 0.9309,
+        "subwindow_sharpe": [
+          2.304,
+          -0.0,
+          0.208
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5926,
+        "ann_vol": 0.8054,
+        "sharpe": 0.736,
+        "max_dd": 0.8562,
+        "subwindow_sharpe": [
+          1.756,
+          0.156,
+          0.014
+        ]
+      }
+    },
+    {
+      "lookback": 14,
+      "rebalance": 7,
+      "top_n": 8,
+      "rebalances": 397,
+      "long_short": {
+        "ann_return": 0.2808,
+        "ann_vol": 0.5612,
+        "sharpe": 0.5,
+        "max_dd": 0.7353,
+        "subwindow_sharpe": [
+          1.097,
+          -0.49,
+          0.609
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.8063,
+        "ann_vol": 0.8654,
+        "sharpe": 0.932,
+        "max_dd": 0.9055,
+        "subwindow_sharpe": [
+          2.316,
+          -0.148,
+          0.142
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.6094,
+        "ann_vol": 0.8075,
+        "sharpe": 0.755,
+        "max_dd": 0.8562,
+        "subwindow_sharpe": [
+          1.919,
+          0.052,
+          -0.037
+        ]
+      }
+    },
+    {
+      "lookback": 14,
+      "rebalance": 14,
+      "top_n": 3,
+      "rebalances": 199,
+      "long_short": {
+        "ann_return": 0.2609,
+        "ann_vol": 0.8341,
+        "sharpe": 0.313,
+        "max_dd": 0.908,
+        "subwindow_sharpe": [
+          0.428,
+          -0.256,
+          0.753
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.7062,
+        "ann_vol": 1.0136,
+        "sharpe": 0.697,
+        "max_dd": 0.9644,
+        "subwindow_sharpe": [
+          1.626,
+          -0.29,
+          0.465
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5865,
+        "ann_vol": 0.805,
+        "sharpe": 0.728,
+        "max_dd": 0.8563,
+        "subwindow_sharpe": [
+          1.739,
+          0.156,
+          0.013
+        ]
+      }
+    },
+    {
+      "lookback": 14,
+      "rebalance": 14,
+      "top_n": 5,
+      "rebalances": 199,
+      "long_short": {
+        "ann_return": 0.3836,
+        "ann_vol": 0.6474,
+        "sharpe": 0.593,
+        "max_dd": 0.8354,
+        "subwindow_sharpe": [
+          1.137,
+          -0.353,
+          0.785
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.7752,
+        "ann_vol": 0.9228,
+        "sharpe": 0.84,
+        "max_dd": 0.9467,
+        "subwindow_sharpe": [
+          2.024,
+          -0.17,
+          0.257
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5865,
+        "ann_vol": 0.805,
+        "sharpe": 0.728,
+        "max_dd": 0.8563,
+        "subwindow_sharpe": [
+          1.739,
+          0.156,
+          0.013
+        ]
+      }
+    },
+    {
+      "lookback": 14,
+      "rebalance": 14,
+      "top_n": 8,
+      "rebalances": 199,
+      "long_short": {
+        "ann_return": 0.4079,
+        "ann_vol": 0.5449,
+        "sharpe": 0.749,
+        "max_dd": 0.7728,
+        "subwindow_sharpe": [
+          1.815,
+          -0.744,
+          0.591
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.7891,
+        "ann_vol": 0.883,
+        "sharpe": 0.894,
+        "max_dd": 0.94,
+        "subwindow_sharpe": [
+          2.379,
+          -0.41,
+          0.093
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5937,
+        "ann_vol": 0.8071,
+        "sharpe": 0.736,
+        "max_dd": 0.8563,
+        "subwindow_sharpe": [
+          1.881,
+          0.024,
+          -0.022
+        ]
+      }
+    },
+    {
+      "lookback": 14,
+      "rebalance": 30,
+      "top_n": 3,
+      "rebalances": 93,
+      "long_short": {
+        "ann_return": 0.745,
+        "ann_vol": 0.9619,
+        "sharpe": 0.775,
+        "max_dd": 0.6753,
+        "subwindow_sharpe": [
+          0.986,
+          0.624,
+          0.681
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 1.1697,
+        "ann_vol": 1.1313,
+        "sharpe": 1.034,
+        "max_dd": 0.9142,
+        "subwindow_sharpe": [
+          1.947,
+          0.282,
+          0.375
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5865,
+        "ann_vol": 0.8047,
+        "sharpe": 0.729,
+        "max_dd": 0.8559,
+        "subwindow_sharpe": [
+          1.738,
+          0.156,
+          0.013
+        ]
+      }
+    },
+    {
+      "lookback": 14,
+      "rebalance": 30,
+      "top_n": 5,
+      "rebalances": 93,
+      "long_short": {
+        "ann_return": 0.4876,
+        "ann_vol": 0.7165,
+        "sharpe": 0.681,
+        "max_dd": 0.6499,
+        "subwindow_sharpe": [
+          0.78,
+          0.783,
+          0.5
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.9841,
+        "ann_vol": 0.9843,
+        "sharpe": 1.0,
+        "max_dd": 0.8986,
+        "subwindow_sharpe": [
+          1.846,
+          0.31,
+          0.503
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5865,
+        "ann_vol": 0.8047,
+        "sharpe": 0.729,
+        "max_dd": 0.8559,
+        "subwindow_sharpe": [
+          1.738,
+          0.156,
+          0.013
+        ]
+      }
+    },
+    {
+      "lookback": 14,
+      "rebalance": 30,
+      "top_n": 8,
+      "rebalances": 93,
+      "long_short": {
+        "ann_return": 0.312,
+        "ann_vol": 0.5503,
+        "sharpe": 0.567,
+        "max_dd": 0.6486,
+        "subwindow_sharpe": [
+          0.914,
+          0.212,
+          0.431
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.8549,
+        "ann_vol": 0.8938,
+        "sharpe": 0.957,
+        "max_dd": 0.8899,
+        "subwindow_sharpe": [
+          2.086,
+          0.052,
+          0.333
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5907,
+        "ann_vol": 0.8071,
+        "sharpe": 0.732,
+        "max_dd": 0.8559,
+        "subwindow_sharpe": [
+          1.89,
+          -0.002,
+          -0.023
+        ]
+      }
+    },
+    {
+      "lookback": 30,
+      "rebalance": 7,
+      "top_n": 3,
+      "rebalances": 395,
+      "long_short": {
+        "ann_return": 0.2856,
+        "ann_vol": 0.8833,
+        "sharpe": 0.323,
+        "max_dd": 0.9272,
+        "subwindow_sharpe": [
+          0.454,
+          -0.088,
+          0.568
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.7808,
+        "ann_vol": 1.0307,
+        "sharpe": 0.758,
+        "max_dd": 0.9326,
+        "subwindow_sharpe": [
+          1.523,
+          0.035,
+          0.481
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5956,
+        "ann_vol": 0.8063,
+        "sharpe": 0.739,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.842,
+          0.09,
+          -0.024
+        ]
+      }
+    },
+    {
+      "lookback": 30,
+      "rebalance": 7,
+      "top_n": 5,
+      "rebalances": 395,
+      "long_short": {
+        "ann_return": 0.2643,
+        "ann_vol": 0.704,
+        "sharpe": 0.375,
+        "max_dd": 0.8044,
+        "subwindow_sharpe": [
+          0.663,
+          -0.021,
+          0.375
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.8299,
+        "ann_vol": 0.9343,
+        "sharpe": 0.888,
+        "max_dd": 0.8875,
+        "subwindow_sharpe": [
+          1.962,
+          0.109,
+          0.245
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5956,
+        "ann_vol": 0.8063,
+        "sharpe": 0.739,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.842,
+          0.09,
+          -0.024
+        ]
+      }
+    },
+    {
+      "lookback": 30,
+      "rebalance": 7,
+      "top_n": 8,
+      "rebalances": 395,
+      "long_short": {
+        "ann_return": 0.0796,
+        "ann_vol": 0.5406,
+        "sharpe": 0.147,
+        "max_dd": 0.7927,
+        "subwindow_sharpe": [
+          0.227,
+          0.017,
+          0.173
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.5814,
+        "ann_vol": 0.8616,
+        "sharpe": 0.675,
+        "max_dd": 0.9023,
+        "subwindow_sharpe": [
+          1.612,
+          0.06,
+          0.03
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.562,
+        "ann_vol": 0.8071,
+        "sharpe": 0.696,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.804,
+          0.022,
+          -0.053
+        ]
+      }
+    },
+    {
+      "lookback": 30,
+      "rebalance": 14,
+      "top_n": 3,
+      "rebalances": 198,
+      "long_short": {
+        "ann_return": 0.1897,
+        "ann_vol": 0.973,
+        "sharpe": 0.195,
+        "max_dd": 0.9671,
+        "subwindow_sharpe": [
+          0.364,
+          -0.134,
+          0.251
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.74,
+        "ann_vol": 1.1199,
+        "sharpe": 0.661,
+        "max_dd": 0.9509,
+        "subwindow_sharpe": [
+          1.454,
+          -0.12,
+          0.21
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5938,
+        "ann_vol": 0.8063,
+        "sharpe": 0.736,
+        "max_dd": 0.8561,
+        "subwindow_sharpe": [
+          1.837,
+          0.09,
+          -0.024
+        ]
+      }
+    },
+    {
+      "lookback": 30,
+      "rebalance": 14,
+      "top_n": 5,
+      "rebalances": 198,
+      "long_short": {
+        "ann_return": 0.1646,
+        "ann_vol": 0.7302,
+        "sharpe": 0.225,
+        "max_dd": 0.9005,
+        "subwindow_sharpe": [
+          0.276,
+          -0.192,
+          0.583
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.733,
+        "ann_vol": 0.9648,
+        "sharpe": 0.76,
+        "max_dd": 0.9164,
+        "subwindow_sharpe": [
+          1.63,
+          -0.063,
+          0.364
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5938,
+        "ann_vol": 0.8063,
+        "sharpe": 0.736,
+        "max_dd": 0.8561,
+        "subwindow_sharpe": [
+          1.837,
+          0.09,
+          -0.024
+        ]
+      }
+    },
+    {
+      "lookback": 30,
+      "rebalance": 14,
+      "top_n": 8,
+      "rebalances": 198,
+      "long_short": {
+        "ann_return": 0.0566,
+        "ann_vol": 0.5579,
+        "sharpe": 0.101,
+        "max_dd": 0.8337,
+        "subwindow_sharpe": [
+          0.026,
+          -0.236,
+          0.589
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.5988,
+        "ann_vol": 0.8796,
+        "sharpe": 0.681,
+        "max_dd": 0.9094,
+        "subwindow_sharpe": [
+          1.575,
+          -0.013,
+          0.143
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5725,
+        "ann_vol": 0.8068,
+        "sharpe": 0.71,
+        "max_dd": 0.8561,
+        "subwindow_sharpe": [
+          1.837,
+          0.053,
+          -0.084
+        ]
+      }
+    },
+    {
+      "lookback": 30,
+      "rebalance": 30,
+      "top_n": 3,
+      "rebalances": 93,
+      "long_short": {
+        "ann_return": -0.0853,
+        "ann_vol": 0.8039,
+        "sharpe": -0.106,
+        "max_dd": 0.9981,
+        "subwindow_sharpe": [
+          -0.765,
+          0.216,
+          0.432
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.7631,
+        "ann_vol": 0.9766,
+        "sharpe": 0.781,
+        "max_dd": 0.9363,
+        "subwindow_sharpe": [
+          1.404,
+          -0.016,
+          0.781
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.593,
+        "ann_vol": 0.8061,
+        "sharpe": 0.736,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.834,
+          0.09,
+          -0.025
+        ]
+      }
+    },
+    {
+      "lookback": 30,
+      "rebalance": 30,
+      "top_n": 5,
+      "rebalances": 93,
+      "long_short": {
+        "ann_return": -0.0707,
+        "ann_vol": 0.6281,
+        "sharpe": -0.112,
+        "max_dd": 0.9858,
+        "subwindow_sharpe": [
+          -0.699,
+          0.151,
+          0.421
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.6299,
+        "ann_vol": 0.9006,
+        "sharpe": 0.699,
+        "max_dd": 0.9226,
+        "subwindow_sharpe": [
+          1.474,
+          -0.095,
+          0.495
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.593,
+        "ann_vol": 0.8061,
+        "sharpe": 0.736,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.834,
+          0.09,
+          -0.025
+        ]
+      }
+    },
+    {
+      "lookback": 30,
+      "rebalance": 30,
+      "top_n": 8,
+      "rebalances": 93,
+      "long_short": {
+        "ann_return": -0.1535,
+        "ann_vol": 0.498,
+        "sharpe": -0.308,
+        "max_dd": 0.9745,
+        "subwindow_sharpe": [
+          -0.483,
+          -0.561,
+          0.151
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.4807,
+        "ann_vol": 0.8441,
+        "sharpe": 0.57,
+        "max_dd": 0.9401,
+        "subwindow_sharpe": [
+          1.592,
+          -0.395,
+          0.177
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5773,
+        "ann_vol": 0.8067,
+        "sharpe": 0.716,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.854,
+          0.057,
+          -0.093
+        ]
+      }
+    },
+    {
+      "lookback": 60,
+      "rebalance": 7,
+      "top_n": 3,
+      "rebalances": 391,
+      "long_short": {
+        "ann_return": 0.0352,
+        "ann_vol": 0.8733,
+        "sharpe": 0.04,
+        "max_dd": 0.9822,
+        "subwindow_sharpe": [
+          -0.337,
+          0.251,
+          0.302
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.7801,
+        "ann_vol": 1.0208,
+        "sharpe": 0.764,
+        "max_dd": 0.9389,
+        "subwindow_sharpe": [
+          1.341,
+          0.162,
+          0.668
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5803,
+        "ann_vol": 0.8067,
+        "sharpe": 0.719,
+        "max_dd": 0.8557,
+        "subwindow_sharpe": [
+          1.863,
+          0.058,
+          -0.091
+        ]
+      }
+    },
+    {
+      "lookback": 60,
+      "rebalance": 7,
+      "top_n": 5,
+      "rebalances": 391,
+      "long_short": {
+        "ann_return": -0.1005,
+        "ann_vol": 0.673,
+        "sharpe": -0.149,
+        "max_dd": 0.967,
+        "subwindow_sharpe": [
+          -0.127,
+          -0.361,
+          0.025
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.517,
+        "ann_vol": 0.9346,
+        "sharpe": 0.553,
+        "max_dd": 0.9502,
+        "subwindow_sharpe": [
+          1.408,
+          -0.238,
+          0.252
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5803,
+        "ann_vol": 0.8067,
+        "sharpe": 0.719,
+        "max_dd": 0.8557,
+        "subwindow_sharpe": [
+          1.863,
+          0.058,
+          -0.091
+        ]
+      }
+    },
+    {
+      "lookback": 60,
+      "rebalance": 7,
+      "top_n": 8,
+      "rebalances": 391,
+      "long_short": {
+        "ann_return": -0.1694,
+        "ann_vol": 0.5159,
+        "sharpe": -0.328,
+        "max_dd": 0.9406,
+        "subwindow_sharpe": [
+          -0.451,
+          -0.224,
+          -0.277
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.5053,
+        "ann_vol": 0.8589,
+        "sharpe": 0.588,
+        "max_dd": 0.9086,
+        "subwindow_sharpe": [
+          1.536,
+          -0.072,
+          -0.001
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5583,
+        "ann_vol": 0.8087,
+        "sharpe": 0.69,
+        "max_dd": 0.8557,
+        "subwindow_sharpe": [
+          1.816,
+          0.105,
+          -0.199
+        ]
+      }
+    },
+    {
+      "lookback": 60,
+      "rebalance": 14,
+      "top_n": 3,
+      "rebalances": 196,
+      "long_short": {
+        "ann_return": 0.0527,
+        "ann_vol": 0.8436,
+        "sharpe": 0.063,
+        "max_dd": 0.9819,
+        "subwindow_sharpe": [
+          -0.462,
+          0.291,
+          0.48
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.6955,
+        "ann_vol": 0.9919,
+        "sharpe": 0.701,
+        "max_dd": 0.9283,
+        "subwindow_sharpe": [
+          1.209,
+          0.179,
+          0.598
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5834,
+        "ann_vol": 0.8065,
+        "sharpe": 0.723,
+        "max_dd": 0.8562,
+        "subwindow_sharpe": [
+          1.875,
+          0.058,
+          -0.093
+        ]
+      }
+    },
+    {
+      "lookback": 60,
+      "rebalance": 14,
+      "top_n": 5,
+      "rebalances": 196,
+      "long_short": {
+        "ann_return": -0.091,
+        "ann_vol": 0.6505,
+        "sharpe": -0.14,
+        "max_dd": 0.9812,
+        "subwindow_sharpe": [
+          -0.521,
+          -0.137,
+          0.348
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.5196,
+        "ann_vol": 0.9143,
+        "sharpe": 0.568,
+        "max_dd": 0.9341,
+        "subwindow_sharpe": [
+          1.225,
+          -0.082,
+          0.409
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5834,
+        "ann_vol": 0.8065,
+        "sharpe": 0.723,
+        "max_dd": 0.8562,
+        "subwindow_sharpe": [
+          1.875,
+          0.058,
+          -0.093
+        ]
+      }
+    },
+    {
+      "lookback": 60,
+      "rebalance": 14,
+      "top_n": 8,
+      "rebalances": 196,
+      "long_short": {
+        "ann_return": -0.1225,
+        "ann_vol": 0.504,
+        "sharpe": -0.243,
+        "max_dd": 0.9274,
+        "subwindow_sharpe": [
+          -0.553,
+          -0.02,
+          -0.06
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.5148,
+        "ann_vol": 0.8552,
+        "sharpe": 0.602,
+        "max_dd": 0.8715,
+        "subwindow_sharpe": [
+          1.386,
+          0.108,
+          0.05
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5496,
+        "ann_vol": 0.8092,
+        "sharpe": 0.679,
+        "max_dd": 0.8562,
+        "subwindow_sharpe": [
+          1.786,
+          0.122,
+          -0.216
+        ]
+      }
+    },
+    {
+      "lookback": 60,
+      "rebalance": 30,
+      "top_n": 3,
+      "rebalances": 92,
+      "long_short": {
+        "ann_return": -0.1818,
+        "ann_vol": 0.811,
+        "sharpe": -0.224,
+        "max_dd": 0.9977,
+        "subwindow_sharpe": [
+          -0.176,
+          -0.88,
+          0.332
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.608,
+        "ann_vol": 0.9829,
+        "sharpe": 0.619,
+        "max_dd": 0.9595,
+        "subwindow_sharpe": [
+          1.493,
+          -0.301,
+          0.431
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5884,
+        "ann_vol": 0.8069,
+        "sharpe": 0.729,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.888,
+          0.057,
+          -0.093
+        ]
+      }
+    },
+    {
+      "lookback": 60,
+      "rebalance": 30,
+      "top_n": 5,
+      "rebalances": 92,
+      "long_short": {
+        "ann_return": -0.1888,
+        "ann_vol": 0.6133,
+        "sharpe": -0.308,
+        "max_dd": 0.9879,
+        "subwindow_sharpe": [
+          -0.48,
+          -0.394,
+          -0.014
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.4916,
+        "ann_vol": 0.8858,
+        "sharpe": 0.555,
+        "max_dd": 0.924,
+        "subwindow_sharpe": [
+          1.441,
+          -0.219,
+          0.195
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5884,
+        "ann_vol": 0.8069,
+        "sharpe": 0.729,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.888,
+          0.057,
+          -0.093
+        ]
+      }
+    },
+    {
+      "lookback": 60,
+      "rebalance": 30,
+      "top_n": 8,
+      "rebalances": 92,
+      "long_short": {
+        "ann_return": 0.0138,
+        "ann_vol": 0.5099,
+        "sharpe": 0.027,
+        "max_dd": 0.8652,
+        "subwindow_sharpe": [
+          0.012,
+          -0.169,
+          0.244
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.5837,
+        "ann_vol": 0.8709,
+        "sharpe": 0.67,
+        "max_dd": 0.8798,
+        "subwindow_sharpe": [
+          1.48,
+          0.098,
+          0.108
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5358,
+        "ann_vol": 0.8084,
+        "sharpe": 0.663,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.668,
+          0.227,
+          -0.228
+        ]
+      }
+    },
+    {
+      "lookback": 90,
+      "rebalance": 7,
+      "top_n": 3,
+      "rebalances": 387,
+      "long_short": {
+        "ann_return": 0.178,
+        "ann_vol": 0.8208,
+        "sharpe": 0.217,
+        "max_dd": 0.9718,
+        "subwindow_sharpe": [
+          -0.033,
+          -0.167,
+          0.889
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.7651,
+        "ann_vol": 0.9963,
+        "sharpe": 0.768,
+        "max_dd": 0.9478,
+        "subwindow_sharpe": [
+          1.592,
+          0.031,
+          0.452
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5374,
+        "ann_vol": 0.8086,
+        "sharpe": 0.665,
+        "max_dd": 0.8561,
+        "subwindow_sharpe": [
+          1.673,
+          0.231,
+          -0.231
+        ]
+      }
+    },
+    {
+      "lookback": 90,
+      "rebalance": 7,
+      "top_n": 5,
+      "rebalances": 387,
+      "long_short": {
+        "ann_return": 0.1011,
+        "ann_vol": 0.626,
+        "sharpe": 0.162,
+        "max_dd": 0.8899,
+        "subwindow_sharpe": [
+          -0.26,
+          0.172,
+          0.739
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.5967,
+        "ann_vol": 0.9044,
+        "sharpe": 0.66,
+        "max_dd": 0.9077,
+        "subwindow_sharpe": [
+          1.421,
+          0.167,
+          0.126
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5374,
+        "ann_vol": 0.8086,
+        "sharpe": 0.665,
+        "max_dd": 0.8561,
+        "subwindow_sharpe": [
+          1.673,
+          0.231,
+          -0.231
+        ]
+      }
+    },
+    {
+      "lookback": 90,
+      "rebalance": 7,
+      "top_n": 8,
+      "rebalances": 387,
+      "long_short": {
+        "ann_return": -0.0105,
+        "ann_vol": 0.5116,
+        "sharpe": -0.02,
+        "max_dd": 0.8445,
+        "subwindow_sharpe": [
+          0.167,
+          -0.635,
+          0.329
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.5555,
+        "ann_vol": 0.8479,
+        "sharpe": 0.655,
+        "max_dd": 0.8943,
+        "subwindow_sharpe": [
+          1.687,
+          -0.182,
+          0.07
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5524,
+        "ann_vol": 0.81,
+        "sharpe": 0.682,
+        "max_dd": 0.8561,
+        "subwindow_sharpe": [
+          1.76,
+          0.113,
+          -0.186
+        ]
+      }
+    },
+    {
+      "lookback": 90,
+      "rebalance": 14,
+      "top_n": 3,
+      "rebalances": 194,
+      "long_short": {
+        "ann_return": 0.2271,
+        "ann_vol": 0.7727,
+        "sharpe": 0.294,
+        "max_dd": 0.8736,
+        "subwindow_sharpe": [
+          0.416,
+          0.123,
+          0.304
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.7687,
+        "ann_vol": 0.9803,
+        "sharpe": 0.784,
+        "max_dd": 0.9203,
+        "subwindow_sharpe": [
+          1.54,
+          0.294,
+          0.281
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5371,
+        "ann_vol": 0.8088,
+        "sharpe": 0.664,
+        "max_dd": 0.8559,
+        "subwindow_sharpe": [
+          1.67,
+          0.229,
+          -0.229
+        ]
+      }
+    },
+    {
+      "lookback": 90,
+      "rebalance": 14,
+      "top_n": 5,
+      "rebalances": 194,
+      "long_short": {
+        "ann_return": 0.2423,
+        "ann_vol": 0.6034,
+        "sharpe": 0.402,
+        "max_dd": 0.7,
+        "subwindow_sharpe": [
+          0.304,
+          0.366,
+          0.587
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.7145,
+        "ann_vol": 0.8992,
+        "sharpe": 0.795,
+        "max_dd": 0.8807,
+        "subwindow_sharpe": [
+          1.596,
+          0.294,
+          0.232
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5371,
+        "ann_vol": 0.8088,
+        "sharpe": 0.664,
+        "max_dd": 0.8559,
+        "subwindow_sharpe": [
+          1.67,
+          0.229,
+          -0.229
+        ]
+      }
+    },
+    {
+      "lookback": 90,
+      "rebalance": 14,
+      "top_n": 8,
+      "rebalances": 194,
+      "long_short": {
+        "ann_return": 0.0908,
+        "ann_vol": 0.4966,
+        "sharpe": 0.183,
+        "max_dd": 0.7378,
+        "subwindow_sharpe": [
+          0.409,
+          -0.141,
+          0.206
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.6225,
+        "ann_vol": 0.8489,
+        "sharpe": 0.733,
+        "max_dd": 0.8707,
+        "subwindow_sharpe": [
+          1.705,
+          0.05,
+          0.082
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5545,
+        "ann_vol": 0.8109,
+        "sharpe": 0.684,
+        "max_dd": 0.8559,
+        "subwindow_sharpe": [
+          1.78,
+          0.094,
+          -0.187
+        ]
+      }
+    },
+    {
+      "lookback": 90,
+      "rebalance": 30,
+      "top_n": 3,
+      "rebalances": 91,
+      "long_short": {
+        "ann_return": -0.1195,
+        "ann_vol": 0.7733,
+        "sharpe": -0.154,
+        "max_dd": 0.9905,
+        "subwindow_sharpe": [
+          -0.354,
+          -0.287,
+          0.195
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.5313,
+        "ann_vol": 0.9493,
+        "sharpe": 0.56,
+        "max_dd": 0.9434,
+        "subwindow_sharpe": [
+          1.449,
+          -0.124,
+          0.105
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5374,
+        "ann_vol": 0.8088,
+        "sharpe": 0.664,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.671,
+          0.227,
+          -0.228
+        ]
+      }
+    },
+    {
+      "lookback": 90,
+      "rebalance": 30,
+      "top_n": 5,
+      "rebalances": 91,
+      "long_short": {
+        "ann_return": 0.1079,
+        "ann_vol": 0.6086,
+        "sharpe": 0.177,
+        "max_dd": 0.8658,
+        "subwindow_sharpe": [
+          0.211,
+          -0.052,
+          0.346
+        ],
+        "passes": false
+      },
+      "long_only_top": {
+        "ann_return": 0.6205,
+        "ann_vol": 0.8867,
+        "sharpe": 0.7,
+        "max_dd": 0.9,
+        "subwindow_sharpe": [
+          1.631,
+          0.044,
+          0.09
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5374,
+        "ann_vol": 0.8088,
+        "sharpe": 0.664,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.671,
+          0.227,
+          -0.228
+        ]
+      }
+    },
+    {
+      "lookback": 90,
+      "rebalance": 30,
+      "top_n": 8,
+      "rebalances": 91,
+      "long_short": {
+        "ann_return": 0.2071,
+        "ann_vol": 0.529,
+        "sharpe": 0.391,
+        "max_dd": 0.805,
+        "subwindow_sharpe": [
+          0.706,
+          -0.473,
+          0.737
+        ],
+        "passes": true
+      },
+      "long_only_top": {
+        "ann_return": 0.7008,
+        "ann_vol": 0.8731,
+        "sharpe": 0.803,
+        "max_dd": 0.8938,
+        "subwindow_sharpe": [
+          1.819,
+          -0.18,
+          0.346
+        ],
+        "passes": false
+      },
+      "equal_weight_basket": {
+        "ann_return": 0.5505,
+        "ann_vol": 0.8111,
+        "sharpe": 0.679,
+        "max_dd": 0.856,
+        "subwindow_sharpe": [
+          1.75,
+          0.057,
+          -0.131
+        ]
+      }
+    }
+  ],
+  "long_short_pass_count": 17,
+  "long_only_pass_count": 0
+}
