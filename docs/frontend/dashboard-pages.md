@@ -82,6 +82,9 @@
 
 ## 4. Experiments (`/experiments`)
 
+> از ۲۰۲۶-۰۸ این صفحه تب دوم بخش **Research** است (سایدبار فقط «Research» را نشان می‌دهد،
+> route ها جدا مانده‌اند — `components/layout/SectionTabs`).
+
 Governance — [governance.md](../architecture/governance.md).
 
 | بخش | محتوا |
@@ -93,9 +96,12 @@ Governance — [governance.md](../architecture/governance.md).
 
 ---
 
-## 5. Signals (`/signals`)
+## 5. Signals
 
-### لیست سیگنال‌ها
+> از ۲۰۲۶-۰۸ صفحهٔ لیست `/signals` حذف شد — «سیگنال‌های approved» صرفاً یک فیلتر روی
+> Decision Monitor است. جزئیات کامل یک تصمیم به `/decisions/[id]` منتقل شد.
+
+### لیست سیگنال‌ها (منسوخ)
 
 **جدول:**
 

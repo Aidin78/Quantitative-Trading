@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { SectionTabs } from "@/components/layout/SectionTabs";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { api } from "@/lib/api";
 import type {
@@ -56,6 +57,12 @@ export default function ResearchPage() {
       <PageHeader
         title="Research"
         description="Structured hypotheses, experiment memory, and the candidate promotion lifecycle — the self-improving research loop layered on top of the Decision Engine."
+      />
+      <SectionTabs
+        tabs={[
+          { href: "/research", label: "Hypotheses & Candidates" },
+          { href: "/experiments", label: "Experiments" },
+        ]}
       />
       <HypothesesSection />
       <CandidatesSection />

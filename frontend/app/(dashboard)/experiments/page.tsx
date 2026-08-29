@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FlaskConical, Loader2, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { SectionTabs } from "@/components/layout/SectionTabs";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
 import { api } from "@/lib/api";
 
@@ -102,6 +103,13 @@ export default function ExperimentsPage() {
       <PageHeader
         title="Experiments"
         description="Tracked validation and live runs bound to config revisions."
+      />
+
+      <SectionTabs
+        tabs={[
+          { href: "/research", label: "Hypotheses & Candidates" },
+          { href: "/experiments", label: "Experiments" },
+        ]}
       />
 
       <Card title="Experiment Registry" subtitle="Governance-bound runs">

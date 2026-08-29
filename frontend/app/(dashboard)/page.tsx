@@ -274,12 +274,20 @@ export default function DecisionMonitorPage() {
                   </p>
                 </div>
               )}
-              <Link
-                href={`/replay?correlation_id=${detail.correlation_id}`}
-                className="btn-secondary mt-4 w-full"
-              >
-                View replay timeline
-              </Link>
+              <div className="mt-4 flex flex-col gap-2">
+                <Link
+                  href={`/decisions/${detail.id}`}
+                  className="btn-secondary w-full"
+                >
+                  Open full detail
+                </Link>
+                <Link
+                  href={`/replay?correlation_id=${detail.correlation_id}`}
+                  className="btn-secondary w-full"
+                >
+                  View replay timeline
+                </Link>
+              </div>
             </div>
           </div>
         </Card>

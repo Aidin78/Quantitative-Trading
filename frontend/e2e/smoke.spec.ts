@@ -11,12 +11,15 @@ test.describe("smoke", () => {
     ).toBeVisible();
   });
 
-  test("navigate analytics and experiments", async ({ page }) => {
+  test("navigate analytics and research", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("link", { name: "Analytics" }).click();
     await expect(
       page.getByRole("heading", { name: "Analytics" }),
     ).toBeVisible();
+    await page.getByRole("link", { name: "Research", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Research" })).toBeVisible();
+    // Experiments is now a tab inside the Research section
     await page.getByRole("link", { name: "Experiments" }).click();
     await expect(
       page.getByRole("heading", { name: "Experiments" }),

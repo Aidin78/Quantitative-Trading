@@ -6,19 +6,22 @@ import { api } from "@/lib/api";
 
 const titles: Record<string, string> = {
   "/": "Decision Monitor",
+  "/analytics": "Analytics",
   "/engine": "Engine Config",
   "/replay": "Forensic Replay",
-  "/signals": "Signals",
   "/validation": "Validation Harness",
   "/optimization": "Auto Optimizer",
+  "/research": "Research",
+  "/experiments": "Experiments",
   "/providers": "Signal Providers",
+  "/market-data": "Market Data",
 };
 
 export function TopBar() {
   const pathname = usePathname();
   const title =
     titles[pathname] ??
-    (pathname.startsWith("/signals/") ? "Signal Detail" : "Dashboard");
+    (pathname.startsWith("/decisions/") ? "Decision Detail" : "Dashboard");
 
   const { data: health } = useQuery({
     queryKey: ["health"],

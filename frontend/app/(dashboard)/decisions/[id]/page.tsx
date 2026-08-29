@@ -14,13 +14,13 @@ function providerBadgeVariant(side: string) {
   return "default" as const;
 }
 
-export default function SignalDetailPage() {
+export default function DecisionDetailPage() {
   const params = useParams();
   const id = String(params.id);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["signal", id],
-    queryFn: () => api.signal(id),
+    queryKey: ["decision", id],
+    queryFn: () => api.decision(id),
   });
 
   if (isLoading) {
@@ -37,45 +37,66 @@ export default function SignalDetailPage() {
   if (error || !data) {
     return (
       <div className="page-container">
-        <p className="text-danger">Signal not found</p>
-        <Link href="/signals" className="btn-secondary mt-4 inline-flex">
-          Back to signals
+        <p className="text-danger">Decision not found</p>
+        <Link href="/" className="btn-secondary mt-4 inline-flex">
+          Back to Decision Monitor
         </Link>
       </div>
     );
   }
 
+  const approved = !data.rejection_reason;
+
   return (
     <div className="page-container space-y-6">
       <Link
-        href="/signals"
+        href="/"
         className="inline-flex items-center gap-2 text-sm text-muted transition-colors hover:text-accent"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to signals
+        Back to Decision Monitor
       </Link>
 
       <PageHeader
-        title={`${data.symbol} · ${data.side ?? "Signal"}`}
+        title={`${data.symbol} · ${data.side ?? "Decision"}`}
         description={data.explainability.summary}
         action={
-          <Badge variant="success">
-            {data.side} · {((data.confidence ?? 0) * 100).toFixed(0)}%
+          <Badge variant={approved ? "success" : "danger"}>
+            {approved
+              ? `${data.side} · ${((data.confidence ?? 0) * 100).toFixed(0)}%`
+              : "Rejected"}
           </Badge>
         }
       />
 
       <Card title="Outcome" subtitle={`Decision ${data.id}`}>
-        <div className="rounded-lg border border-success/20 bg-[var(--success-dim)] p-4">
-          <p className="text-sm font-medium text-success">Approved</p>
-          <p className="mt-1 text-sm text-foreground/80">
-            {data.side} with {(Number(data.confidence) * 100).toFixed(0)}%
-            confidence on {data.timeframe ?? "1h"}
-          </p>
-          <p className="mt-2 font-mono text-xs text-muted">
-            correlation: {data.correlation_id}
-          </p>
-        </div>
+        {approved ? (
+          <div className="rounded-lg border border-success/20 bg-[var(--success-dim)] p-4">
+            <p className="text-sm font-medium text-success">Approved</p>
+            <p className="mt-1 text-sm text-foreground/80">
+              {data.side} with {(Number(data.confidence) * 100).toFixed(0)}%
+              confidence on {data.timeframe ?? "1h"}
+            </p>
+            <p className="mt-2 font-mono text-xs text-muted">
+              correlation: {data.correlation_id}
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-danger/20 bg-[var(--danger-dim)] p-4">
+            <p className="text-sm font-medium text-danger">Rejected</p>
+            <p className="mt-1 text-sm text-foreground/80">
+              {data.rejection_reason}
+            </p>
+            {data.rejection_stage ? (
+              <p className="mt-2 text-xs text-muted">
+                Stage: {data.rejection_stage}
+              </p>
+            ) : null}
+            <p className="mt-2 font-mono text-xs text-muted">
+              correlation: {data.correlation_id}
+            </p>
+          </div>
+        )}
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">

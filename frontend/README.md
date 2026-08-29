@@ -4,14 +4,20 @@ Next.js 14 dashboard for the Quantitative Trading Platform (Phase 6 — Observab
 
 ## Pages
 
-| Route         | Purpose                                             |
-| ------------- | --------------------------------------------------- |
-| `/`           | Decision Monitor — live feed, stats, explainability |
-| `/engine`     | Engine config (aggregation, filter, risk)           |
-| `/replay`     | Forensic replay by correlation ID                   |
-| `/signals`    | Approved decisions                                  |
-| `/validation` | Run validation harness                              |
-| `/providers`  | Signal provider management                          |
+| Route             | Purpose                                                 |
+| ----------------- | ------------------------------------------------------- |
+| `/`               | Decision Monitor — live feed, stats, explainability     |
+| `/decisions/[id]` | Full decision detail (features, market context, log)    |
+| `/analytics`      | Decision trends, provider contribution, regime analysis |
+| `/validation`     | Validation harness — **Backtest** + **Optimize** tabs   |
+| `/research`       | **Hypotheses & Candidates** + **Experiments** tabs      |
+| `/providers`      | Signal provider management                              |
+| `/engine`         | Engine config (aggregation, filter, risk)               |
+| `/market-data`    | OHLCV download / cache                                  |
+| `/replay`         | Forensic replay by correlation ID                       |
+
+`/optimization` and `/experiments` remain their own routes; the sidebar folds
+each into its parent section via `components/layout/SectionTabs`.
 
 ## Development
 

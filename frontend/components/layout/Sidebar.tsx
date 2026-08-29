@@ -7,31 +7,44 @@ import {
   BarChart3,
   Beaker,
   Cpu,
-  FlaskConical,
   GitBranch,
   Layers,
-  LineChart,
   Database,
   Loader2,
   PlayCircle,
-  Sparkles,
   Zap,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/app-info";
 import { useActiveOptimizationSweep } from "@/contexts/OptimizationSweepContext";
 
-const links = [
+// Validation covers the Backtest + Optimize tabs; Research covers the
+// Hypotheses/Candidates + Experiments tabs — see components/layout/SectionTabs.
+type NavLink = {
+  href: string;
+  label: string;
+  icon: typeof Activity;
+  aliases?: string[];
+};
+
+const links: NavLink[] = [
   { href: "/", label: "Decision Monitor", icon: Activity },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/engine", label: "Engine Config", icon: Cpu },
-  { href: "/replay", label: "Replay", icon: GitBranch },
-  { href: "/signals", label: "Signals", icon: LineChart },
-  { href: "/validation", label: "Validation", icon: PlayCircle },
-  { href: "/market-data", label: "Market Data", icon: Database },
-  { href: "/optimization", label: "Auto Optimizer", icon: Sparkles },
-  { href: "/experiments", label: "Experiments", icon: FlaskConical },
-  { href: "/research", label: "Research", icon: Beaker },
+  {
+    href: "/validation",
+    label: "Validation",
+    icon: PlayCircle,
+    aliases: ["/optimization"],
+  },
+  {
+    href: "/research",
+    label: "Research",
+    icon: Beaker,
+    aliases: ["/experiments"],
+  },
   { href: "/providers", label: "Providers", icon: Layers },
+  { href: "/engine", label: "Engine Config", icon: Cpu },
+  { href: "/market-data", label: "Market Data", icon: Database },
+  { href: "/replay", label: "Replay", icon: GitBranch },
 ];
 
 export function Sidebar() {
@@ -59,17 +72,20 @@ export function Sidebar() {
           Navigation
         </p>
         {links.map((link) => {
+          const aliases = link.aliases ?? [];
           const active =
             pathname === link.href ||
-            (link.href !== "/" && pathname.startsWith(link.href));
+            (link.href !== "/" && pathname.startsWith(link.href)) ||
+            aliases.some((a) => pathname.startsWith(a));
           const Icon = link.icon;
+          // a running sweep lives under the Validation section (Optimize tab)
           const showOptimizerPulse =
-            link.href === "/optimization" && optimizationRunning;
+            link.href === "/validation" && optimizationRunning;
           return (
             <Link
               key={link.href}
               href={
-                link.href === "/optimization" && sweepId
+                link.href === "/validation" && sweepId
                   ? `/optimization?sweep=${encodeURIComponent(sweepId)}`
                   : link.href
               }

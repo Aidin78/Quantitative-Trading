@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { SectionTabs } from "@/components/layout/SectionTabs";
 import { ValidationCompareCard } from "@/components/validation/ValidationCompareCard";
 import { ValidationFormCard } from "@/components/validation/ValidationFormCard";
 import { ValidationHistoryCard } from "@/components/validation/ValidationHistoryCard";
@@ -258,6 +259,13 @@ function ValidationPageContent() {
       <PageHeader
         title="Validation Harness"
         description="Run historical backtests to measure engine quality and outcome metrics."
+      />
+
+      <SectionTabs
+        tabs={[
+          { href: "/validation", label: "Backtest" },
+          { href: "/optimization", label: "Optimize" },
+        ]}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">

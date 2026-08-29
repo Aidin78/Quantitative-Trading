@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { SectionTabs } from "@/components/layout/SectionTabs";
 import { OptimizationFormCard } from "@/components/optimization/OptimizationFormCard";
 import { OptimizationModeCard } from "@/components/optimization/OptimizationModeCard";
 import { OptimizationTrialsTable } from "@/components/optimization/OptimizationTrialsTable";
@@ -173,6 +174,13 @@ function OptimizationPageContent() {
       <PageHeader
         title="Auto Optimizer"
         description="Walk-forward grid search with composite scoring, holdout reserve, and local refinement."
+      />
+
+      <SectionTabs
+        tabs={[
+          { href: "/validation", label: "Backtest" },
+          { href: "/optimization", label: "Optimize" },
+        ]}
       />
 
       <OptimizationModeCard
