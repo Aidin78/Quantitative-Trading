@@ -119,6 +119,11 @@ funding چاق وابسته **نیست**، overlay با تکیهٔ بیشتر ر
 ۲۰۲۲ با نسخهٔ دینامیک **+۰.۲٪** شد (به‌جای −۴.۲٪) — عملاً هیچ سال منفی. ماه منفی: ۲۲/۷۹ (۲۸٪).
 پیاده‌سازی: `build_blended_book(..., core_conviction=<series>)`.
 
+**robustness:** band ∈ {۰.۰۸, ۰.۱۲, ۰.۱۸} → CAGR ۲۶–۲۷٪، Sharpe ۲.۲، ماه مثبت ۷۰–۷۲٪ (لبهٔ چاقو نیست).
+زیر-بازه‌ها: ۲۰۲۰→میانهٔ۲۰۲۳ CAGR ۳۶٪/Sharpe ۲.۸/ماه مثبت ۸۰٪؛ میانهٔ۲۰۲۳→۲۰۲۶ CAGR ۱۷٪/Sharpe
+۱.۵/ماه مثبت ۶۴٪ (فشردگی funding + بازار آرام‌تر). **عدد forward واقع‌بینانه: ~۱۵–۱۷٪ سالانه،
+Sharpe ~۱.۵، ~۲/۳ ماه مثبت.**
+
 ### گشاد کردن سبد کری فراتر از BTC+ETH — رد شد ✗
 
 [run_carry_basket_research.py](../../backend/scripts/run_carry_basket_research.py) — funding

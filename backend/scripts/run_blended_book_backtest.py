@@ -157,6 +157,13 @@ async def _run() -> int:
         conv_legs.append(await _core_conviction(symbol, args.start, args.end))
     core = pd.concat(core_legs, axis=1).mean(axis=1)
     conviction = pd.concat(conv_legs, axis=1).mean(axis=1)
+    conv_bands = {}
+    for band in (0.08, 0.12, 0.18):
+        legs = [
+            await _core_conviction(s, args.start, args.end, band=band)
+            for s in ("BTC/USDT", "ETH/USDT")
+        ]
+        conv_bands[band] = pd.concat(legs, axis=1).mean(axis=1)
 
     print(f"\ncarry book: {len(carry)}d  core book: {len(core)}d", flush=True)
 
@@ -255,6 +262,30 @@ async def _run() -> int:
         f"share of 3-month windows negative: {(roll3 < 0).mean() * 100:.0f}%",
         flush=True,
     )
+
+    # ---- robustness of the dynamic config: conviction band + sub-periods ----
+    print("\n=== dynamic-config robustness ===", flush=True)
+    for band, conv in conv_bands.items():
+        s = build_blended_book(carry, core, dyn_cfg, core_conviction=conv).summary()
+        print(
+            f"  conviction band {band:>4}:  CAGR {s['cagr_pct']:>5}%  Sharpe {s['sharpe']:>4}  "
+            f"maxDD {s['max_drawdown_pct']:>5}%  +mo {s['pct_months_positive']:>4}%",
+            flush=True,
+        )
+    half = primary.daily_returns.index[len(primary.daily_returns) // 2]
+    for label, sl in (("2020-mid", slice(None, half)), ("mid-2026", slice(half, None))):
+        d = primary.daily_returns.loc[sl]
+        eq = (1 + d).cumprod()
+        mo = eq.resample("ME").last().pct_change().dropna()
+        cagr = eq.iloc[-1] ** (365 / len(d)) - 1
+        sharpe = d.mean() / d.std() * (365**0.5)
+        mdd = (1 - eq / eq.cummax()).max() * 100
+        pos = (mo > 0).mean() * 100
+        print(
+            f"  sub-period {label:<9}: CAGR {cagr * 100:>5.0f}%  Sharpe {sharpe:>4.1f}  "
+            f"maxDD {mdd:>4.0f}%  +mo {pos:>3.0f}%",
+            flush=True,
+        )
     return 0
 
 
