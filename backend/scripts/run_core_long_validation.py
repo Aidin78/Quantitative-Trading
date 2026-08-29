@@ -79,13 +79,16 @@ def _perf_from_equity(equity: np.ndarray) -> dict:
     r = r[np.isfinite(r)]
     mean, std = float(r.mean()), float(r.std(ddof=1))
     dd = float((1 - equity / np.maximum.accumulate(equity)).max())
-    ann_return = mean * 365
+    # Geometric CAGR — arithmetic mean*365 badly overstates return on a
+    # high-vol series (volatility drag). Sharpe keeps the arithmetic mean.
+    n_days = len(equity) - 1
+    cagr = (equity[-1] / equity[0]) ** (365 / n_days) - 1 if n_days > 0 and equity[0] > 0 else 0.0
     return {
         "total_return_pct": round((equity[-1] / equity[0] - 1) * 100, 1),
-        "ann_return_pct": round(ann_return * 100, 1),
+        "ann_return_pct": round(cagr * 100, 1),
         "sharpe": round(mean / std * (365**0.5), 3) if std else 0.0,
         "max_dd_pct": round(dd * 100, 1),
-        "calmar": round(ann_return / dd, 3) if dd > 0 else None,
+        "calmar": round(cagr / dd, 3) if dd > 0 else None,
     }
 
 

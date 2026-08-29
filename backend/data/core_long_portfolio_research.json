@@ -1,0 +1,307 @@
+{
+  "params": {
+    "sma_n": 150,
+    "vol_w": 30,
+    "target_ann_vol": 0.5,
+    "cap": 1.5
+  },
+  "one_way_cost": 0.0015,
+  "n_days": 3297,
+  "full_history": {
+    "btc_buyhold": {
+      "raw": {
+        "ann_return": 0.552,
+        "ann_vol": 0.6706,
+        "sharpe": 0.823,
+        "max_dd": 0.8319,
+        "calmar": 0.664
+      },
+      "vol_matched": {
+        "ann_return": 0.5978,
+        "ann_vol": 0.7262,
+        "sharpe": 0.823,
+        "max_dd": 0.86,
+        "calmar": 0.695
+      }
+    },
+    "eth_buyhold": {
+      "raw": {
+        "ann_return": 0.6145,
+        "ann_vol": 0.8661,
+        "sharpe": 0.709,
+        "max_dd": 0.9397,
+        "calmar": 0.654
+      },
+      "vol_matched": {
+        "ann_return": 0.5152,
+        "ann_vol": 0.7262,
+        "sharpe": 0.709,
+        "max_dd": 0.8981,
+        "calmar": 0.574
+      }
+    },
+    "5050_buyhold": {
+      "raw": {
+        "ann_return": 0.5832,
+        "ann_vol": 0.7262,
+        "sharpe": 0.803,
+        "max_dd": 0.8792,
+        "calmar": 0.663
+      },
+      "vol_matched": {
+        "ann_return": 0.5832,
+        "ann_vol": 0.7262,
+        "sharpe": 0.803,
+        "max_dd": 0.8792,
+        "calmar": 0.663
+      }
+    },
+    "btc_managed": {
+      "raw": {
+        "ann_return": 0.3919,
+        "ann_vol": 0.3862,
+        "sharpe": 1.015,
+        "max_dd": 0.4172,
+        "calmar": 0.939
+      },
+      "vol_matched": {
+        "ann_return": 0.7299,
+        "ann_vol": 0.7194,
+        "sharpe": 1.015,
+        "max_dd": 0.6712,
+        "calmar": 1.087
+      }
+    },
+    "eth_managed": {
+      "raw": {
+        "ann_return": 0.3695,
+        "ann_vol": 0.3862,
+        "sharpe": 0.957,
+        "max_dd": 0.3945,
+        "calmar": 0.937
+      },
+      "vol_matched": {
+        "ann_return": 0.6883,
+        "ann_vol": 0.7194,
+        "sharpe": 0.957,
+        "max_dd": 0.6457,
+        "calmar": 1.066
+      }
+    },
+    "portfolio_managed": {
+      "raw": {
+        "ann_return": 0.3772,
+        "ann_vol": 0.3481,
+        "sharpe": 1.084,
+        "max_dd": 0.3794,
+        "calmar": 0.994
+      },
+      "vol_matched": {
+        "ann_return": 0.7869,
+        "ann_vol": 0.7262,
+        "sharpe": 1.084,
+        "max_dd": 0.67,
+        "calmar": 1.175
+      }
+    }
+  },
+  "from_2022": {
+    "btc_buyhold": {
+      "raw": {
+        "ann_return": 0.2476,
+        "ann_vol": 0.5083,
+        "sharpe": 0.487,
+        "max_dd": 0.6693,
+        "calmar": 0.37
+      },
+      "vol_matched": {
+        "ann_return": 0.2807,
+        "ann_vol": 0.5762,
+        "sharpe": 0.487,
+        "max_dd": 0.7235,
+        "calmar": 0.388
+      }
+    },
+    "eth_buyhold": {
+      "raw": {
+        "ann_return": 0.1564,
+        "ann_vol": 0.6917,
+        "sharpe": 0.226,
+        "max_dd": 0.7401,
+        "calmar": 0.211
+      },
+      "vol_matched": {
+        "ann_return": 0.1303,
+        "ann_vol": 0.5762,
+        "sharpe": 0.226,
+        "max_dd": 0.6662,
+        "calmar": 0.196
+      }
+    },
+    "5050_buyhold": {
+      "raw": {
+        "ann_return": 0.202,
+        "ann_vol": 0.5762,
+        "sharpe": 0.351,
+        "max_dd": 0.683,
+        "calmar": 0.296
+      },
+      "vol_matched": {
+        "ann_return": 0.202,
+        "ann_vol": 0.5762,
+        "sharpe": 0.351,
+        "max_dd": 0.683,
+        "calmar": 0.296
+      }
+    },
+    "btc_managed": {
+      "raw": {
+        "ann_return": 0.3308,
+        "ann_vol": 0.3686,
+        "sharpe": 0.898,
+        "max_dd": 0.3487,
+        "calmar": 0.949
+      },
+      "vol_matched": {
+        "ann_return": 0.5172,
+        "ann_vol": 0.5762,
+        "sharpe": 0.898,
+        "max_dd": 0.5253,
+        "calmar": 0.985
+      }
+    },
+    "eth_managed": {
+      "raw": {
+        "ann_return": 0.2701,
+        "ann_vol": 0.3587,
+        "sharpe": 0.753,
+        "max_dd": 0.3829,
+        "calmar": 0.705
+      },
+      "vol_matched": {
+        "ann_return": 0.4338,
+        "ann_vol": 0.5762,
+        "sharpe": 0.753,
+        "max_dd": 0.5766,
+        "calmar": 0.752
+      }
+    },
+    "portfolio_managed": {
+      "raw": {
+        "ann_return": 0.3004,
+        "ann_vol": 0.3297,
+        "sharpe": 0.911,
+        "max_dd": 0.2889,
+        "calmar": 1.04
+      },
+      "vol_matched": {
+        "ann_return": 0.5251,
+        "ann_vol": 0.5762,
+        "sharpe": 0.911,
+        "max_dd": 0.4677,
+        "calmar": 1.123
+      }
+    }
+  },
+  "subwindows": [
+    {
+      "window": "1/3",
+      "btc_buyhold": {
+        "calmar": 0.831,
+        "max_dd": 0.8319,
+        "ann_return": 0.6914
+      },
+      "eth_buyhold": {
+        "calmar": 0.681,
+        "max_dd": 0.9397,
+        "ann_return": 0.6395
+      },
+      "5050_buyhold": {
+        "calmar": 0.757,
+        "max_dd": 0.8792,
+        "ann_return": 0.6654
+      },
+      "btc_managed": {
+        "calmar": 0.721,
+        "max_dd": 0.4172,
+        "ann_return": 0.3008
+      },
+      "eth_managed": {
+        "calmar": 0.596,
+        "max_dd": 0.3945,
+        "ann_return": 0.2353
+      },
+      "portfolio_managed": {
+        "calmar": 0.687,
+        "max_dd": 0.3794,
+        "ann_return": 0.2607
+      }
+    },
+    {
+      "window": "2/3",
+      "btc_buyhold": {
+        "calmar": 0.631,
+        "max_dd": 0.7663,
+        "ann_return": 0.4835
+      },
+      "eth_buyhold": {
+        "calmar": 1.07,
+        "max_dd": 0.793,
+        "ann_return": 0.8488
+      },
+      "5050_buyhold": {
+        "calmar": 0.874,
+        "max_dd": 0.7625,
+        "ann_return": 0.6661
+      },
+      "btc_managed": {
+        "calmar": 1.116,
+        "max_dd": 0.3901,
+        "ann_return": 0.4352
+      },
+      "eth_managed": {
+        "calmar": 1.505,
+        "max_dd": 0.3294,
+        "ann_return": 0.4957
+      },
+      "portfolio_managed": {
+        "calmar": 1.485,
+        "max_dd": 0.3134,
+        "ann_return": 0.4654
+      }
+    },
+    {
+      "window": "3/3",
+      "btc_buyhold": {
+        "calmar": 0.908,
+        "max_dd": 0.5297,
+        "ann_return": 0.4811
+      },
+      "eth_buyhold": {
+        "calmar": 0.526,
+        "max_dd": 0.6755,
+        "ann_return": 0.3552
+      },
+      "5050_buyhold": {
+        "calmar": 0.698,
+        "max_dd": 0.5993,
+        "ann_return": 0.4181
+      },
+      "btc_managed": {
+        "calmar": 1.254,
+        "max_dd": 0.3487,
+        "ann_return": 0.4371
+      },
+      "eth_managed": {
+        "calmar": 0.976,
+        "max_dd": 0.3829,
+        "ann_return": 0.3739
+      },
+      "portfolio_managed": {
+        "calmar": 1.404,
+        "max_dd": 0.2889,
+        "ann_return": 0.4055
+      }
+    }
+  ]
+}

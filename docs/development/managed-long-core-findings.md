@@ -199,3 +199,31 @@
 
 پارامتر جدید: `run_validation_job(retain_events=True)` — انتشار و نگه‌داری کل جریان رویداد
 (context بازار، تصمیم‌ها) برای تحلیل offline بدون نوشتن در Postgres.
+
+---
+
+## رفع باگ metrics + نسخهٔ پرتفوی (۲۰۲۶-۰۸-۲۹)
+
+### باگ mark-to-market در `compute_outcome_metrics`
+
+منحنی equity (و در نتیجه `max_drawdown_pct`, `sharpe`, `sortino`, breakdown ماهانه) فقط از
+PnL معاملهٔ بسته‌شده ساخته می‌شد — استراتژی‌ای که پوزیشن را از میان یک سقوط نگه می‌دارد
+تقریباً هیچ drawdown گزارش نمی‌کرد (رکورد governance: BTC MaxDD ~۱۱٪ در برابر واقعیت ~۴۱٪).
+
+**فیکس:** `compute_mark_to_market_series()` رویدادهای `CANDLE_RECEIVED` را می‌پیماید و هر
+پوزیشن باز را به close روز mark می‌کند → کلیدهای `mtm_equity_curve`, `mtm_return_pct`,
+`mtm_max_drawdown_pct`, `mtm_sharpe_ratio`, `mtm_sortino_ratio`. Additive — کلیدهای
+trade-realized دست‌نخورده، پس optimizer و گیت‌های انتخابش تغییر نکردند. فقط وقتی run کل
+جریان رویداد را emit کرده باشد حاضرند. `run_core_long_governance.py` حالا `mtm_*` را در
+`metrics_summary` ثبت می‌کند (BTC MaxDD ۴۱٪، Sharpe 0.85).
+
+### نسخهٔ پرتفوی — [core-long-portfolio-findings](./core-long-portfolio-findings.md)
+
+کتاب ۵۰/۵۰ BTC+ETH از دو leg مدیریت‌شده. اسکرین آماری: MaxDD پرتفوی از هر دو leg تکی کمتر
+(diversification واقعی)، Sharpe 1.08؛ و در نوسان برابر با buy&hold، **هم بازده بیشتر
+(۷۹٪ در برابر ۵۸٪) هم drawdown کمتر (۶۷٪ در برابر ۸۸٪)**.
+
+روی پلتفرم (۲۰۱۸–۲۰۲۶، mark-to-market، CAGR هندسی): پرتفوی +۸۱۴٪ / Sharpe 0.98 / MaxDD ۴۳٪
+در برابر ۵۰/۵۰ buy&hold +۳۶۶٪ / 0.61 / ۸۸٪. **استراتژی روی هر چهار معیار buy&hold را می‌برد.**
+MaxDD پرتفوی روی پلتفرم کمی بدتر از leg تک BTC است چون سایز روزانه rescale نمی‌شود —
+که همان قدم بهینه‌سازی بعدی را مشخص می‌کند.
