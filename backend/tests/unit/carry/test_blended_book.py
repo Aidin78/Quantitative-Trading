@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from src.carry.blended_book import BlendConfig, build_blended_book
 
@@ -52,6 +53,29 @@ def test_summary_shape() -> None:
     for key in ("cagr_pct", "sharpe", "max_drawdown_pct", "pct_months_positive", "worst_month_pct"):
         assert key in s
     assert s["n_months"] >= 10
+
+
+def test_core_conviction_routes_idle_capital_to_carry() -> None:
+    idx = pd.date_range("2022-01-01", periods=600, freq="D", tz="UTC")
+    # carry: small steady positive; core: negative (would drag if held)
+    carry = pd.Series(0.0004, index=idx)
+    core = pd.Series(-0.002, index=idx)
+    # conviction 0 for first half (route to carry), 1 for second half (hold core)
+    conv = pd.Series([0.0] * 300 + [1.0] * 300, index=idx)
+
+    static = build_blended_book(
+        carry, core, BlendConfig(carry_weight=0.7, core_weight=0.3, target_annual_vol=None)
+    )
+    dynamic = build_blended_book(
+        carry,
+        core,
+        BlendConfig(carry_weight=0.7, core_weight=0.3, target_annual_vol=None),
+        core_conviction=conv,
+    )
+    # with conviction 0 early, the dynamic book avoids the core drag -> higher equity
+    assert dynamic.equity_curve.iloc[-1] > static.equity_curve.iloc[-1]
+    # first-half daily return should equal pure carry (core weight 0 there)
+    assert dynamic.daily_returns.iloc[100] == pytest.approx(0.0004, rel=1e-9)
 
 
 def test_overlapping_span_only() -> None:

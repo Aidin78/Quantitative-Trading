@@ -65,12 +65,20 @@ def build_blended_book(
     carry_returns: pd.Series,
     core_returns: pd.Series,
     config: BlendConfig | None = None,
+    *,
+    core_conviction: pd.Series | None = None,
 ) -> BlendedBookResult:
     """Blend two daily-return series into one book.
 
     Inputs are daily simple returns (on deployed capital). They are aligned on
     the union of their dates over the overlapping span; a leg with no value on a
     day contributes 0 that day (e.g. carry flat, or core warming up).
+
+    ``core_conviction`` (optional, values in [0, 1], known at the prior close):
+    scales the core sleeve day by day and hands the freed capital to carry —
+    so when the trend regime is weak the book leans on the smooth carry leg
+    instead of parking idle cash. ``config.core_weight`` is then the *maximum*
+    core allocation. Without it the split is static.
     """
     cfg = config or BlendConfig()
     total_w = cfg.carry_weight + cfg.core_weight
@@ -88,7 +96,15 @@ def build_blended_book(
     carry = carry.reindex(idx).fillna(0.0)
     core = core.reindex(idx).fillna(0.0)
 
-    raw = w_carry * carry + w_core * core
+    if core_conviction is not None:
+        conv = core_conviction.copy()
+        conv.index = pd.DatetimeIndex(conv.index).tz_localize(None)
+        conv = conv.reindex(idx).ffill().clip(0.0, 1.0).fillna(0.0)
+        core_alloc = w_core * conv
+        carry_alloc = 1.0 - core_alloc
+        raw = carry_alloc * carry + core_alloc * core
+    else:
+        raw = w_carry * carry + w_core * core
 
     if cfg.target_annual_vol is not None:
         realised = raw.rolling(cfg.vol_window).std(ddof=1) * np.sqrt(_ANN)

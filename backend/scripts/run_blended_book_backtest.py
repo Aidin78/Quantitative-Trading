@@ -96,6 +96,25 @@ async def _core_leg_returns(
     return pd.Series(eq, index=ts).pct_change().dropna()
 
 
+async def _core_conviction(symbol: str, start: str, end: str, sma_n: int = 150, band: float = 0.12):
+    """How strongly the trend regime is 'on': 0 at/below the SMA, 1 at band% above.
+
+    Known at the prior close (shift(1)); used to scale the core sleeve in the
+    dynamic blend and hand idle capital to carry.
+    """
+    df = await load_ohlcv(
+        source="exchange",
+        symbol=symbol,
+        timeframe="1d",
+        start=datetime.fromisoformat(start).replace(tzinfo=UTC),
+        end=datetime.fromisoformat(end).replace(tzinfo=UTC),
+    )
+    close = pd.Series(df["close"].to_numpy(), index=pd.to_datetime(df["timestamp"], utc=True))
+    sma = close.rolling(sma_n).mean()
+    conv = ((close / sma - 1.0) / band).clip(0.0, 1.0)
+    return conv.shift(1).fillna(0.0)
+
+
 def _print_month_table(monthly: pd.Series) -> None:
     by_year: dict[int, dict[int, float]] = {}
     for ts, val in monthly.items():
@@ -130,11 +149,14 @@ async def _run() -> int:
     carry = pd.concat(carry_legs, axis=1).mean(axis=1)
 
     core_legs = []
+    conv_legs = []
     for symbol in ("BTC/USDT", "ETH/USDT"):
         core_legs.append(
             await _core_leg_returns(symbol, args.start, args.end, args.sma, args.vol_target_atr_pct)
         )
+        conv_legs.append(await _core_conviction(symbol, args.start, args.end))
     core = pd.concat(core_legs, axis=1).mean(axis=1)
+    conviction = pd.concat(conv_legs, axis=1).mean(axis=1)
 
     print(f"\ncarry book: {len(carry)}d  core book: {len(core)}d", flush=True)
 
@@ -166,6 +188,22 @@ async def _run() -> int:
             f"{s['median_month_pct']:>8} {s['worst_month_pct']:>6}% {s['worst_month_date']:>9}",
             flush=True,
         )
+
+    # dynamic: core sleeve scaled by trend conviction, idle capital -> carry
+    dyn_cfg = BlendConfig(
+        carry_weight=1.0 - (1 - args.carry_weight),
+        core_weight=1 - args.carry_weight,
+        target_annual_vol=args.target_vol,
+    )
+    dyn = build_blended_book(carry, core, dyn_cfg, core_conviction=conviction)
+    ds = dyn.summary()
+    print(
+        f"{'DYNAMIC (conv-scaled)':<24} {ds['cagr_pct']:>7} {ds['annual_vol_pct']:>6} "
+        f"{ds['sharpe']:>7} {ds['max_drawdown_pct']:>7} {ds['pct_months_positive']:>6} "
+        f"{ds['median_month_pct']:>8} {ds['worst_month_pct']:>6}% {ds['worst_month_date']:>9}",
+        flush=True,
+    )
+    primary = dyn
 
     print("\n=== primary config month-by-month return % ===", flush=True)
     _print_month_table(primary.monthly_returns)
