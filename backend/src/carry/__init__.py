@@ -13,6 +13,12 @@ from src.carry.basis_carry import BasisCarryConfig, BasisCarryResult, simulate_b
 from src.carry.blended_book import BlendConfig, BlendedBookResult, build_blended_book
 from src.carry.carry_runner import CarryRunner, ExecReport, PaperCarryExecutor
 from src.carry.funding_data import load_funding_history
+from src.carry.live_executor import (
+    CarryCredentials,
+    CarryExchange,
+    LiveCarryExecutor,
+    PartialCarryFill,
+)
 from src.carry.perp_provider import HistoricalPerpProvider, LivePerpProvider, PerpSnapshot
 from src.carry.position_manager import (
     CarryManagerConfig,
@@ -27,6 +33,8 @@ __all__ = [
     "BasisCarryResult",
     "BlendConfig",
     "BlendedBookResult",
+    "CarryCredentials",
+    "CarryExchange",
     "CarryManagerConfig",
     "CarryPositionManager",
     "CarryPositionState",
@@ -34,8 +42,10 @@ __all__ = [
     "CarryTarget",
     "ExecReport",
     "HistoricalPerpProvider",
+    "LiveCarryExecutor",
     "LivePerpProvider",
     "PaperCarryExecutor",
+    "PartialCarryFill",
     "PerpSnapshot",
     "RebalancePlan",
     "build_blended_book",

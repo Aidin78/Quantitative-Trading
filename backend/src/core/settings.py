@@ -79,6 +79,13 @@ class Settings(BaseSettings):
     exchange_id: str = "binance"
     exchange_api_key: str = ""
     exchange_api_secret: str = ""
+    # basis-carry runner: spot + futures accounts have separate keys on Binance,
+    # and separate testnets. carry_sandbox=True targets the testnet endpoints.
+    carry_spot_api_key: str = ""
+    carry_spot_api_secret: str = ""
+    carry_futures_api_key: str = ""
+    carry_futures_api_secret: str = ""
+    carry_sandbox: bool = True
     config_dir: str | None = None
     environment: Literal["development", "staging", "production"] = "development"
     auth_required: bool = False

@@ -20,26 +20,34 @@ leg کری بک‌تست دارد (`src/carry/`) ولی اجرای زنده ند
 (realized P&L پرپ روی کاهش short وارد cash می‌شود). paper runner همان بازدهٔ بک‌تست را
 تولید می‌کند (BTC ۴۹.۵٪ در برابر ۴۴.۳٪، maxDD ۰.۳٪) — یعنی زنجیره وفادار است.
 
-## باقی‌مانده برای live
+## live/testnet — ساخته شد ✓ (۲۰۲۶-۰۸-۲۹)
 
-### ۱. `LiveCarryExecutor` (`src/carry/carry_runner.py` یا فایل جدید)
-- همان اینترفیس `CarryExecutor.execute(plan) -> ExecReport` ولی سفارش واقعی ccxt:
-  خرید/فروش spot + باز/بستن short پرپ هم‌اندازه (taker یا limit)
-- safety gate: اگر یک leg پر شد و دیگری نه → فوراً هج یا ببند
-- منتظر fill بمان، `ExecReport` را از fillهای واقعی بساز
+| قطعه | فایل | وضعیت |
+|---|---|---|
+| `CarryExchange` (spot + futures ccxt، sandbox) | `live_executor.py` | ✓ |
+| `LiveCarryExecutor` — سفارش واقعی market + unwind روی اجرای ناقص | `live_executor.py` | ✓ ۵ تست (fake exchange) |
+| runner + persist + reconcile | `scripts/run_carry_live.py` | ✓ `--once` / `--loop` / `--dry-run` / `--reconcile` |
+| تنظیمات credential | `settings.py` (`carry_*`) + `.env.example` | ✓ |
 
-### ۲. حلقهٔ زندهٔ scheduler (`scripts/run_carry_live.py`)
-- APScheduler هر ~۸ ساعت (پیش از settlement funding): `LivePerpProvider.snapshot()` → `runner.step(snap)`
-- persist کردن `runner.state` بین اجراها (JSON یا DB)
-- کتاب ترکیبی: تخصیص ۷۰/۳۰ در سطح حساب بین این runner و استراتژی هسته؛ overlay هدف-نوسان روی مجموع
+`LiveCarryExecutor` همان اینترفیس `CarryExecutor` را دارد — پس `CarryRunner` بدون تغییر
+درایو می‌شود. جفت به‌ترتیب گذاشته می‌شود؛ اگر leg دوم بعد از پر شدن leg اول خطا دهد،
+leg اول فوراً unwind و `PartialCarryFill` raise می‌شود (کتاب هیچ‌وقت directional نمی‌ماند).
+`scripts/run_carry_live.py --loop` با APScheduler در ۰۰:۵۰ / ۰۸:۵۰ / ۱۶:۵۰ UTC اجرا می‌شود
+(~۱۰ دقیقه پیش از settlement funding)؛ state در `data/carry_live_state.json` persist می‌شود.
 
-### ۳. reconciliation + مانیتورینگ
-- هر چرخه: پوزیشن واقعی صرافی را با `runner.state` تطبیق بده؛ روی واگرایی halt
-- متریک‌های Prometheus: `carry_net_delta`, `carry_accrued_funding`, `carry_leverage`, `basis_bps`
-- هشدار Telegram: اجرای ناقص، basis > آستانه، نزدیک liquidation
+### برای اجرا لازم است (کاربر)
+1. اکانت testnet: [testnet.binance.vision](https://testnet.binance.vision) (spot) و
+   [testnet.binancefuture.com](https://testnet.binancefuture.com) (futures) → کلیدها را در `.env` بگذار
+   (`CARRY_SPOT_API_KEY`, ...). `CARRY_SANDBOX=true` پیش‌فرض.
+2. `poetry run python scripts/run_carry_live.py --dry-run` — قیمت واقعی، بدون سفارش
+3. `poetry run python scripts/run_carry_live.py --once` — یک چرخهٔ واقعی روی testnet
+4. `poetry run python scripts/run_carry_live.py --loop` — زمان‌بندی‌شده
+5. `--reconcile` — تطبیق state با پوزیشن واقعی صرافی
 
-### نیازمندی کاربر
-انتخاب صرافی(ها)، API key، testnet/live، حداقل سرمایه. تخمین: ~۱ هفته برای live executor + scheduler + reconciliation.
+### باقی‌مانده (بعد از تأیید testnet)
+- مانیتورینگ Prometheus/Telegram (`carry_net_delta`, `carry_leverage`, هشدار اجرای ناقص)
+- کتاب ترکیبی: تخصیص ۷۰/۳۰ در سطح حساب + overlay هدف-نوسان روی مجموع (runner هسته جداست)
+- سوییچ live واقعی: `CARRY_SANDBOX=false` + کلیدهای واقعی + سرمایهٔ کوچک اول
 
 ## ریسک‌هایی که بک‌تست نمی‌گیرد (در live باید مدیریت شوند)
 - **ریسک basis:** spread قیمت spot-perp در ورود/خروج و در استرس باز می‌شود
