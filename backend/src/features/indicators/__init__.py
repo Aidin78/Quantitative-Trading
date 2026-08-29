@@ -15,6 +15,7 @@ from src.features.indicators.market_structure import (
     _market_structure_latest,
 )
 from src.features.indicators.rsi import RsiIndicator
+from src.features.indicators.sma import SmaIndicator
 from src.features.indicators.supertrend import (
     SuperTrendIndicator,
     _supertrend_components,
@@ -32,6 +33,7 @@ __all__ = [
     "MacdIndicator",
     "MarketStructureIndicator",
     "RsiIndicator",
+    "SmaIndicator",
     "SuperTrendIndicator",
     "VolumeFlowIndicator",
     "_adx_components",

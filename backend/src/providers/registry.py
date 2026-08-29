@@ -8,6 +8,7 @@ from src.providers.adx_trend_strength import AdxTrendStrengthProvider
 from src.providers.base import BaseSignalProvider, ProviderConfig
 from src.providers.bollinger_reversion import BollingerReversionProvider
 from src.providers.config import load_provider_yaml
+from src.providers.core_long import CoreLongProvider
 from src.providers.ema_crossover import EmaCrossoverProvider
 from src.providers.macd_momentum import MacdMomentumProvider
 from src.providers.market_structure import MarketStructureProvider
@@ -24,6 +25,7 @@ _PROVIDER_CLASSES: dict[str, type[BaseSignalProvider]] = {
     "supertrend_trend": SuperTrendTrendProvider,
     "volume_order_flow": VolumeOrderFlowProvider,
     "market_structure": MarketStructureProvider,
+    "core_long": CoreLongProvider,
 }
 
 

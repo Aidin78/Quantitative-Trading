@@ -178,6 +178,17 @@ def test_supertrend_full_series_parity_long_with_warmup() -> None:
     assert set(np.unique(direction[~np.isnan(direction)])).issubset({-1.0, 1.0})
 
 
+def test_sma_matches_rolling_mean() -> None:
+    df = make_sample_ohlcv(bars=60)
+    sma = get_indicator_class("sma")().compute(df, {"period": 30})
+    assert sma == pytest.approx(float(df["close"].tail(30).mean()), rel=1e-9)
+
+
+def test_sma_insufficient_data_raises() -> None:
+    with pytest.raises(InsufficientDataError, match="sma"):
+        get_indicator_class("sma")().compute(make_sample_ohlcv(bars=10), {"period": 30})
+
+
 def test_supertrend_insufficient_data_raises() -> None:
     small = make_sample_ohlcv(bars=15)
     with pytest.raises(InsufficientDataError, match="supertrend"):

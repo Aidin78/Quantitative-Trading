@@ -8,7 +8,7 @@ import pandas as pd
 
 from src.core.contracts.context import MarketContext
 from src.core.contracts.features import FeatureSet, FeatureSetRecord
-from src.core.exceptions import DataProviderError
+from src.core.exceptions import DataProviderError, InsufficientDataError
 from src.features.config import FeaturesConfig, load_features_config
 from src.features.context_deriver import ContextDeriver
 from src.features.registry import FeatureRegistry
@@ -65,11 +65,18 @@ class DefaultFeatureBuilder:
         indicators: dict[str, float] = {}
         shared: dict[tuple[Any, ...], Any] = {}
         for definition in self._registry.indicators:
-            indicators[definition.name] = self._registry.compute_indicator(
-                definition,
-                normalized,
-                shared=shared,
-            )
+            try:
+                indicators[definition.name] = self._registry.compute_indicator(
+                    definition,
+                    normalized,
+                    shared=shared,
+                )
+            except InsufficientDataError:
+                # During warm-up a long-lookback indicator (e.g. sma_200) is not
+                # yet computable; omit it rather than fail the whole build. The
+                # harness skips this warm-up window anyway, and consumers read
+                # indicators defensively (``.get(name)``).
+                continue
 
         flags = self._registry.evaluate_flags(indicators)
         close = float(normalized["close"].iloc[-1])

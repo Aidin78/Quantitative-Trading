@@ -1,0 +1,17 @@
+# Trend-regime gate for a risk-managed long crypto core.
+# Not a directional edge — harvests the trend + vol-targeting risk premium.
+# Validated in docs/development/managed-long-core-findings.md.
+# Disabled by default: this is a candidate strategy, run it in its own experiment,
+# not mixed into the default multi-provider engine.
+provider_id: core_long
+version: v1
+enabled: false
+weight: 1.0
+params:
+  sma_indicator: sma_200      # regime reference (config/features.yaml)
+  confidence: 0.9             # fixed high conviction while regime is on
+  min_confidence: 0.6
+  regime_off_side: HOLD       # HOLD (safe) | SELL (only on a long-only engine)
+  use_atr_stops: true         # keep engine-compatible SL/TP; the research
+                              # strategy holds through, so widen max_bars_in_trade
+                              # or set use_atr_stops: false once exit-to-flat exists
