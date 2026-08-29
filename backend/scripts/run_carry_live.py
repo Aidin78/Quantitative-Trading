@@ -38,9 +38,15 @@ from src.core.settings import get_settings
 _STATE_PATH = _BACKEND / "data" / "carry_live_state.json"
 
 
-def _load_state() -> tuple[CarryPositionState, float]:
+def _load_state() -> tuple[CarryPositionState, float, float | None]:
+    """(position state, cash, spot_baseline).
+
+    ``spot_baseline`` is the base-asset balance already in the spot account
+    before the runner touched it (testnet accounts ship pre-funded with 1 BTC
+    etc.) — subtracted out during reconciliation.
+    """
     if not _STATE_PATH.exists():
-        return CarryPositionState(), 0.0
+        return CarryPositionState(), 0.0, None
     raw = json.loads(_STATE_PATH.read_text())
     st = raw["state"]
     return (
@@ -53,14 +59,21 @@ def _load_state() -> tuple[CarryPositionState, float]:
             flips=st["flips"],
         ),
         raw["cash"],
+        raw.get("spot_baseline"),
     )
 
 
-def _save_state(state: CarryPositionState, cash: float) -> None:
+def _save_state(state: CarryPositionState, cash: float, spot_baseline: float | None) -> None:
     _STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
     _STATE_PATH.write_text(
         json.dumps(
-            {"ts": datetime.now(UTC).isoformat(), "cash": cash, "state": asdict(state)}, indent=2
+            {
+                "ts": datetime.now(UTC).isoformat(),
+                "cash": cash,
+                "spot_baseline": spot_baseline,
+                "state": asdict(state),
+            },
+            indent=2,
         )
     )
 
@@ -91,9 +104,13 @@ def _build_exchange(symbol: str) -> CarryExchange:
 
 def _cycle(symbol: str, capital: float, *, dry_run: bool) -> None:
     exchange = _build_exchange(symbol)
-    state, cash = _load_state()
+    state, cash, spot_baseline = _load_state()
     if not state.in_market and cash == 0.0:
         cash = capital
+    if spot_baseline is None and not dry_run:
+        # first real cycle: record what's already sitting in the spot account,
+        # net of any position the runner already holds (crash-recovery case)
+        spot_baseline = exchange.open_positions()["spot_qty"] - state.spot_qty
 
     runner = CarryRunner(
         PaperCarryExecutor() if dry_run else LiveCarryExecutor(exchange),
@@ -104,7 +121,7 @@ def _cycle(symbol: str, capital: float, *, dry_run: bool) -> None:
 
     snap = exchange.snapshot()
     action = runner.step(snap)
-    _save_state(runner.state, runner.cash)
+    _save_state(runner.state, runner.cash, spot_baseline)
 
     eq = runner.equity(snap.spot_px, snap.perp_mark_px)
     st = runner.state
@@ -120,11 +137,17 @@ def _cycle(symbol: str, capital: float, *, dry_run: bool) -> None:
 
 def _reconcile(symbol: str) -> None:
     exchange = _build_exchange(symbol)
-    state, _ = _load_state()
+    state, _, spot_baseline = _load_state()
     actual = exchange.open_positions()
+    base = spot_baseline or 0.0
+    runner_spot = actual["spot_qty"] - base
     print(f"persisted: spot={state.spot_qty:.5f} perp={state.perp_qty:.5f}", flush=True)
-    print(f"exchange : spot={actual['spot_qty']:.5f} perp={actual['perp_qty']:.5f}", flush=True)
-    sd = abs(state.spot_qty - actual["spot_qty"])
+    print(
+        f"exchange : spot={runner_spot:.5f} perp={actual['perp_qty']:.5f} "
+        f"(raw {actual['spot_qty']:.5f} - baseline {base:.5f})",
+        flush=True,
+    )
+    sd = abs(state.spot_qty - runner_spot)
     pd_ = abs(state.perp_qty - actual["perp_qty"])
     tol = max(state.spot_qty, 1e-6) * 0.02
     print("OK" if sd < tol and pd_ < tol else "MISMATCH — halt and investigate", flush=True)

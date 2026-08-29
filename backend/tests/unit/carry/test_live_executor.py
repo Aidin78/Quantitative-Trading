@@ -21,11 +21,18 @@ class _FakeClient:
         if self.fail_on == side:
             raise RuntimeError("exchange rejected order")
         self.orders.append((sym, side, amount, params or {}))
+        if getattr(self, "no_price_on_create", False):
+            # Binance market orders (esp. testnet) often return before the fill
+            # price is populated — no average, no fees.
+            return {"id": "1", "filled": amount}
         return {
             "filled": amount,
             "average": self.last,
             "fees": [{"cost": amount * self.last * 0.0004}],
         }
+
+    def fetch_order(self, oid, sym):
+        return {"id": oid, "average": self.last, "filled": 0.0}
 
 
 def _exchange(spot_last=100.0, perp_last=100.0, perp_fail=None) -> CarryExchange:
@@ -89,3 +96,20 @@ def test_signs_negative_delta_reports_negative_fill_qty() -> None:
     )
     assert report.spot_fill_qty == pytest.approx(-1.5)
     assert report.perp_fill_qty == pytest.approx(-1.5)
+
+
+def test_missing_fill_price_falls_back_to_reference_not_zero() -> None:
+    """Binance market orders can return no `average`; a 0 entry price would blow
+    up the position manager's mark-to-market (perp_qty * (0 - mark))."""
+    exch = _exchange(spot_last=101.0, perp_last=99.0)
+    exch._spot.no_price_on_create = True  # noqa: SLF001
+    exch._fut.no_price_on_create = True  # noqa: SLF001
+    report = LiveCarryExecutor(exch).execute(
+        RebalancePlan(spot_delta_qty=2.0, perp_delta_qty=2.0, reason="open"),
+        spot_px=101.0,
+        perp_px=99.0,
+    )
+    # fetch_order stub returns `last`, so we get the real price back
+    assert report.spot_fill_px == pytest.approx(101.0)
+    assert report.perp_fill_px == pytest.approx(99.0)
+    assert report.fee > 0  # estimated from notional when the venue omits it

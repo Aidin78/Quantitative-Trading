@@ -44,6 +44,25 @@ leg اول فوراً unwind و `PartialCarryFill` raise می‌شود (کتاب
 4. `poetry run python scripts/run_carry_live.py --loop` — زمان‌بندی‌شده
 5. `--reconcile` — تطبیق state با پوزیشن واقعی صرافی
 
+### testnet تأیید شد ✓ (۲۰۲۶-۰۸-۲۹)
+
+روی Binance testnet (spot `testnet.binance.vision` + futures `testnet.binancefuture.com`)
+یک چرخهٔ کامل open → hold → reconcile اجرا شد. سه مشکلی که فقط در اجرای واقعی بروز کرد:
+
+- **کج‌شدن ساعت:** سیستم ~۱ ثانیه جلوتر از سرور بایننس → رد امضا (`-1021`). حل با
+  `adjustForTimeDifference` + `recvWindow=15s`.
+- **ccxt امضای futures testnet را بلاک می‌کند** (deprecation nag؛ خود endpoint سالم است) —
+  با `options["disableFuturesSandboxWarning"]=True` رد می‌شود.
+- **market order بایننس بدون قیمت fill برمی‌گردد** → `perp_entry_px=0` و انفجار
+  mark-to-market. حل: `fetch_order` دوباره‌خوانی، fallback به mark price، تخمین کارمزد
+  وقتی صرافی گزارش نمی‌دهد (testnet). ضمناً هر دو leg به step مشترک گرد می‌شوند تا
+  residual جهت‌دار نماند.
+- `--reconcile` حالا `spot_baseline` (موجودی BTC از پیش در اکانت testnet) را کم می‌کند.
+
+اتصال به هاست‌های testnet از ایران ناپایدار است (دیتای live بایننس geo-block است، فقط
+testnet جواب می‌دهد) — یک retry محدود روی فراخوانی‌های خواندنی گذاشته شد؛ سفارش هیچ‌وقت
+retry نمی‌شود. برای `--loop` پایدار به VPS خارج نیاز است.
+
 ### باقی‌مانده (بعد از تأیید testnet)
 - مانیتورینگ Prometheus/Telegram (`carry_net_delta`, `carry_leverage`, هشدار اجرای ناقص)
 - کتاب ترکیبی: تخصیص ۷۰/۳۰ در سطح حساب + overlay هدف-نوسان روی مجموع (runner هسته جداست)

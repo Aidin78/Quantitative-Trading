@@ -100,7 +100,13 @@ class CarryExchange:
                 "secret": creds.futures_secret,
                 "enableRateLimit": True,
                 "timeout": 30000,
-                "options": {"defaultType": "future", **_CLIENT_OPTIONS},
+                "options": {
+                    "defaultType": "future",
+                    # ccxt now blocks signed calls to testnet.binancefuture.com by
+                    # default (deprecation nag); the endpoint itself still works.
+                    "disableFuturesSandboxWarning": True,
+                    **_CLIENT_OPTIONS,
+                },
             }
         )
         if creds.sandbox:
@@ -132,23 +138,66 @@ class CarryExchange:
         )
 
     # --- orders ----------------------------------------------------
-    def _fill_from_order(self, order: dict) -> Fill:
-        qty = float(order.get("filled") or order.get("amount") or 0.0)
-        price = float(order.get("average") or order.get("price") or 0.0)
+    def _ensure_markets(self) -> None:
+        if not getattr(self, "_markets_ready", False):
+            _retry_read(self._spot.load_markets)
+            _retry_read(self._fut.load_markets)
+            self._markets_ready = True
+
+    def round_qty(self, qty: float) -> float:
+        """Quantize to a step both venues accept (the coarser of spot/perp).
+
+        Keeps the two legs equal after rounding — otherwise the perp's coarser
+        lot size leaves a standing directional residual every open/close.
+        """
+        try:
+            self._ensure_markets()
+            s = float(self._spot.amount_to_precision(self.symbol, abs(qty)))
+            p = float(self._fut.amount_to_precision(self._perp, abs(qty)))
+        except Exception:  # noqa: BLE001 - fall back to the raw qty
+            return qty
+        coarser = min(s, p)  # whichever venue rounded down further
+        return coarser if qty >= 0 else -coarser
+
+    @staticmethod
+    def _sum_fees(order: dict) -> float:
         fee = 0.0
         for f in order.get("fees") or ([order["fee"]] if order.get("fee") else []):
             if f and f.get("cost") is not None:
-                fee += float(f["cost"])
+                fee += abs(float(f["cost"]))
+        return fee
+
+    def _resolve_fill(
+        self, client, order: dict, symbol: str, ref_px: float, taker_bps: float
+    ) -> Fill:
+        qty = float(order.get("filled") or order.get("amount") or 0.0)
+        price = float(order.get("average") or order.get("price") or 0.0)
+        fee = self._sum_fees(order)
+        if price <= 0 and order.get("id"):
+            # market orders on Binance (esp. testnet) often return before the
+            # fill price is populated — read the order back once.
+            try:
+                back = _retry_read(lambda: client.fetch_order(order["id"], symbol))
+                price = float(back.get("average") or back.get("price") or 0.0)
+                fee = fee or self._sum_fees(back)
+            except Exception:  # noqa: BLE001
+                pass
+        if price <= 0:
+            price = ref_px
+        if fee <= 0:  # venue didn't report it (testnet) — estimate from notional
+            fee = qty * price * taker_bps / 1e4
         return Fill(qty=qty, avg_price=price, fee=fee)
 
-    def market_spot(self, side: str, qty: float) -> Fill:
+    def market_spot(self, side: str, qty: float, *, ref_px: float = 0.0) -> Fill:
         order = self._spot.create_order(self.symbol, "market", side, abs(qty))
-        return self._fill_from_order(order)
+        return self._resolve_fill(self._spot, order, self.symbol, ref_px, taker_bps=10.0)
 
-    def market_perp(self, side: str, qty: float, *, reduce_only: bool = False) -> Fill:
+    def market_perp(
+        self, side: str, qty: float, *, reduce_only: bool = False, ref_px: float = 0.0
+    ) -> Fill:
         params = {"reduceOnly": True} if reduce_only else {}
         order = self._fut.create_order(self._perp, "market", side, abs(qty), None, params)
-        return self._fill_from_order(order)
+        return self._resolve_fill(self._fut, order, self._perp, ref_px, taker_bps=5.0)
 
     def open_positions(self) -> dict:
         """{'spot_qty', 'perp_qty'} for reconciliation."""
@@ -170,31 +219,34 @@ class LiveCarryExecutor:
         if plan.is_noop:
             return None
 
+        spot_delta = self.exchange.round_qty(plan.spot_delta_qty)
+        perp_delta = self.exchange.round_qty(plan.perp_delta_qty)
+
         spot_fill: Fill | None = None
-        if abs(plan.spot_delta_qty) > 1e-9:
-            side = "buy" if plan.spot_delta_qty > 0 else "sell"
-            spot_fill = self.exchange.market_spot(side, plan.spot_delta_qty)
+        if abs(spot_delta) > 1e-9:
+            side = "buy" if spot_delta > 0 else "sell"
+            spot_fill = self.exchange.market_spot(side, spot_delta, ref_px=spot_px)
 
         try:
             perp_fill: Fill | None = None
-            if abs(plan.perp_delta_qty) > 1e-9:
+            if abs(perp_delta) > 1e-9:
                 # + => increase short (sell), - => reduce short (buy, reduceOnly)
-                if plan.perp_delta_qty > 0:
-                    perp_fill = self.exchange.market_perp("sell", plan.perp_delta_qty)
+                if perp_delta > 0:
+                    perp_fill = self.exchange.market_perp("sell", perp_delta, ref_px=perp_px)
                 else:
                     perp_fill = self.exchange.market_perp(
-                        "buy", plan.perp_delta_qty, reduce_only=True
+                        "buy", perp_delta, reduce_only=True, ref_px=perp_px
                     )
         except Exception as exc:  # noqa: BLE001 - unwind then re-raise
             if spot_fill is not None and spot_fill.qty > 0:
-                unwind = "sell" if plan.spot_delta_qty > 0 else "buy"
-                self.exchange.market_spot(unwind, spot_fill.qty)
+                unwind = "sell" if spot_delta > 0 else "buy"
+                self.exchange.market_spot(unwind, spot_fill.qty, ref_px=spot_px)
             raise PartialCarryFill(
                 f"perp leg failed after spot filled ({spot_fill}); spot unwound"
             ) from exc
 
-        s_qty = (spot_fill.qty if spot_fill else 0.0) * (1 if plan.spot_delta_qty >= 0 else -1)
-        p_qty = (perp_fill.qty if perp_fill else 0.0) * (1 if plan.perp_delta_qty >= 0 else -1)
+        s_qty = (spot_fill.qty if spot_fill else 0.0) * (1 if spot_delta >= 0 else -1)
+        p_qty = (perp_fill.qty if perp_fill else 0.0) * (1 if perp_delta >= 0 else -1)
         return ExecReport(
             spot_fill_qty=s_qty,
             spot_fill_px=spot_fill.avg_price if spot_fill else spot_px,
