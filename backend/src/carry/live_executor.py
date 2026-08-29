@@ -17,12 +17,37 @@ never left directionally exposed) and raises ``PartialCarryFill``.
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from datetime import datetime
 
 from src.carry.carry_runner import ExecReport
 from src.carry.perp_provider import PerpSnapshot
 from src.carry.position_manager import RebalancePlan
+
+# ccxt options shared by both legs: the local clock is often ~1s ahead of
+# Binance's server (rejected as -1021 InvalidNonce), and connectivity to the
+# testnet hosts is flaky from some networks — so sync the clock and widen the
+# signature validity window.
+_CLIENT_OPTIONS = {"adjustForTimeDifference": True, "recvWindow": 15000}
+
+
+def _retry_read(fn, *, attempts: int = 4, backoff: float = 2.0):
+    """Retry a read-only ccxt call through transient network errors.
+
+    Only for idempotent GETs (tickers, funding, balances) — never order placement.
+    """
+    import ccxt
+
+    last: Exception | None = None
+    for i in range(attempts):
+        try:
+            return fn()
+        except (ccxt.NetworkError, ccxt.RequestTimeout, ccxt.ExchangeNotAvailable) as exc:
+            last = exc
+            if i < attempts - 1:
+                time.sleep(backoff * (i + 1))
+    raise last  # type: ignore[misc]
 
 
 class PartialCarryFill(RuntimeError):
@@ -61,14 +86,21 @@ class CarryExchange:
         import ccxt
 
         spot = ccxt.binance(
-            {"apiKey": creds.spot_api_key, "secret": creds.spot_secret, "enableRateLimit": True}
+            {
+                "apiKey": creds.spot_api_key,
+                "secret": creds.spot_secret,
+                "enableRateLimit": True,
+                "timeout": 30000,
+                "options": {"defaultType": "spot", **_CLIENT_OPTIONS},
+            }
         )
         fut = ccxt.binance(
             {
                 "apiKey": creds.futures_api_key,
                 "secret": creds.futures_secret,
                 "enableRateLimit": True,
-                "options": {"defaultType": "future"},
+                "timeout": 30000,
+                "options": {"defaultType": "future", **_CLIENT_OPTIONS},
             }
         )
         if creds.sandbox:
@@ -78,10 +110,14 @@ class CarryExchange:
 
     # --- market data -------------------------------------------------
     def snapshot(self) -> PerpSnapshot:
-        spot_px = float(self._spot.fetch_ticker(self.symbol)["last"])
-        fr = self._fut.fetch_funding_rate(self._perp)
-        perp_px = float(fr.get("markPrice") or self._fut.fetch_ticker(self._perp)["last"])
-        hist = self._fut.fetch_funding_rate_history(self._perp, limit=self._trail_prints)
+        spot_px = float(_retry_read(lambda: self._spot.fetch_ticker(self.symbol))["last"])
+        fr = _retry_read(lambda: self._fut.fetch_funding_rate(self._perp))
+        perp_px = float(
+            fr.get("markPrice") or _retry_read(lambda: self._fut.fetch_ticker(self._perp))["last"]
+        )
+        hist = _retry_read(
+            lambda: self._fut.fetch_funding_rate_history(self._perp, limit=self._trail_prints)
+        )
         trail = (
             sum(h["fundingRate"] for h in hist) / len(hist) if hist else float(fr["fundingRate"])
         )
@@ -116,11 +152,11 @@ class CarryExchange:
 
     def open_positions(self) -> dict:
         """{'spot_qty', 'perp_qty'} for reconciliation."""
-        spot_bal = self._spot.fetch_balance()
+        spot_bal = _retry_read(self._spot.fetch_balance)
         base = self.symbol.split("/")[0]
         spot_qty = float(spot_bal.get(base, {}).get("free", 0.0) or 0.0)
         perp = 0.0
-        for p in self._fut.fetch_positions([self._perp]):
+        for p in _retry_read(lambda: self._fut.fetch_positions([self._perp])):
             if p.get("symbol") == self._perp:
                 perp = abs(float(p.get("contracts") or p.get("contractSize") or 0.0))
         return {"spot_qty": spot_qty, "perp_qty": perp}
