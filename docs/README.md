@@ -39,6 +39,7 @@
 | | [funding-signal-findings.md](./development/funding-signal-findings.md) | فرضیه‌ی نرخ funding پرپچوال — رد شد |
 | | [volatility-targeting-findings.md](./development/volatility-targeting-findings.md) | فرضیه‌ی سایزینگ رژیم نوسان — رد شد |
 | | [cross-sectional-momentum-findings.md](./development/cross-sectional-momentum-findings.md) | فرضیه‌ی cross-sectional momentum سبد — رد شد |
+| | [managed-long-core-findings.md](./development/managed-long-core-findings.md) | هسته‌ی long ریسک‌-منضبط (trend gate + vol targeting) — **PASS** |
 
 ## خلاصه Stack
 
