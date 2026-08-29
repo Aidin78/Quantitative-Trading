@@ -63,15 +63,17 @@ class RiskManager:
             )
         )
 
+        # Same reasoning as ``max_open_positions``: an opposing/exit decision
+        # *reduces* exposure, so the exposure cap must not block it — otherwise a
+        # fully-invested strategy can never act on its own exit signal.
+        exposure_ok = opposing_exit or risk.open_exposure_pct <= self._config.max_exposure_pct
         checks.append(
             RiskCheckResult(
                 check_name="max_exposure",
-                passed=risk.open_exposure_pct <= self._config.max_exposure_pct,
+                passed=exposure_ok,
                 current_value=risk.open_exposure_pct,
                 threshold=self._config.max_exposure_pct,
-                message="exposure within limit"
-                if risk.open_exposure_pct <= self._config.max_exposure_pct
-                else "max exposure exceeded",
+                message="exposure within limit" if exposure_ok else "max exposure exceeded",
             )
         )
 

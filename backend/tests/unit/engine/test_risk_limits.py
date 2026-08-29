@@ -118,6 +118,26 @@ def test_opposing_exit_not_blocked_by_max_open_positions(engine, times: dict) ->
     assert decision.result.rejection_reason != "max_open_positions"
 
 
+def test_opposing_exit_not_blocked_by_max_exposure(engine, times: dict) -> None:
+    """A SELL that closes an open LONG must not be rejected at the exposure cap."""
+    snapshot = make_snapshot_with_open_positions(1)
+    snapshot = snapshot.model_copy(
+        update={"risk": snapshot.risk.model_copy(update={"open_exposure_pct": 95.0})}
+    )
+    decision = engine.process(
+        [
+            make_signal("ema_crossover", "SELL", 0.78, event_time=times["event_time"]),
+            make_signal("rsi_divergence", "SELL", 0.72, event_time=times["event_time"]),
+        ],
+        make_context(),
+        snapshot,
+        correlation_id="cycle_opposing_exit_exposure",
+        event_time=times["event_time"],
+        decision_time=times["decision_time"],
+    )
+    assert decision.result.rejection_reason != "max_exposure"
+
+
 def test_max_exposure_rejected(engine, times: dict) -> None:
     decision = engine.process(
         consensus_buy_signals(times["event_time"]),

@@ -139,9 +139,9 @@ async def _run() -> int:
     parser.add_argument("--start", default="2018-01-01")
     parser.add_argument("--end", default="2026-08-27")
     parser.add_argument("--exposure-pct", type=float, default=100.0)
-    parser.add_argument("--vol-target-atr-pct", type=float, default=4.0)
+    parser.add_argument("--vol-target-atr-pct", type=float, default=2.5)
     parser.add_argument("--vol-target-cap", type=float, default=1.5)
-    parser.add_argument("--sma", default="sma_200")
+    parser.add_argument("--sma", default="sma_150")
     args = parser.parse_args()
 
     features_config = load_features_config_file(

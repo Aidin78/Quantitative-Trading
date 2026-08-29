@@ -3,6 +3,7 @@
 # plus ATR/EMA for MarketContext. Pass this to run_validation_job via
 # features_config= instead of the default config/features.yaml, so the global
 # warm-up requirement is not raised to 200 bars for every other backtest.
+# sma_100/150/200 are all provided so the param sweep can pick the regime window.
 version: v1
 indicators:
   - name: ema_12
@@ -14,6 +15,12 @@ indicators:
   - name: atr_14
     type: atr
     params: { period: 14 }
+  - name: sma_100
+    type: sma
+    params: { period: 100 }
+  - name: sma_150
+    type: sma
+    params: { period: 150 }
   - name: sma_200
     type: sma
     params: { period: 200 }

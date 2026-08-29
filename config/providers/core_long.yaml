@@ -3,14 +3,19 @@
 # Validated in docs/development/managed-long-core-findings.md.
 #
 # Disabled by default: run it in its own experiment with
-#   - features_config = config/features.core_long.yaml   (provides sma_200)
+#   - features_config = config/features.core_long.yaml   (provides sma_100/150/200)
 #   - execution config long_only: true                   (regime-off = go to cash, not short)
+#
+# sma_150 is the neighbourhood centre from the platform param sweep (see
+# findings doc): it beats buy&hold on Sharpe, MaxDD and Calmar on BOTH BTC and
+# ETH across vol_target_atr_pct ∈ [2.0, 3.5]. sma_200 is a more conservative
+# corner (better MaxDD, comparable Calmar).
 provider_id: core_long
 version: v1
 enabled: false
 weight: 1.0
 params:
-  sma_indicator: sma_200      # regime reference (config/features.core_long.yaml)
+  sma_indicator: sma_150      # regime reference (config/features.core_long.yaml)
   confidence: 0.9             # fixed high conviction while regime is on
   min_confidence: 0.6
   regime_off_side: SELL       # closes the long via evaluate_bar; long_only suppresses the short
