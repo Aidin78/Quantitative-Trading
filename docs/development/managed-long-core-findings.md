@@ -114,7 +114,6 @@
 
 1. **rescale روزانهٔ سایز** — الان فقط در ورود.
 2. **rebalance band** روی ضریب vol برای کم‌کردن turnover.
-3. اجرا از طریق `Experiment`/`ConfigRevision` رسمی governance به‌جای اسکریپت.
 
 ---
 
@@ -163,4 +162,40 @@
 
 **وضعیت: استراتژی روی پلتفرم اجرا می‌شود، در یک ناحیهٔ پارامتری منسجم به‌طور مادی از buy&hold
 بهتر است (MaxDD نصف، Sharpe/Calmar بالاتر، بازده کل بالاتر)، و باگ exit پلتفرم اصلاح شد.**
-آمادهٔ promote به `candidate` از مسیر governance.
+
+---
+
+## عبور از governance رسمی (۲۰۲۶-۰۸-۲۹) — `challenger`
+
+[run_core_long_governance.py](../../backend/scripts/run_core_long_governance.py) استراتژی را از
+مسیر رسمی رد کرد (روی یک sqlite DB محلی `backend/data/governance_core_long.db`، نه Postgres):
+
+1. `ConfigRevision` با label `core_long_v1` — `config_bundle` کل استراتژی را ثبت می‌کند
+   (فقط `core_long` فعال، `features.core_long.yaml`، `vol_target_atr_pct` روی engine،
+   `long_only` + `exposure_pct_per_trade` روی execution، `risk_limits`).
+2. `Experiment` زیر آن (BTC+ETH، 1d) + `ExperimentRun` با `metrics_summary` کل‌تاریخچه.
+3. `Candidate` ساخته شد (state = `candidate`).
+4. `run_candidate_evaluation` — سیاست پذیرش قطعی و بدون‌LLM:
+
+| چک | نتیجه | جزئیات |
+|---|---|---|
+| `out_of_sample` | PASS | holdout (۲۰۲۴-۰۱ به بعد): ۲۵ معامله، +۶۵.۵٪ بازده |
+| `minimum_sample` | PASS | ۲۵ معاملهٔ holdout (آستانه ۲۰) — BTC+ETH با هم شمرده شد |
+| `fold_stability` | PASS | `fold_std=18.1` روی ۳ فولد anchored walk-forward (آستانه ~۳۹) |
+| `regime_concentration` | PASS | بزرگ‌ترین رژیم = ۵۶٪ معاملات holdout (سقف ۸۰٪) |
+
+**تصمیم: ACCEPTED.** کاندیدا به `challenger` promote شد.
+
+**هشدارها:**
+- **`metrics_summary` ثبت‌شده از `compute_outcome_metrics` استاندارد است** (PnL بر مبنای معاملهٔ
+  بسته‌شده، نه mark-to-market) — برای استراتژی hold-the-core، MaxDD را کم‌گزارش و Sharpe را
+  بالا نشان می‌دهد (`btc_max_drawdown_pct≈۱۱٪`, `sharpe≈۴.۳`). عدد واقعی mark-to-market
+  همان جدول بالاست (BTC MaxDD ۴۱٪). چهار چک evaluator به محاسبهٔ drawdown وابسته **نیستند**
+  (بازده holdout، تعداد معامله، پایداری fold، تمرکز رژیم) پس ACCEPT روی معیارهای خودش معتبر است.
+- **holdout تک-نماد کمتر از ۲۰ معامله دارد** (BTC ۱۵، ETH ۱۰) — گیت فقط با شمردن BTC+ETH با هم
+  رد می‌شود. یک استراتژی رژیم-overlay با ~۴ معامله/سال/نماد نزدیک کف نمونهٔ evaluator است.
+- **`challenger` → `champion` یک تصمیم انسانی/فرایندی است**، نه خودکار. `LiveGovernanceGate`
+  به‌صورت پیش‌فرض champion را الزام نمی‌کند (`require_champion_candidate=False`).
+
+پارامتر جدید: `run_validation_job(retain_events=True)` — انتشار و نگه‌داری کل جریان رویداد
+(context بازار، تصمیم‌ها) برای تحلیل offline بدون نوشتن در Postgres.

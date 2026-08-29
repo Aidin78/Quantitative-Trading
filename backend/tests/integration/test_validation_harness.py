@@ -163,3 +163,31 @@ async def test_emit_events_false_outcome_parity(csv_path: Path, real_providers) 
     )
     assert not any(e.event_family == EventFamily.MARKET for e in score.events)
     assert not any(e.event_family == EventFamily.DECISION for e in score.events)
+
+
+@pytest.mark.asyncio
+async def test_run_validation_job_retain_events_keeps_full_stream(csv_path: Path) -> None:
+    """retain_events=True emits + retains non-execution families without a DB."""
+    from src.validation.job_runner import run_validation_job
+
+    common = dict(
+        symbol="BTC/USDT",
+        timeframe="1h",
+        source="csv",
+        csv_path=str(csv_path),
+        persist_db=False,
+    )
+    default = await run_validation_job(**common)
+    retained = await run_validation_job(**common, retain_events=True)
+
+    default_families = {e.event_family for e in default.events}
+    retained_families = {e.event_family for e in retained.events}
+
+    assert default_families <= {EventFamily.EXECUTION}
+    assert EventFamily.MARKET in retained_families
+    assert EventFamily.DECISION in retained_families
+    # Outcome metrics must not shift just because more events were logged.
+    assert default.outcome_metrics["total_trades"] == retained.outcome_metrics["total_trades"]
+    assert default.outcome_metrics["ending_equity"] == pytest.approx(
+        retained.outcome_metrics["ending_equity"], rel=1e-9
+    )

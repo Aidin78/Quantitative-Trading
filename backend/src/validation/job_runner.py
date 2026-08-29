@@ -98,6 +98,7 @@ async def run_validation_job(
     source: Literal["exchange", "csv"] = "exchange",
     initial_capital: float = 10000.0,
     persist_db: bool = True,
+    retain_events: bool | None = None,
     experiment_id: str | None = None,
     revision_id: str | None = None,
     engine_config: EngineConfig | None = None,
@@ -165,6 +166,12 @@ async def run_validation_job(
             total=len(timestamps),
         ),
     )
+    # ``persist_db`` normally doubles as "emit every event family and log it".
+    # ``retain_events=True`` decouples the two: emit + retain the full event
+    # stream (market context, decisions, signals) for offline analysis
+    # (e.g. regime attribution) without writing to Postgres.
+    emit_all = persist_db if retain_events is None else (persist_db or retain_events)
+
     clock = SimulatedClock(event_time=start)
     feature_store = InMemoryFeatureStore()
     # A full ``risk_limits`` wins; otherwise fall back to the legacy
@@ -188,10 +195,10 @@ async def run_validation_job(
         fill_model,
         clock,
         config=execution_config,
-        emit_events=persist_db,
+        emit_events=emit_all,
     )
     log_handler = EventLogHandler(
-        families=None if persist_db else {EventFamily.EXECUTION},
+        families=None if emit_all else {EventFamily.EXECUTION},
     )
     handlers: list = [log_handler]
     if persist_db:
@@ -225,7 +232,7 @@ async def run_validation_job(
         mode="validation",
         execution_engine=execution_engine,
         persist_features=persist_db,
-        emit_events=persist_db,
+        emit_events=emit_all,
     )
     config = ValidationConfig(
         symbol=sym,
