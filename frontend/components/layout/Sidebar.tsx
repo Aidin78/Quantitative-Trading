@@ -12,6 +12,7 @@ import {
   Database,
   Loader2,
   PlayCircle,
+  Wallet,
   Zap,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/app-info";
@@ -26,25 +27,36 @@ type NavLink = {
   aliases?: string[];
 };
 
-const links: NavLink[] = [
-  { href: "/", label: "Decision Monitor", icon: Activity },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+const sections: { heading: string; links: NavLink[] }[] = [
   {
-    href: "/validation",
-    label: "Validation",
-    icon: PlayCircle,
-    aliases: ["/optimization"],
+    heading: "Trading",
+    links: [
+      { href: "/portfolio", label: "Book", icon: Wallet },
+      { href: "/", label: "Decision Monitor", icon: Activity },
+      { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    ],
   },
   {
-    href: "/research",
-    label: "Research",
-    icon: Beaker,
-    aliases: ["/experiments"],
+    heading: "Research",
+    links: [
+      {
+        href: "/validation",
+        label: "Validation",
+        icon: PlayCircle,
+        aliases: ["/optimization"],
+      },
+      {
+        href: "/research",
+        label: "Research",
+        icon: Beaker,
+        aliases: ["/experiments"],
+      },
+      { href: "/providers", label: "Providers", icon: Layers },
+      { href: "/engine", label: "Engine Config", icon: Cpu },
+      { href: "/market-data", label: "Market Data", icon: Database },
+      { href: "/replay", label: "Replay", icon: GitBranch },
+    ],
   },
-  { href: "/providers", label: "Providers", icon: Layers },
-  { href: "/engine", label: "Engine Config", icon: Cpu },
-  { href: "/market-data", label: "Market Data", icon: Database },
-  { href: "/replay", label: "Replay", icon: GitBranch },
 ];
 
 export function Sidebar() {
@@ -67,46 +79,50 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
-        <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted/60">
-          Navigation
-        </p>
-        {links.map((link) => {
-          const aliases = link.aliases ?? [];
-          const active =
-            pathname === link.href ||
-            (link.href !== "/" && pathname.startsWith(link.href)) ||
-            aliases.some((a) => pathname.startsWith(a));
-          const Icon = link.icon;
-          // a running sweep lives under the Validation section (Optimize tab)
-          const showOptimizerPulse =
-            link.href === "/validation" && optimizationRunning;
-          return (
-            <Link
-              key={link.href}
-              href={
-                link.href === "/validation" && sweepId
-                  ? `/optimization?sweep=${encodeURIComponent(sweepId)}`
-                  : link.href
-              }
-              className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                active
-                  ? "bg-[var(--accent-dim)] text-accent shadow-sm"
-                  : "text-muted hover:bg-white/5 hover:text-foreground"
-              }`}
-            >
-              <Icon
-                className={`h-4 w-4 shrink-0 ${active ? "text-accent" : "text-muted group-hover:text-foreground"}`}
-              />
-              {link.label}
-              {showOptimizerPulse ? (
-                <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-accent" />
-              ) : active ? (
-                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--glow)]" />
-              ) : null}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 space-y-5 p-3">
+        {sections.map((section) => (
+          <div key={section.heading} className="space-y-1">
+            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted/60">
+              {section.heading}
+            </p>
+            {section.links.map((link) => {
+              const aliases = link.aliases ?? [];
+              const active =
+                pathname === link.href ||
+                (link.href !== "/" && pathname.startsWith(link.href)) ||
+                aliases.some((a) => pathname.startsWith(a));
+              const Icon = link.icon;
+              // a running sweep lives under the Validation section (Optimize tab)
+              const showOptimizerPulse =
+                link.href === "/validation" && optimizationRunning;
+              return (
+                <Link
+                  key={link.href}
+                  href={
+                    link.href === "/validation" && sweepId
+                      ? `/optimization?sweep=${encodeURIComponent(sweepId)}`
+                      : link.href
+                  }
+                  className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                    active
+                      ? "bg-[var(--accent-dim)] text-accent shadow-sm"
+                      : "text-muted hover:bg-white/5 hover:text-foreground"
+                  }`}
+                >
+                  <Icon
+                    className={`h-4 w-4 shrink-0 ${active ? "text-accent" : "text-muted group-hover:text-foreground"}`}
+                  />
+                  {link.label}
+                  {showOptimizerPulse ? (
+                    <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-accent" />
+                  ) : active ? (
+                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--glow)]" />
+                  ) : null}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
     </aside>
   );

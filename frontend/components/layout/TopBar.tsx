@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 
 const titles: Record<string, string> = {
   "/": "Decision Monitor",
+  "/portfolio": "Book",
   "/analytics": "Analytics",
   "/engine": "Engine Config",
   "/replay": "Forensic Replay",

@@ -5,6 +5,7 @@ import { governanceApi } from "./domains/governance";
 import { liveApi } from "./domains/live";
 import { marketDataApi } from "./domains/marketData";
 import { optimizationApi } from "./domains/optimization";
+import { portfolioApi } from "./domains/portfolio";
 import { replayApi } from "./domains/replay";
 import { validationApi } from "./domains/validation";
 
@@ -27,4 +28,5 @@ export const api = {
   ...analyticsApi,
   ...marketDataApi,
   ...governanceApi,
+  ...portfolioApi,
 };

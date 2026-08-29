@@ -11,6 +11,7 @@ from src.api.v1 import (
     live,
     market_data,
     optimization,
+    portfolio,
     providers,
     replay,
     signals,
@@ -34,3 +35,4 @@ api_v1_router.include_router(optimization.router)
 api_v1_router.include_router(market_data.router)
 api_v1_router.include_router(providers.router)
 api_v1_router.include_router(live.router)
+api_v1_router.include_router(portfolio.router)

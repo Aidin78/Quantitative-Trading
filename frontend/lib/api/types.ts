@@ -9,3 +9,4 @@ export type * from "./types/analytics";
 export type * from "./types/live";
 export type * from "./types/marketData";
 export type * from "./types/governance";
+export type * from "./types/portfolio";

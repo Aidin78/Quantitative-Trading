@@ -21,61 +21,18 @@ testnet.binancefuture.com (futures).
 from __future__ import annotations
 
 import argparse
-import json
 import sys
-from dataclasses import asdict
-from datetime import UTC, datetime
 from pathlib import Path
 
 _BACKEND = Path(__file__).resolve().parents[1]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
-from src.carry import CarryManagerConfig, CarryPositionState, CarryRunner, PaperCarryExecutor
+from src.carry import CarryManagerConfig, CarryRunner, PaperCarryExecutor
 from src.carry.live_executor import CarryCredentials, CarryExchange, LiveCarryExecutor
+from src.carry.live_state import load_position as _load_state
+from src.carry.live_state import save_live_state as _save_state
 from src.core.settings import get_settings
-
-_STATE_PATH = _BACKEND / "data" / "carry_live_state.json"
-
-
-def _load_state() -> tuple[CarryPositionState, float, float | None]:
-    """(position state, cash, spot_baseline).
-
-    ``spot_baseline`` is the base-asset balance already in the spot account
-    before the runner touched it (testnet accounts ship pre-funded with 1 BTC
-    etc.) — subtracted out during reconciliation.
-    """
-    if not _STATE_PATH.exists():
-        return CarryPositionState(), 0.0, None
-    raw = json.loads(_STATE_PATH.read_text())
-    st = raw["state"]
-    return (
-        CarryPositionState(
-            spot_qty=st["spot_qty"],
-            perp_qty=st["perp_qty"],
-            spot_entry_px=st["spot_entry_px"],
-            perp_entry_px=st["perp_entry_px"],
-            accrued_funding=st["accrued_funding"],
-            flips=st["flips"],
-        ),
-        raw["cash"],
-        raw.get("spot_baseline"),
-    )
-
-
-def _save_state(state: CarryPositionState, cash: float, spot_baseline: float | None) -> None:
-    _STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _STATE_PATH.write_text(
-        json.dumps(
-            {
-                "ts": datetime.now(UTC).isoformat(),
-                "cash": cash,
-                "spot_baseline": spot_baseline,
-                "state": asdict(state),
-            },
-            indent=2,
-        )
-    )
 
 
 def _build_exchange(symbol: str) -> CarryExchange:
@@ -121,9 +78,23 @@ def _cycle(symbol: str, capital: float, *, dry_run: bool) -> None:
 
     snap = exchange.snapshot()
     action = runner.step(snap)
-    _save_state(runner.state, runner.cash, spot_baseline)
-
     eq = runner.equity(snap.spot_px, snap.perp_mark_px)
+    _save_state(
+        runner.state,
+        runner.cash,
+        spot_baseline,
+        symbol=symbol,
+        mark={
+            "at": snap.ts.isoformat(),
+            "spot_px": snap.spot_px,
+            "perp_px": snap.perp_mark_px,
+            "funding_8h": snap.trailing_funding_8h,
+            "equity": eq,
+            "action": action,
+            "dry_run": dry_run,
+        },
+    )
+
     st = runner.state
     tag = "  [DRY-RUN]" if dry_run else ""
     print(
