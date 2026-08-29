@@ -177,6 +177,46 @@ async def _run() -> int:
         f"({len(neg) / len(monthly) * 100:.0f}%).  worst 5: {worst}",
         flush=True,
     )
+
+    # ---- stress: funding compression, tighter leverage cap, 2022-only ----
+    print("\n=== stress on the primary config ===", flush=True)
+    base_cfg = next(iter(configs.values()))
+    scenarios = {
+        "baseline": (carry, base_cfg),
+        "funding halved": (carry * 0.5, base_cfg),
+        "funding -70%": (carry * 0.3, base_cfg),
+        "leverage cap 1.5x": (
+            carry,
+            BlendConfig(
+                base_cfg.carry_weight,
+                base_cfg.core_weight,
+                base_cfg.target_annual_vol,
+                base_cfg.vol_window,
+                1.5,
+            ),
+        ),
+        "no vol overlay": (
+            carry,
+            BlendConfig(base_cfg.carry_weight, base_cfg.core_weight, None),
+        ),
+    }
+    for name, (c, cfg) in scenarios.items():
+        s = build_blended_book(c, core, cfg).summary()
+        print(
+            f"  {name:<20} CAGR {s['cagr_pct']:>5}%  Sharpe {s['sharpe']:>4}  "
+            f"maxDD {s['max_drawdown_pct']:>5}%  +mo {s['pct_months_positive']:>4}%  "
+            f"worst mo {s['worst_month_pct']:>5}%",
+            flush=True,
+        )
+
+    # worst rolling 3-month stretch on the primary book
+    roll3 = primary.equity_curve.resample("ME").last().pct_change(3).dropna()
+    print(
+        f"\n  worst rolling 3-month: {roll3.min() * 100:.1f}% "
+        f"({roll3.idxmin().strftime('%Y-%m')}); "
+        f"share of 3-month windows negative: {(roll3 < 0).mean() * 100:.0f}%",
+        flush=True,
+    )
     return 0
 
 
