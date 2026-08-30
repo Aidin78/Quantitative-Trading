@@ -5,6 +5,7 @@ import { Activity, Layers, Loader2, Scale, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, Card, EmptyState, StatCard } from "@/components/ui/Card";
+import { QueryError } from "@/components/ui/QueryError";
 import { api } from "@/lib/api";
 import type { CarrySleeve, CoreSleeve } from "@/lib/api/types";
 
@@ -67,19 +68,7 @@ export default function PortfolioPage() {
           Loading book…
         </div>
       ) : isError ? (
-        <div className="rounded-lg border border-danger/30 bg-[var(--danger-dim)] p-4">
-          <p className="font-medium text-danger">Failed to load the book</p>
-          <p className="mt-1 text-sm text-muted">
-            {error instanceof Error ? error.message : "Unknown error"}
-          </p>
-          <button
-            type="button"
-            className="btn-secondary mt-3 text-xs"
-            onClick={() => refetch()}
-          >
-            Retry
-          </button>
-        </div>
+        <QueryError error={error} onRetry={() => refetch()} />
       ) : notStarted ? (
         <EmptyState
           message="Neither sleeve is running"

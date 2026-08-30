@@ -50,10 +50,17 @@ app = FastAPI(
 
 settings = get_settings()
 origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+# In development the frontend may run on any localhost port (3000, 3001, a
+# second `next start`, …) — a port mismatch otherwise fails CORS preflight and
+# the dashboard just spins. Widen to any localhost origin outside production.
+dev_origin_regex = (
+    r"https?://(localhost|127\.0\.0\.1)(:\d+)?" if settings.environment != "production" else None
+)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins or ["http://localhost:3000"],
+    allow_origin_regex=dev_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

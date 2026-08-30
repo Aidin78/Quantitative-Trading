@@ -11,6 +11,8 @@ import { validationApi } from "./domains/validation";
 
 export {
   apiFetch,
+  ApiError,
+  API_BASE,
   clearToken,
   downloadExport,
   getToken,

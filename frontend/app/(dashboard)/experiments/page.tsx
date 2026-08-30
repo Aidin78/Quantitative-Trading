@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionTabs } from "@/components/layout/SectionTabs";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
+import { QueryError } from "@/components/ui/QueryError";
 import { api } from "@/lib/api";
 
 export default function ExperimentsPage() {
@@ -13,7 +14,7 @@ export default function ExperimentsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["experiments"],
     queryFn: () => api.experiments(),
   });
@@ -117,6 +118,8 @@ export default function ExperimentsPage() {
           <div className="flex justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-accent" />
           </div>
+        ) : isError ? (
+          <QueryError error={error} onRetry={() => refetch()} />
         ) : !items.length ? (
           <EmptyState
             message="No experiments yet"

@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionTabs } from "@/components/layout/SectionTabs";
 import { Badge, Card, EmptyState } from "@/components/ui/Card";
+import { QueryError } from "@/components/ui/QueryError";
 import { api } from "@/lib/api";
 import type {
   Candidate,
@@ -77,7 +78,7 @@ function HypothesesSection() {
   const [genJobId, setGenJobId] = useState<string | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["hypotheses"],
     queryFn: () => api.hypotheses({ limit: 50 }),
   });
@@ -185,6 +186,8 @@ function HypothesesSection() {
         <div className="flex justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-accent" />
         </div>
+      ) : isError ? (
+        <QueryError error={error} onRetry={() => refetch()} />
       ) : !items.length ? (
         <EmptyState
           message="No hypotheses yet"
@@ -361,7 +364,7 @@ function CreateHypothesisForm({ onDone }: { onDone: () => void }) {
 
 function CandidatesSection() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["candidates"],
     queryFn: () => api.candidates({ limit: 50 }),
   });
@@ -384,6 +387,8 @@ function CandidatesSection() {
         <div className="flex justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-accent" />
         </div>
+      ) : isError ? (
+        <QueryError error={error} onRetry={() => refetch()} />
       ) : !items.length ? (
         <EmptyState
           message="No candidates yet"

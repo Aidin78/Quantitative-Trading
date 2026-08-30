@@ -5,6 +5,7 @@ import { BarChart3, Loader2, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, Card, EmptyState, StatCard } from "@/components/ui/Card";
+import { QueryError } from "@/components/ui/QueryError";
 import { api } from "@/lib/api";
 
 const PERIODS = [
@@ -33,7 +34,7 @@ function heatColor(rate: number, trades: number): string {
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState("30d");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["analytics", period],
     queryFn: () => api.analyticsOverview(period),
   });
@@ -94,6 +95,8 @@ export default function AnalyticsPage() {
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-accent" />
         </div>
+      ) : isError ? (
+        <QueryError error={error} onRetry={() => refetch()} />
       ) : !data || data.total_decisions === 0 ? (
         <EmptyState
           message="No live/paper activity in this period"

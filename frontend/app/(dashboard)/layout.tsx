@@ -1,3 +1,4 @@
+import { ApiHealthBanner } from "@/components/layout/ApiHealthBanner";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
@@ -15,6 +16,7 @@ export default function DashboardLayout({
         <div className="flex min-h-screen">
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col">
+            <ApiHealthBanner />
             <TopBar />
             <main className="flex-1 p-6 lg:p-8">{children}</main>
             <AppFooter />
