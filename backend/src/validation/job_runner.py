@@ -98,6 +98,7 @@ async def run_validation_job(
     source: Literal["exchange", "csv"] = "exchange",
     initial_capital: float = 10000.0,
     persist_db: bool = True,
+    persist_stream: bool = False,
     retain_events: bool | None = None,
     experiment_id: str | None = None,
     revision_id: str | None = None,
@@ -166,11 +167,14 @@ async def run_validation_job(
             total=len(timestamps),
         ),
     )
-    # ``persist_db`` normally doubles as "emit every event family and log it".
-    # ``retain_events=True`` decouples the two: emit + retain the full event
-    # stream (market context, decisions, signals) for offline analysis
-    # (e.g. regime attribution) without writing to Postgres.
+    # ``emit_all`` = produce every event family in-memory (needed for outcome
+    # metrics + regime attribution, computed at job end). ``persist_stream`` =
+    # additionally write that firehose to Postgres (event_log / decision_records
+    # / feature_sets / per-cycle state_snapshots). The stream is only useful for
+    # forensic replay of this specific run and otherwise piles up multi-GB, so
+    # it is opt-in — a normal run keeps just the summary + trades.
     emit_all = persist_db if retain_events is None else (persist_db or retain_events)
+    persist_stream = persist_db and persist_stream
 
     clock = SimulatedClock(event_time=start)
     feature_store = InMemoryFeatureStore()
@@ -203,7 +207,8 @@ async def run_validation_job(
     handlers: list = [log_handler]
     if persist_db:
         handlers.append(WebSocketEventHandler())
-        handlers.append(DatabaseEventHandler(get_session_factory()))
+        if persist_stream:
+            handlers.append(DatabaseEventHandler(get_session_factory()))
     bus = InMemoryEventBus(handlers=handlers)
     signal_providers = (
         build_providers_from_overrides(provider_overrides)
@@ -231,7 +236,7 @@ async def run_validation_job(
         portfolio_id="portfolio_default",
         mode="validation",
         execution_engine=execution_engine,
-        persist_features=persist_db,
+        persist_features=persist_stream,
         emit_events=emit_all,
     )
     config = ValidationConfig(
@@ -307,6 +312,7 @@ async def run_validation_job(
                 result,
                 revision_id=rev_id,
                 experiment_id=exp_id,
+                persist_cycles=persist_stream,
             )
             if experiment_run_id:
                 from src.governance.experiment_store import complete_experiment_run

@@ -42,7 +42,12 @@ async def persist_validation_result(
     *,
     revision_id: str | None = None,
     experiment_id: str | None = None,
+    persist_cycles: bool = True,
 ) -> None:
+    """Persist a finished run. ``persist_cycles=False`` keeps only the run
+    summary + closed trades and drops the per-bar ``feature_sets`` /
+    ``state_snapshots`` (hundreds of thousands of rows per run, only used for
+    forensic replay of that run)."""
     now = datetime.now(UTC)
     rev = revision_id or result.revision_id
     exp = experiment_id or result.experiment_id
@@ -68,7 +73,7 @@ async def persist_validation_result(
     )
 
     seen_feature_sets: set[str] = set()
-    for cycle in result.cycles:
+    for cycle in result.cycles if persist_cycles else ():
         fs = cycle.feature_set
         if fs.feature_set_id not in seen_feature_sets:
             if await session.get(FeatureSetRow, fs.feature_set_id) is None:
