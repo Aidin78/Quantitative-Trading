@@ -5,12 +5,15 @@ import type {
   ValidationRequest,
   ValidationRunsBulkDeleteResult,
   ValidationRunsResponse,
+  ValidationStrategy,
   ValidationTradesResponse,
   WalkForwardRequest,
   WalkForwardResult,
 } from "../types";
 
 export const validationApi = {
+  validationStrategies: () =>
+    apiFetch<{ items: ValidationStrategy[] }>("/api/v1/validation/strategies"),
   runValidation: (body: ValidationRequest) =>
     apiFetch<{ id: string; status: string }>("/api/v1/validation/run", {
       method: "POST",

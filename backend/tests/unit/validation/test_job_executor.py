@@ -50,3 +50,40 @@ async def test_execute_validation_job_honors_cancel_flag(
     done = isolated_store.get("job_coop")
     assert done is not None
     assert done.status == "cancelled"
+
+
+@pytest.mark.asyncio
+async def test_execute_validation_job_applies_strategy_preset(
+    isolated_store: ValidationJobStore,
+) -> None:
+    """Selecting the managed-long-core preset must forward its config bundle and
+    force its own timeframe, not the baseline 1h."""
+    job = isolated_store.create(
+        "job_preset",
+        {"source": "csv", "symbol": "BTC/USDT", "timeframe": "1h", "strategy": "managed_long_core"},
+    )
+    captured: dict = {}
+
+    async def fake_run(**kwargs):  # noqa: ANN003
+        captured.update(kwargs)
+
+        class _R:
+            outcome_metrics: dict = {}
+            engine_metrics: dict = {}
+            experiment_run_id = None
+            run_id = "run_x"
+            revision_id = None
+            experiment_id = None
+
+        return _R()
+
+    with patch(
+        "src.validation.job_executor.run_validation_job",
+        new=AsyncMock(side_effect=fake_run),
+    ):
+        await execute_validation_job("job_preset", job.config)
+
+    assert captured["timeframe"] == "1d"  # preset wins over the request's 1h
+    assert "provider_overrides" in captured
+    assert captured["provider_overrides"]["core_long"]["enabled"] is True
+    assert captured["execution_config"].long_only is True

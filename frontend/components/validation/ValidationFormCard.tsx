@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { DateRangeFields } from "@/components/ui/DateRangeFields";
 import { FieldLabel } from "@/components/ui/FieldLabel";
 import { FORM_TOOLTIPS } from "@/lib/formTooltips";
+import type { ValidationStrategy } from "@/lib/api";
 
 type Props = {
   symbol: string;
@@ -15,6 +16,9 @@ type Props = {
   onEndDateChange: (value: string) => void;
   initialCapital: number;
   onInitialCapitalChange: (value: number) => void;
+  strategy: string;
+  strategies: ValidationStrategy[];
+  onStrategyChange: (value: string) => void;
   runError: Error | null;
   walkForwardError: Error | null;
   isRunPending: boolean;
@@ -31,18 +35,50 @@ export function ValidationFormCard({
   onEndDateChange,
   initialCapital,
   onInitialCapitalChange,
+  strategy,
+  strategies,
+  onStrategyChange,
   runError,
   walkForwardError,
   isRunPending,
   isJobActive,
   onRun,
 }: Props) {
+  const active = strategies.find((s) => s.key === strategy);
+
   return (
     <Card
       title="Run Configuration"
-      subtitle="Historical validation with live exchange data"
+      subtitle="Historical validation with cached exchange data"
     >
       <div className="space-y-4">
+        {strategies.length > 0 && (
+          <div>
+            <FieldLabel
+              label="Strategy"
+              tooltip="Which configuration to validate. The baseline is a demo engine with no validated edge; the managed long-core is the strategy that passed research."
+            />
+            <select
+              className="input-field mt-2"
+              value={strategy}
+              onChange={(e) => onStrategyChange(e.target.value)}
+            >
+              {strategies.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            {active && (
+              <p className="mt-2 text-xs leading-relaxed text-muted">
+                {active.summary}{" "}
+                <span className="text-foreground/70">
+                  Runs on {active.timeframe} bars.
+                </span>
+              </p>
+            )}
+          </div>
+        )}
         <div>
           <FieldLabel label="Symbol" tooltip={FORM_TOOLTIPS.symbol} />
           <input

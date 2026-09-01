@@ -28,6 +28,26 @@ from src.validation.walk_forward import build_walk_forward_windows
 _execute_job = execute_validation_job
 
 
+@router.get("/strategies")
+async def list_strategies() -> dict:
+    """Named strategy bundles the validation form can pick from."""
+    from src.validation.strategy_presets import PRESETS
+
+    return {
+        "items": [
+            {
+                "key": p.key,
+                "label": p.label,
+                "summary": p.summary,
+                "timeframe": p.timeframe,
+                "default_lookback_days": p.default_lookback_days,
+                "default_symbols": list(p.default_symbols),
+            }
+            for p in PRESETS.values()
+        ]
+    }
+
+
 @router.post("/run")
 async def start_validation(body: ValidationRunRequest) -> dict:
     if validation_jobs.has_active():

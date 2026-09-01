@@ -7,6 +7,16 @@ export type ValidationRequest = {
   initial_capital?: number;
   experiment_id?: string;
   revision_id?: string;
+  strategy?: string;
+};
+
+export type ValidationStrategy = {
+  key: string;
+  label: string;
+  summary: string;
+  timeframe: string;
+  default_lookback_days: number;
+  default_symbols: string[];
 };
 
 export type ValidationTrade = {

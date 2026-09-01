@@ -16,6 +16,10 @@ class ValidationRunRequest(BaseModel):
     experiment_id: str | None = None
     revision_id: str | None = None
     max_consecutive_losses: int | None = None
+    # named strategy bundle — see src/validation/strategy_presets.py.
+    # "baseline" runs the stock demo config; "managed_long_core" runs the one
+    # strategy that passed research (its own providers / features / execution).
+    strategy: str = "baseline"
 
 
 class WalkForwardRequest(BaseModel):

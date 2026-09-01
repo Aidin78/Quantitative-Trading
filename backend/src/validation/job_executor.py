@@ -48,10 +48,16 @@ async def execute_validation_job(
         job.progress_total = event.total
         validation_jobs.update(job)
 
+    from src.validation.strategy_presets import resolve_preset
+
+    preset = resolve_preset(getattr(body, "strategy", None))
+    # a non-baseline strategy only makes sense on its own timeframe
+    timeframe = body.timeframe if preset.key == "baseline" else preset.timeframe
+
     try:
         result = await run_validation_job(
             symbol=body.symbol,
-            timeframe=body.timeframe,
+            timeframe=timeframe,
             start_date=body.start_date,
             end_date=body.end_date,
             csv_path=body.csv_path,
@@ -62,6 +68,7 @@ async def execute_validation_job(
             revision_id=body.revision_id,
             max_consecutive_losses=body.max_consecutive_losses,
             on_progress=on_progress,
+            **preset.run_kwargs(),
         )
         job.result = result
         job.status = "completed"

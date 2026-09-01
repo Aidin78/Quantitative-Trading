@@ -48,6 +48,7 @@ function ValidationPageContent() {
   );
   const [endDate, setEndDate] = useState(() => dateRangeForPreset("30d").end);
   const [initialCapital, setInitialCapital] = useState(10000);
+  const [strategy, setStrategy] = useState("baseline");
   const [wfWindows, setWfWindows] = useState(3);
   const [wfTrainRatio, setWfTrainRatio] = useState(0.7);
   const [exporting, setExporting] = useState(false);
@@ -75,6 +76,23 @@ function ValidationPageContent() {
     });
   };
 
+  const { data: strategyList } = useQuery({
+    queryKey: ["validation-strategies"],
+    queryFn: () => api.validationStrategies(),
+  });
+  const strategies = strategyList?.items ?? [];
+
+  const applyStrategy = (key: string) => {
+    setStrategy(key);
+    const preset = strategies.find((s) => s.key === key);
+    if (!preset) return;
+    setSymbol(preset.default_symbols[0] ?? symbol);
+    const days = preset.default_lookback_days;
+    const start = new Date(Date.now() - days * 86_400_000);
+    setStartDate(start.toISOString().slice(0, 10));
+    setEndDate("");
+  };
+
   const { data: runHistory } = useQuery({
     queryKey: ["validation-runs", symbol],
     queryFn: () => api.validationRuns({ limit: 20, symbol }),
@@ -94,7 +112,9 @@ function ValidationPageContent() {
         end_date: endDate || undefined,
         source: "exchange",
         initial_capital: initialCapital,
-        timeframe: "1h",
+        strategy,
+        // timeframe is chosen by the strategy preset on the backend
+        ...(strategy === "baseline" ? { timeframe: "1h" } : {}),
       }),
     onSuccess: (res) => persistJobId(res.id),
   });
@@ -278,6 +298,9 @@ function ValidationPageContent() {
           onEndDateChange={setEndDate}
           initialCapital={initialCapital}
           onInitialCapitalChange={setInitialCapital}
+          strategy={strategy}
+          strategies={strategies}
+          onStrategyChange={applyStrategy}
           runError={run.error instanceof Error ? run.error : null}
           walkForwardError={
             walkForward.error instanceof Error ? walkForward.error : null
