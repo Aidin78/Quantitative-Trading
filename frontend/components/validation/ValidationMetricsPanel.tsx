@@ -1,8 +1,10 @@
 "use client";
 
 import { StatCard } from "@/components/ui/Card";
+import { EquityChart } from "@/components/ui/EquityChart";
 import type {
   DiagnosticsBucket,
+  EquityTimeline,
   MonthlyBreakdownRow,
   ValidationDiagnostics,
   ValidationTrade,
@@ -78,11 +80,74 @@ export function ValidationMetricsPanel({
     Record<string, number> | undefined;
   const monthly = outcome?.monthly_breakdown as
     MonthlyBreakdownRow[] | undefined;
+  const timeline = outcome?.equity_timeline as EquityTimeline | undefined;
   const diagnostics = outcome?.diagnostics as ValidationDiagnostics | undefined;
   const score = typeof outcome?.score === "number" ? outcome.score : null;
 
+  const num = (v: unknown): number | null =>
+    typeof v === "number" && Number.isFinite(v) ? v : null;
+  const stratReturn = num(outcome?.mtm_return_pct) ?? num(outcome?.return_pct);
+  const stratMaxDd =
+    num(outcome?.mtm_max_drawdown_pct) ?? num(outcome?.max_drawdown_pct);
+  const stratSharpe =
+    num(outcome?.mtm_sharpe_ratio) ?? num(outcome?.sharpe_ratio);
+
   return (
     <div className="space-y-6">
+      {timeline && timeline.points.length > 1 ? (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+            Equity vs. {timeline.benchmark_label.toLowerCase()}
+          </p>
+          <EquityChart
+            points={timeline.points}
+            benchmarkLabel={timeline.benchmark_label}
+          />
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)] text-left text-xs uppercase text-muted">
+                  <th className="pb-2 pr-3" />
+                  <th className="pb-2 pr-3">Total return</th>
+                  <th className="pb-2 pr-3">Max drawdown</th>
+                  <th className="pb-2">Sharpe</th>
+                </tr>
+              </thead>
+              <tbody className="font-mono text-xs">
+                <tr className="border-b border-[var(--border)]/50">
+                  <td className="py-2 pr-3 font-sans font-medium text-accent">
+                    Strategy
+                  </td>
+                  <td className="py-2 pr-3">
+                    {stratReturn != null ? `${stratReturn.toFixed(1)}%` : "—"}
+                  </td>
+                  <td className="py-2 pr-3">
+                    {stratMaxDd != null ? `${stratMaxDd.toFixed(1)}%` : "—"}
+                  </td>
+                  <td className="py-2">
+                    {stratSharpe != null ? stratSharpe.toFixed(2) : "—"}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-3 font-sans font-medium text-muted">
+                    {timeline.benchmark_label}
+                  </td>
+                  <td className="py-2 pr-3">
+                    {timeline.benchmark_return_pct.toFixed(1)}%
+                  </td>
+                  <td className="py-2 pr-3">
+                    {timeline.benchmark_max_drawdown_pct.toFixed(1)}%
+                  </td>
+                  <td className="py-2">
+                    {timeline.benchmark_sharpe_ratio.toFixed(2)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
       {score != null ? (
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">

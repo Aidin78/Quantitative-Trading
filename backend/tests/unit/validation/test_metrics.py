@@ -338,6 +338,101 @@ def test_mtm_handles_overlapping_positions() -> None:
     assert om["mtm_max_drawdown_pct"] == pytest.approx(0.0, abs=1e-6)
 
 
+def test_equity_timeline_tracks_strategy_and_buy_and_hold() -> None:
+    """The dated timeline must carry both the marked-to-market strategy curve and
+    a buy & hold benchmark rebased to the same starting capital."""
+    from datetime import timedelta
+
+    from src.events.envelopes import ExecutionEventType, MarketEventType, build_envelope
+
+    base = utc_now()
+
+    def candle(day: int, close: float):
+        t = base + timedelta(days=day)
+        return build_envelope(
+            event_family=EventFamily.MARKET,
+            event_type=MarketEventType.CANDLE_RECEIVED,
+            event_time=t,
+            processing_time=t,
+            correlation_id=f"c{day}",
+            symbol="BTC/USDT",
+            timeframe="1d",
+            mode="validation",
+            payload={"open": close, "high": close, "low": close, "close": close, "volume": 1.0},
+        )
+
+    opened = build_envelope(
+        event_family=EventFamily.EXECUTION,
+        event_type=ExecutionEventType.POSITION_OPENED,
+        event_time=base,
+        processing_time=base,
+        correlation_id="c0",
+        symbol="BTC/USDT",
+        timeframe="1d",
+        mode="validation",
+        payload={
+            "position_id": "p1",
+            "position": {"quantity": 1.0, "entry_price": 100.0, "side": "LONG"},
+        },
+    )
+    closed = build_envelope(
+        event_family=EventFamily.EXECUTION,
+        event_type=ExecutionEventType.POSITION_CLOSED,
+        event_time=base + timedelta(days=2),
+        processing_time=base + timedelta(days=2),
+        correlation_id="c2",
+        symbol="BTC/USDT",
+        timeframe="1d",
+        mode="validation",
+        payload={"pnl": 50.0, "position_id": "p1", "exit_reason": "signal", "side": "LONG"},
+    )
+    # price 100 -> 150 (+50%); strategy holds one unit the whole way
+    events = [candle(0, 100.0), opened, candle(1, 125.0), candle(2, 150.0), closed]
+
+    om = compute_outcome_metrics(events, initial_capital=100.0)
+    timeline = om["equity_timeline"]
+    assert [row["date"] for row in timeline["points"]] == [
+        (base + timedelta(days=d)).date().isoformat() for d in range(3)
+    ]
+    assert timeline["points"][0]["benchmark"] == pytest.approx(100.0)
+    assert timeline["points"][-1]["benchmark"] == pytest.approx(150.0)
+    assert timeline["points"][-1]["strategy"] == pytest.approx(150.0)
+    assert timeline["benchmark_return_pct"] == pytest.approx(50.0, rel=1e-6)
+
+
+def test_equity_timeline_downsamples_long_runs() -> None:
+    from datetime import timedelta
+
+    from src.events.envelopes import MarketEventType, build_envelope
+
+    base = utc_now()
+    events = [
+        build_envelope(
+            event_family=EventFamily.MARKET,
+            event_type=MarketEventType.CANDLE_RECEIVED,
+            event_time=base + timedelta(days=day),
+            processing_time=base + timedelta(days=day),
+            correlation_id=f"c{day}",
+            symbol="BTC/USDT",
+            timeframe="1d",
+            mode="validation",
+            payload={
+                "open": 100.0,
+                "high": 100.0,
+                "low": 100.0,
+                "close": 100.0 + day,
+                "volume": 1.0,
+            },
+        )
+        for day in range(1200)
+    ]
+    om = compute_outcome_metrics(events, initial_capital=10_000.0)
+    points = om["equity_timeline"]["points"]
+    assert len(points) <= 401
+    # the final bar is always kept so the endpoint value is exact
+    assert points[-1]["date"] == (base + timedelta(days=1199)).date().isoformat()
+
+
 def test_mtm_series_absent_without_candles() -> None:
     from src.events.envelopes import ExecutionEventType, build_envelope
 

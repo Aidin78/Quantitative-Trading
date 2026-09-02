@@ -70,6 +70,20 @@ export type ValidationDiagnostics = {
   by_side: Record<string, DiagnosticsBucket>;
 };
 
+export type EquityTimelinePoint = {
+  date: string;
+  strategy: number;
+  benchmark: number;
+};
+
+export type EquityTimeline = {
+  points: EquityTimelinePoint[];
+  benchmark_label: string;
+  benchmark_return_pct: number;
+  benchmark_max_drawdown_pct: number;
+  benchmark_sharpe_ratio: number;
+};
+
 export type ValidationRunSummary = {
   run_id: string;
   symbol: string;

@@ -166,6 +166,101 @@ def compute_mark_to_market_series(
     return equity_curve, returns
 
 
+def compute_equity_timeline(
+    events: list[EventEnvelope],
+    *,
+    initial_capital: float = 10000.0,
+    max_points: int = 400,
+) -> dict:
+    """Dated strategy equity curve (marked to market) alongside a buy & hold
+    benchmark over the same bars.
+
+    Same ledger walk as ``compute_mark_to_market_series`` but it keeps the day
+    key and the bar close, so the dashboard can plot the strategy against just
+    holding the asset. Benchmark summary stats are taken from the full daily
+    series *before* the payload is downsampled. Needs ``CANDLE_RECEIVED``
+    events; returns ``{}`` without them (callers then hide the chart).
+    """
+    relevant = sorted(
+        (
+            e
+            for e in events
+            if e.event_type
+            in (
+                MarketEventType.CANDLE_RECEIVED,
+                ExecutionEventType.POSITION_OPENED,
+                ExecutionEventType.POSITION_CLOSED,
+            )
+        ),
+        key=lambda e: e.event_time,
+    )
+    candles = [e for e in relevant if e.event_type == MarketEventType.CANDLE_RECEIVED]
+    if not candles:
+        return {}
+
+    realised = 0.0
+    open_positions: dict[str, tuple[float, int, float]] = {}  # id -> (qty, sign, entry)
+    last_close = 0.0
+    strategy_by_day: dict[str, float] = {}
+    close_by_day: dict[str, float] = {}
+
+    for event in relevant:
+        if event.event_type == MarketEventType.CANDLE_RECEIVED:
+            last_close = float(event.payload.get("close", last_close))
+        elif event.event_type == ExecutionEventType.POSITION_OPENED:
+            position = event.payload.get("position", {})
+            pid = event.payload.get("position_id") or position.get("position_id") or ""
+            qty = float(position.get("quantity", 0.0))
+            sign = 1 if position.get("side") == "LONG" else -1
+            entry = float(position.get("entry_price", last_close))
+            open_positions[pid] = (qty, sign, entry)
+        elif event.event_type == ExecutionEventType.POSITION_CLOSED:
+            realised += float(event.payload.get("pnl", 0.0))
+            open_positions.pop(event.payload.get("position_id") or "", None)
+        unrealised = sum(
+            sign * qty * (last_close - entry) for qty, sign, entry in open_positions.values()
+        )
+        day = event.event_time.date().isoformat()
+        strategy_by_day[day] = initial_capital + realised + unrealised
+        close_by_day[day] = last_close
+
+    days = sorted(strategy_by_day)
+    first_close = next((close_by_day[d] for d in days if close_by_day[d] > 0), 0.0)
+    if first_close <= 0:
+        return {}
+
+    full = [
+        {
+            "date": day,
+            "strategy": round(strategy_by_day[day], 2),
+            "benchmark": round(initial_capital * close_by_day[day] / first_close, 2),
+        }
+        for day in days
+    ]
+
+    bench_curve = [row["benchmark"] for row in full]
+    bench_returns = [
+        (bench_curve[i] - bench_curve[i - 1]) / bench_curve[i - 1]
+        for i in range(1, len(bench_curve))
+        if bench_curve[i - 1] > 0
+    ]
+
+    points = full
+    if len(full) > max_points:
+        stride = len(full) // max_points + 1
+        points = full[::stride]
+        if points[-1]["date"] != full[-1]["date"]:
+            points.append(full[-1])
+
+    return {
+        "points": points,
+        "benchmark_label": "Buy & hold",
+        "benchmark_return_pct": (bench_curve[-1] - initial_capital) / initial_capital * 100,
+        "benchmark_max_drawdown_pct": _max_drawdown_pct(bench_curve),
+        "benchmark_sharpe_ratio": _annualized_sharpe(bench_returns) if bench_returns else 0.0,
+    }
+
+
 def _max_drawdown_pct(equity_curve: list[float]) -> float:
     peak = equity_curve[0] if equity_curve else 0.0
     max_dd_pct = 0.0
@@ -593,6 +688,10 @@ def compute_outcome_metrics(
         outcome["mtm_max_drawdown_pct"] = _max_drawdown_pct(mtm_curve)
         outcome["mtm_sharpe_ratio"] = _annualized_sharpe(mtm_returns) if mtm_returns else 0.0
         outcome["mtm_sortino_ratio"] = _annualized_sortino(mtm_returns) if mtm_returns else 0.0
+
+    timeline = compute_equity_timeline(events, initial_capital=initial_capital)
+    if timeline:
+        outcome["equity_timeline"] = timeline
 
     outcome["monthly_breakdown"] = compute_monthly_breakdown(
         events, initial_capital=initial_capital
