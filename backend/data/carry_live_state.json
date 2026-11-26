@@ -1,0 +1,15 @@
+{
+  "ts": "2026-08-29T11:52:55.600123+00:00",
+  "symbol": "BTC/USDT",
+  "cash": 333.6159388,
+  "spot_baseline": 1.0,
+  "state": {
+    "spot_qty": 0.0085,
+    "perp_qty": 0.0085,
+    "spot_entry_px": 77643.1,
+    "perp_entry_px": 77634.3,
+    "accrued_funding": 0.19797,
+    "flips": 1
+  },
+  "mark": null
+}
